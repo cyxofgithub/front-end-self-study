@@ -1,0 +1,49 @@
+登录
+
+git config --global user.name "xxx"
+git config --global user.email "xxxx@qq.com"
+
+连接分支
+
+git remote add origin https://gitee.com/dadadaxyx/shrimp-origin.git
+
+1.在本地新建一文件夹用来存放项目代码 （eg:xny）
+
+2.进入该文件，右键选择 git bush here，打开命令窗后，输入初始化命令：git init
+
+3.命令行：git remote add origin 后面是项目所在远程仓库地址（不是远程分支名称，而是仓库地址）
+
+4.拉取远程分支到本地：git fetch origin dev(dev是你要拉取的远程分支名称)
+
+5.在本地创建dev分支并且切换到该分支：git checkout -b dev(本地分支名称)
+
+6.拉取分支到本地：git pull origin dev(远程分支名称)
+
+
+
+推送分支
+
+git add . 
+
+git commit -m "wonasnkda"
+
+git push --set-upstream origin ljc
+
+git push 
+
+
+合并master到你的分支，同步master
+
+1创建本地master分支
+
+2命令行：git remote add origin 后面是项目所在远程仓库地址（不是远程分支名称，而是仓库地址）
+
+3拉取远程分支到本地：git fetch origin dev(dev是你要拉取的远程分支名称)
+
+4.在本地创建dev分支并且切换到该分支：git checkout -b dev(本地分支名称)
+
+5.拉取分支到本地：git pull origin dev(远程分支名称)
+
+6在master分支上 git pull 
+
+7在切换到你的分支上，git merge master
