@@ -129,6 +129,232 @@ new Vue({
 
 ![Vue 实例生命周期](https://cn.vuejs.org/images/lifecycle.png)
 
+### 生命周期详解（博客）
+
+在vue一整个的生命周期中会有很多**钩子函数**提供给我们在vue生命周期不同的时刻进行操作, 那么先列出所有的钩子函数，然后我们再一一详解:
+
+- **beforeCreate**
+- **created**
+- **beforeMount**
+- **mounted**
+- **beforeUpdate**
+- **updated**
+- **beforeDestroy**
+- **destroyed**
+
+先来一波代码，各位复制在浏览器中运行，打开console查看就行了：
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>vue生命周期学习</title>
+  <script src="https://cdn.bootcss.com/vue/2.4.2/vue.js"></script>
+</head>
+<body>
+  <div id="app">
+    <h1>{{message}}</h1>
+  </div>
+</body>
+<script>
+  var vm = new Vue({
+    el: '#app',
+    data: {
+      message: 'Vue的生命周期'
+    },
+    beforeCreate: function() {
+      console.group('------beforeCreate创建前状态------');
+      console.log("%c%s", "color:red" , "el     : " + this.$el); //undefined
+      console.log("%c%s", "color:red","data   : " + this.$data); //undefined 
+      console.log("%c%s", "color:red","message: " + this.message) 
+    },
+    created: function() {
+      console.group('------created创建完毕状态------');
+      console.log("%c%s", "color:red","el     : " + this.$el); //undefined
+      console.log("%c%s", "color:red","data   : " + this.$data); //已被初始化 
+      console.log("%c%s", "color:red","message: " + this.message); //已被初始化
+    },
+    beforeMount: function() {
+      console.group('------beforeMount挂载前状态------');
+      console.log("%c%s", "color:red","el     : " + (this.$el)); //已被初始化
+      console.log(this.$el);
+      console.log("%c%s", "color:red","data   : " + this.$data); //已被初始化  
+      console.log("%c%s", "color:red","message: " + this.message); //已被初始化  
+    },
+    mounted: function() {
+      console.group('------mounted 挂载结束状态------');
+      console.log("%c%s", "color:red","el     : " + this.$el); //已被初始化
+      console.log(this.$el);    
+      console.log("%c%s", "color:red","data   : " + this.$data); //已被初始化
+      console.log("%c%s", "color:red","message: " + this.message); //已被初始化 
+    },
+    beforeUpdate: function () {
+      console.group('beforeUpdate 更新前状态===============》');
+      console.log("%c%s", "color:red","el     : " + this.$el);
+      console.log(this.$el);   
+      console.log("%c%s", "color:red","data   : " + this.$data); 
+      console.log("%c%s", "color:red","message: " + this.message); 
+    },
+    updated: function () {
+      console.group('updated 更新完成状态===============》');
+      console.log("%c%s", "color:red","el     : " + this.$el);
+      console.log(this.$el); 
+      console.log("%c%s", "color:red","data   : " + this.$data); 
+      console.log("%c%s", "color:red","message: " + this.message); 
+    },
+    beforeDestroy: function () {
+      console.group('beforeDestroy 销毁前状态===============》');
+      console.log("%c%s", "color:red","el     : " + this.$el);
+      console.log(this.$el);    
+      console.log("%c%s", "color:red","data   : " + this.$data); 
+      console.log("%c%s", "color:red","message: " + this.message); 
+    },
+    destroyed: function () {
+      console.group('destroyed 销毁完成状态===============》');
+      console.log("%c%s", "color:red","el     : " + this.$el);
+      console.log(this.$el);  
+      console.log("%c%s", "color:red","data   : " + this.$data); 
+      console.log("%c%s", "color:red","message: " + this.message)
+    }
+  })
+</script>
+</html>
+```
+
+运行后打开console可以看到打印出来内容如下:
+
+![image-20210401182009210](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210401182009210.png)
+
+可以看到一个vue实例在创建过程中调用的几个生命周期钩子。
+
+##### **1. 在beforeCreate和created钩子函数之间的生命周期**
+
+在这个生命周期之间，进行**初始化事件，进行数据的观测**，可以看到在**created**的时候数据已经和**data属性进行绑定**（放在data中的属性当值发生改变的同时，视图也会改变）。
+注意看下：此时还是没有el选项
+
+##### **2. created钩子函数和beforeMount间的生命周期**
+
+![clipboard.png](https://segmentfault.com/img/bVVUb9?w=571&h=509)
+
+在这一阶段发生的事情还是比较多的。
+
+首先会判断对象是否有**el选项**。**如果有的话就继续向下编译，如果没有**el选项**，则停止编译，也就意味着停止了生命周期，直到在该vue实例上调用vm.$mount(el)。**此时注释掉代码中:
+
+```
+el: '#app',
+```
+
+然后运行可以看到到created的时候就停止了：
+
+![clipboard.png](https://segmentfault.com/img/bVVUB3?w=764&h=285)
+
+如果我们在后面继续调用vm.$mount(el),可以发现代码继续向下执行了
+
+```
+vm.$mount(el) //这个el参数就是挂在的dom接点
+```
+
+![clipboard.png](https://segmentfault.com/img/bVVUCG?w=691&h=441)
+
+然后，我们往下看，**template**参数选项的有无对生命周期的影响。
+（1）.如果vue实例对象中有template参数选项，则将其作为模板编译成render函数。
+（2）.如果没有template选项，则将外部HTML作为模板编译。
+（3）.可以看到template中的模板优先级要高于outer HTML的优先级。
+修改代码如下, 在HTML结构中增加了一串html，在vue对象中增加了**template选项**：
+
+```
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>vue生命周期学习</title>
+  <script src="https://cdn.bootcss.com/vue/2.4.2/vue.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!--html中修改的-->
+    <h1>{{message + '这是在outer HTML中的'}}</h1>
+  </div>
+</body>
+<script>
+  var vm = new Vue({
+    el: '#app',
+    template: "<h1>{{message +'这是在template中的'}}</h1>", //在vue配置项中修改的
+    data: {
+      message: 'Vue的生命周期'
+    }
+</script>
+</html>
+```
+
+执行后的结果可以看到在页面中显示的是：
+
+![clipboard.png](https://segmentfault.com/img/bVVUJT?w=910&h=118)
+
+那么将vue对象中template的选项注释掉后打印如下信息：
+
+![clipboard.png](https://segmentfault.com/img/bVVUJ3?w=717&h=97)
+
+这下就可以想想什么**el的判断**要在template之前了~是因为vue需要通过el找到对应的outer template。
+
+在vue对象中还有一个**render函数**，它是以createElement作为参数，然后做渲染操作，而且我们可以直接嵌入JSX.
+
+```
+new Vue({
+    el: '#app',
+    render: function(createElement) {
+        return createElement('h1', 'this is createElement')
+    }
+})
+```
+
+可以看到页面中渲染的是：
+
+![clipboard.png](https://segmentfault.com/img/bVVUSo?w=477&h=76)
+
+所以综合排名优先级：
+render函数选项 > template选项 > outer HTML.
+
+##### **3. beforeMount和mounted 钩子函数间的生命周期**
+
+![clipboard.png](https://segmentfault.com/img/bVVUTK?w=451&h=198)
+
+可以看到此时是给vue实例对象添加**$el成员**，并且替换掉挂在的DOM元素。因为在之前console中打印的结果可以看到**beforeMount**之前el上还是undefined。
+
+#### **4. mounted**
+
+注意看下面截图：
+
+![clipboard.png](https://segmentfault.com/img/bVVUYC?w=424&h=274)
+
+在mounted之前h1中还是通过**{{message}}**进行占位的，因为此时还有挂在到页面上，还是JavaScript中的虚拟DOM形式存在的。在mounted之后可以看到h1中的内容发生了变化。
+
+##### **5. beforeUpdate钩子函数和updated钩子函数间的生命周期**
+
+![clipboard.png](https://segmentfault.com/img/bVVU0E?w=558&h=295)
+
+当vue发现data中的数据发生了改变，会**触发对应组件的重新渲染**，先后调用**beforeUpdate**和**updated**钩子函数。我们在console中输入：
+
+```
+vm.message = '触发组件更新'
+```
+
+发现触发了组件的更新：
+
+![clipboard.png](https://segmentfault.com/img/bVVU55?w=500&h=356)
+
+##### **6.beforeDestroy和destroyed钩子函数间的生命周期**
+
+![clipboard.png](https://segmentfault.com/img/bVVU6C?w=383&h=368)
+
+**beforeDestroy**钩子函数在实例销毁之前调用。在这一步，实例仍然完全可用。
+**destroyed**钩子函数在Vue 实例销毁后调用。调用后，Vue 实例指示的所有东西都会解绑定，所有的事件监听器会被移除，所有的子实例也会被销毁。
+
 # 2.模板语法
 
 Vue.js 使用了基于 HTML 的模板语法，允许开发者声明式地将 DOM 绑定至底层 Vue 实例的数据。所有 Vue.js 的模板都是合法的 HTML，所以能被遵循规范的浏览器和 HTML 解析器解析。
@@ -492,7 +718,7 @@ computed: {
 
 
 
-#### 监听器（重点）
+## 监听器（重点）
 
 虽然计算属性在大多数情况下更合适，但有时也需要一个自定义的侦听器。这就是为什么 Vue 通过 `watch` 选项提供了一个更通用的方法，来响应数据的变化。当需要在数据变化时执行异步或开销较大的操作时，这个方式是最有用的。
 
@@ -565,7 +791,17 @@ I cannot give you an answer until you ask a question!
 
 除了 `watch` 选项之外，您还可以使用命令式的 [vm.$watch API](https://cn.vuejs.org/v2/api/#vm-watch)。
 
+## 两者区别（博客）
 
+```
+watch：监听器
+	- 监听器监听属性数据发生变化去影响他人
+	- 自己改变  => 影响他人
+computed：计算属性
+	- 只要 相关属性的数值发生了变化，计算属性会重新计算
+	- 根据已知的值，得到一个新值
+	- 别人改变 => 影响自己
+```
 
 # 4.Class 与 Style 绑定
 
@@ -1766,6 +2002,172 @@ Vue.component('custom-input', {
 
 # 深入了解组件
 
+# 2.自定义事件
+
+## [事件名](https://cn.vuejs.org/v2/guide/components-custom-events.html#事件名)
+
+不同于组件和 prop，事件名不存在任何自动化的大小写转换。而是触发的事件名需要完全匹配监听这个事件所用的名称。举个例子，如果触发一个 camelCase（驼峰命名） 名字的事件：
+
+```
+this.$emit('myEvent')
+```
+
+则监听这个名字的 kebab-case（短横线命名） 版本是不会有任何效果的：
+
+```
+<!-- 没有效果 -->
+<my-component v-on:my-event="doSomething"></my-component>
+```
+
+不同于组件和 prop，事件名不会被用作一个 JavaScript 变量名或 property 名，所以就没有理由使用 camelCase 或 PascalCase 了。并且 `v-on` 事件监听器在 DOM 模板中会被自动转换为全小写 (因为 HTML 是大小写不敏感的)，所以 `v-on:myEvent` 将会变成 `v-on:myevent`——导致 `myEvent` 不可能被监听到。
+
+因此，我们推荐你**始终使用 kebab-case 的事件名**。
+
+## [自定义组件的 `v-model`](https://cn.vuejs.org/v2/guide/components-custom-events.html#自定义组件的-v-model)
+
+> 2.2.0+ 新增
+
+一个组件上的 `v-model` 默认会利用名为 `value` 的 prop 和名为 `input` 的事件，但是像单选框、复选框等类型的输入控件可能会将 `value` attribute 用于[不同的目的](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/checkbox#Value)。`model` 选项可以用来避免这样的冲突：
+
+```
+Vue.component('base-checkbox', {
+  model: {
+    prop: 'checked',
+    event: 'change'
+  },
+  props: {
+    checked: Boolean
+  },
+  template: `
+    <input
+      type="checkbox"
+      v-bind:checked="checked"
+      v-on:change="$emit('change', $event.target.checked)"
+    >
+  `
+})
+```
+
+现在在这个组件上使用 `v-model` 的时候：
+
+```
+<base-checkbox v-model="lovingVue"></base-checkbox>
+```
+
+这里的 `lovingVue` 的值将会传入这个名为 `checked` 的 prop。同时当 `<base-checkbox>` 触发一个 `change` 事件并附带一个新的值的时候，这个 `lovingVue` 的 property 将会被更新。
+
+注意你仍然需要在组件的 `props` 选项里声明 `checked` 这个 prop。
+
+## [将原生事件绑定到组件（没吃透）](https://cn.vuejs.org/v2/guide/components-custom-events.html#将原生事件绑定到组件)
+
+你可能有很多次想要在一个组件的根元素上直接监听一个原生事件。这时，你可以使用 `v-on` 的 `.native` 修饰符：
+
+```
+<base-input v-on:focus.native="onFocus"></base-input>
+```
+
+在有的时候这是很有用的，不过在你尝试监听一个类似 `<input>` 的非常特定的元素时，这并不是个好主意。比如上述 `<base-input>` 组件可能做了如下重构，所以根元素实际上是一个 `<label>` 元素：
+
+```
+<label>
+  {{ label }}
+  <input
+    v-bind="$attrs"
+    v-bind:value="value"
+    v-on:input="$emit('input', $event.target.value)"
+  >
+</label>
+```
+
+这时，父级的 `.native` 监听器将静默失败。它不会产生任何报错，但是 `onFocus` 处理函数不会如你预期地被调用。
+
+为了解决这个问题，Vue 提供了一个 `$listeners` property，它是一个对象，里面包含了作用在这个组件上的所有监听器。例如：
+
+```
+{
+  focus: function (event) { /* ... */ }
+  input: function (value) { /* ... */ },
+}
+```
+
+有了这个 `$listeners` property，你就可以配合 `v-on="$listeners"` 将所有的事件监听器指向这个组件的某个特定的子元素。对于类似 `<input>` 的你希望它也可以配合 `v-model` 工作的组件来说，为这些监听器创建一个类似下述 `inputListeners` 的计算属性通常是非常有用的：
+
+```
+Vue.component('base-input', {
+  inheritAttrs: false,
+  props: ['label', 'value'],
+  computed: {
+    inputListeners: function () {
+      var vm = this
+      // `Object.assign` 将所有的对象合并为一个新对象
+      return Object.assign({},
+        // 我们从父级添加所有的监听器
+        this.$listeners,
+        // 然后我们添加自定义监听器，
+        // 或覆写一些监听器的行为
+        {
+          // 这里确保组件配合 `v-model` 的工作
+          input: function (event) {
+            vm.$emit('input', event.target.value)
+          }
+        }
+      )
+    }
+  },
+  template: `
+    <label>
+      {{ label }}
+      <input
+        v-bind="$attrs"
+        v-bind:value="value"
+        v-on="inputListeners"
+      >
+    </label>
+  `
+})
+```
+
+现在 `<base-input>` 组件是一个**完全透明的包裹器**了，也就是说它可以完全像一个普通的 `<input>` 元素一样使用了：所有跟它相同的 attribute 和监听器都可以工作，不必再使用 `.native` 监听器。
+
+## [`.sync` 修饰符（没吃透）](https://cn.vuejs.org/v2/guide/components-custom-events.html#sync-修饰符)
+
+> 2.3.0+ 新增
+
+在有些情况下，我们可能需要对一个 prop 进行“双向绑定”。不幸的是，真正的双向绑定会带来维护上的问题，因为子组件可以变更父组件，且在父组件和子组件都没有明显的变更来源。
+
+这也是为什么我们推荐以 `update:myPropName` 的模式触发事件取而代之。举个例子，在一个包含 `title` prop 的假设的组件中，我们可以用以下方法表达对其赋新值的意图：
+
+```
+this.$emit('update:title', newTitle)
+```
+
+然后父组件可以监听那个事件并根据需要更新一个本地的数据 property。例如：
+
+```
+<text-document
+  v-bind:title="doc.title"
+  v-on:update:title="doc.title = $event"
+></text-document>
+```
+
+为了方便起见，我们为这种模式提供一个缩写，即 `.sync` 修饰符：
+
+```
+<text-document v-bind:title.sync="doc.title"></text-document>
+```
+
+注意带有 `.sync` 修饰符的 `v-bind` **不能**和表达式一起使用 (例如 `v-bind:title.sync=”doc.title + ‘!’”` 是无效的)。取而代之的是，你只能提供你想要绑定的 property 名，类似 `v-model`。
+
+当我们用一个对象同时设置多个 prop 的时候，也可以将这个 `.sync` 修饰符和 `v-bind` 配合使用：
+
+```
+<text-document v-bind.sync="doc"></text-document>
+```
+
+这样会把 `doc` 对象中的每一个 property (如 `title`) 都作为一个独立的 prop 传进去，然后各自添加用于更新的 `v-on` 监听器。
+
+将 `v-bind.sync` 用在一个字面量的对象上，例如 `v-bind.sync=”{ title: doc.title }”`，是无法正常工作的，因为在解析一个像这样的复杂表达式的时候，有很多边缘情况需要考虑。
+
 # 4.插槽
 
 ## 插槽内容
@@ -2474,3 +2876,428 @@ methods: {
   }
 }
 ```
+
+
+
+# 核心插件
+
+# 1.Vuex（博客）
+
+## 一、初识VueX
+
+### 1.1 关于`VueX`
+
+`VueX`是适用于在`Vue`项目开发时使用的状态管理工具。试想一下，如果在一个项目开发中频繁的使用组件传参的方式来同步`data`中的值，一旦项目变得很庞大，管理和维护这些值将是相当棘手的工作。为此，`Vue`为这些被多个组件频繁使用的值提供了一个统一管理的工具——`VueX`。在具有`VueX`的Vue项目中，我们只需要把这些值定义在VueX中，即可在整个Vue项目的组件中使用。
+
+### 1.2 安装
+
+由于`VueX`是在学习`VueCli`后进行的，所以在下文出现的项目的目录请参照`VueCli 2.x`构建的目录。
+
+以下步骤的前提是你已经完成了Vue项目构建，并且已转至该项目的文件目录下。
+
+- Npm安装Vuex
+
+  
+
+  ```shell
+  npm i vuex -s
+  ```
+
+- 在项目的根目录下新增一个`store`文件夹，在该文件夹内创建index.js
+
+  此时你的项目的`src`文件夹应当是这样的
+
+  
+
+  ```shell
+  │  App.vue
+  │  main.js
+  │
+  ├─assets
+  │      logo.png
+  │
+  ├─components
+  │      HelloWorld.vue
+  │
+  ├─router
+  │      index.js
+  │
+  └─store
+         index.js
+  ```
+
+### 1.3 使用
+
+#### 1.3.1 初始化`store`下`index.js`中的内容
+
+```js
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+//挂载Vuex
+Vue.use(Vuex)
+
+//创建VueX对象
+const store = new Vuex.Store({
+    state:{
+        //存放的键值对就是所要管理的状态
+        name:'helloVueX'
+    }
+})
+
+export default store
+```
+
+
+
+#### 1.3.2 将store挂载到当前项目的Vue实例当中去
+
+打开main.js
+
+```js
+import Vue from 'vue'
+import App from './App'
+import router from './router'
+import store from './store'
+
+Vue.config.productionTip = false
+
+/* eslint-disable no-new */
+new Vue({
+  el: '#app',
+  router,
+  store,  //store:store 和router一样，将我们创建的Vuex实例挂载到这个vue实例中
+  render: h => h(App)
+})
+```
+
+#### 1.3.3 在组件中使用Vuex
+
+例如在App.vue中，我们要将state中定义的name拿来在h1标签中显示
+
+```html
+<template>
+    <div id='app'>
+        name:
+        <h1>{{ $store.state.name }}</h1>
+    </div>
+</template>
+```
+
+或者要在组件方法中使用
+
+```js
+...,
+methods:{
+    add(){
+      console.log(this.$store.state.name)
+    }
+},
+...
+```
+
+**注意，请不要在此处更改`state`中的状态的值，后文中将会说明**
+
+### 1.4 安装Vue开发工具VueDevtools
+
+在Vue项目开发中，需要监控项目中得各种值，为了提高效率，Vue提供了一款浏览器扩展——VueDevtools。
+
+![img](https:////upload-images.jianshu.io/upload_images/16550832-e1b684e312a9bd1f.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
+
+在学习VueX时，更为需要使用该插件。关于该插件的使用可以移步官网，在此不再赘叙。
+
+## 二、VueX中的核心内容
+
+在VueX对象中，其实不止有`state`,还有用来操作`state`中数据的方法集，以及当我们需要对`state`中的数据需要加工的方法集等等成员。
+
+成员列表：
+
+- state     存放状态
+- mutations   state成员操作
+- getters     加工state成员给外界
+- actions     异步操作
+- modules   模块化状态管理
+
+### 2.1 VueX的工作流程
+
+![img](https:////upload-images.jianshu.io/upload_images/16550832-20d0ad3c60a99111.png?imageMogr2/auto-orient/strip|imageView2/2/w/701/format/webp)
+
+Vuex官网给出的流程图
+
+首先，`Vue`组件如果调用某个`VueX`的方法过程中需要向后端请求时或者说出现异步操作时，需要`dispatch` VueX中`actions`的方法，以保证数据的同步。可以说，`action`的存在就是为了让`mutations`中的方法能在异步操作中起作用。
+
+如果没有异步操作，那么我们就可以直接在组件内提交状态中的`Mutations`中自己编写的方法来达成对`state`成员的操作。注意，`1.3.3节`中有提到，不建议在组件中直接对`state`中的成员进行操作，这是因为直接修改(例如：`this.$store.state.name = 'hello'`)的话不能被`VueDevtools`所监控到。
+
+最后被修改后的state成员会被渲染到组件的原位置当中去。
+
+### 2.2 Mutations
+
+`mutations`是操作`state`数据的方法的集合，比如对该数据的修改、增加、删除等等。
+
+#### 2.2.1 Mutations使用方法
+
+`mutations`方法都有默认的形参：
+
+(**[state]** **[,payload]**)
+
+- `state`是当前`VueX`对象中的`state`
+  - `payload`是该方法在被调用时传递参数使用的
+
+例如，我们编写一个方法，当被执行时，能把下例中的name值修改为`"jack"`,我们只需要这样做
+
+```
+index.js
+```
+
+```js
+import Vue from 'vue'
+import Vuex from 'vuex'
+
+Vue.use(Vuex)
+
+const store = new Vuex.store({
+    state:{
+        name:'helloVueX'
+    },
+    mutations:{
+        //es6语法，等同edit:funcion(){...}
+        edit(state){
+            state.name = 'jack'
+        }
+    }
+})
+
+export default store
+```
+
+而在组件中，我们需要这样去调用这个`mutation`——例如在App.vue的某个`method`中:
+
+```js
+this.$store.commit('edit')
+```
+
+#### 2.2.2 Mutation传值
+
+在实际生产过程中，会遇到需要在提交某个`mutation`时需要携带一些参数给方法使用。
+
+单个值提交时:
+
+```js
+this.$store.commit('edit',15)
+```
+
+当需要多参提交时，推荐把他们放在一个对象中来提交:
+
+```js
+this.$store.commit('edit',{age:15,sex:'男'})
+```
+
+接收挂载的参数：
+
+```js
+        edit(state,payload){
+            state.name = 'jack'
+            console.log(payload) // 15或{age:15,sex:'男'}
+        }
+```
+
+**另一种提交方式**
+
+```js
+this.$store.commit({
+    type:'edit',
+    payload:{
+        age:15,
+        sex:'男'
+    }
+})
+```
+
+#### 2.2.3 增删state中的成员
+
+为了配合Vue的响应式数据，我们在Mutations的方法中，应当使用Vue提供的方法来进行操作。如果使用`delete`或者`xx.xx = xx`的形式去删或增，则Vue不能对数据进行实时响应。
+
+- Vue.set 为某个对象设置成员的值，若不存在则新增
+
+  例如对state对象中添加一个age成员
+
+  ```js
+  Vue.set(state,"age",15)
+  ```
+
+- Vue.delete 删除成员
+
+  将刚刚添加的age成员删除
+
+  ```js
+  Vue.delete(state,'age')
+  ```
+
+### 2.3 Getters
+
+可以对state中的成员加工后传递给外界
+
+Getters中的方法有两个默认参数
+
+- state 当前VueX对象中的状态对象
+- getters 当前getters对象，用于将getters下的其他getter拿来用
+
+例如
+
+```js
+getters:{
+    nameInfo(state){
+        return "姓名:"+state.name
+    },
+    fullInfo(state,getters){
+        return getters.nameInfo+'年龄:'+state.age
+    }  
+}
+```
+
+组件中调用
+
+```js
+this.$store.getters.fullInfo
+```
+
+### 2.4 Actions
+
+由于直接在`mutation`方法中进行异步操作，将会引起数据失效。所以提供了Actions来专门进行异步操作，最终提交`mutation`方法。
+
+`Actions`中的方法有两个默认参数
+
+- `context` 上下文(相当于箭头函数中的this)对象
+- `payload` 挂载参数
+
+例如，我们在两秒中后执行`2.2.2`节中的`edit`方法
+
+由于`setTimeout`是异步操作，所以需要使用`actions`
+
+```js
+actions:{
+    aEdit(context,payload){
+        setTimeout(()=>{
+            context.commit('edit',payload)
+        },2000)
+    }
+}
+```
+
+在组件中调用:
+
+```js
+this.$store.dispatch('aEdit',{age:15})
+```
+
+**改进:**
+
+由于是异步操作，所以我们可以为我们的异步操作封装为一个`Promise`对象
+
+```js
+    aEdit(context,payload){
+        return new Promise((resolve,reject)=>{
+            setTimeout(()=>{
+                context.commit('edit',payload)
+                resolve()
+            },2000)
+        })
+    }
+```
+
+### 2.5 Models
+
+当项目庞大，状态非常多时，可以采用模块化管理模式。Vuex 允许我们将 store 分割成**模块（module）**。每个模块拥有自己的 `state、mutation、action、getter`、甚至是嵌套子模块——从上至下进行同样方式的分割。
+
+```js
+models:{
+    a:{
+        state:{},
+        getters:{},
+        ....
+    }
+}
+```
+
+组件内调用模块a的状态：
+
+```js
+this.$store.state.a
+```
+
+而提交或者`dispatch`某个方法和以前一样,会自动执行所有模块内的对应`type`的方法：
+
+```js
+this.$store.commit('editKey')
+this.$store.dispatch('aEditKey')
+```
+
+#### 2.5.1 模块的细节
+
+- 模块中`mutations`和`getters`中的方法接受的第一个参数是自身局部模块内部的`state`
+
+  ```js
+  models:{
+      a:{
+          state:{key:5},
+          mutations:{
+              editKey(state){
+                  state.key = 9
+              }
+          },
+          ....
+      }
+  }
+  ```
+
+- `getters`中方法的第三个参数是根节点状态
+
+  ```js
+  models:{
+      a:{
+          state:{key:5},
+          getters:{
+              getKeyCount(state,getter,rootState){
+                  return  rootState.key + state.key
+              }
+          },
+          ....
+      }
+  }
+  ```
+
+- `actions`中方法获取局部模块状态是`context.state`,根节点状态是`context.rootState`
+
+  ```js
+  models:{
+      a:{
+          state:{key:5},
+          actions:{
+              aEidtKey(context){
+                  if(context.state.key === context.rootState.key){
+                      context.commit('editKey')
+                  }
+              }
+          },
+          ....
+      }
+  }
+  ```
+
+## 三、规范目录结构
+
+如果把整个`store`都放在`index.js`中是不合理的，所以需要拆分。比较合适的目录格式如下：
+
+```shell
+store:.
+│  actions.js
+│  getters.js
+│  index.js
+│  mutations.js
+│  mutations_type.js   ##该项为存放mutaions方法常量的文件，按需要可加入
+│
+└─modules
+        Astore.js
+```
+
+对应的内容存放在对应的文件中，和以前一样，在`index.js`中存放并导出`store`。`state`中的数据尽量放在`index.js`中。而`modules`中的`Astore`局部模块状态如果多的话也可以进行细分。

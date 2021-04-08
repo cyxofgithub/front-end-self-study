@@ -366,3 +366,7 @@ git chekout -b 分支名（建与远程对应的分支名）
 
 git push -u origin 分支名(要推送的分支)
 
+git reflog 查看所有分支记录
+
+git rest -- hard 版本号 （回到回来的版本）
+
