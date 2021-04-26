@@ -2,7 +2,7 @@
 
 # 第1章　基础知识
 
-# 第2章 常用模块
+# 第2章　常用模块
 
 ## 2.1　Module
 
@@ -836,3 +836,735 @@ pipe方法相当于在可读流和可写流之间架起了桥梁，使得数据�
 ![image-20210421113450775](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210421113450775.png)
 
 pipe方法接收一个writable对象，当readable对象调用pipe方法时，会在内部调用writable对象的write方法进行写入。
+
+### 2.8.2　ReadLine
+
+ReadLine是一个Node原生模块，该模块比较不起眼，提供了按行读取Stream中数据的功能。
+
+下面是ReadLine模块的监听事件及方法：
+
+Event : 'close'
+
+Event : 'line'
+
+Event : 'pause'
+
+Event : 'resume'
+
+Event : 'SIGCONT'
+
+Event : 'SIGINT'
+
+Event : 'SIGTSTP'
+
+rl.close()
+
+rl.pause()
+
+rl.prompt([preserveCursor])
+
+rl.question(query, callback)
+
+rl.resume()
+
+rl.setPrompt(prompt)
+
+rl.write(data[, key])
+
+该模块通常用来和stream搭配使用，但因为在实际项目中通常会定制自己的stream或者自定义读取方法，导致该模块的地位有些尴尬。下面是readLine的一个例子。
+
+#### 代码2.23　使用readLine模块读取文件
+
+![image-20210426195204584](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426195204584.png)
+
+readLine并没有提供形如new readline()形式的构造方法，而是使用createInterface方法初始化了一个rl对象。
+
+想象下有如下场景，一个可读流中包含了很多条独立的信息需要逐条处理，这可能是一个消息队列，这时使用readline模块就比较方便。
+
+### 2.8.3　自定义Stream
+
+在实际开发中，如果想要使用流式API，而原生的Stream又不能满足需求时，可以考虑实现自己的Stream类，常用的方法是继承原生的Stream类，然后做一些扩展。
+
+下面我们拿Readable Stream为例来说明如何实现一个自定义的Stream。
+
+![image-20210426195557484](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426195557484.png)
+
+上面的代码实现了名为MyReadable的类，它继承自Readable类，并且接受一个数组作为参数。
+
+想要继承Readable类，就要在自定义的类内部实现_read方法，该方法内部使用push方法往可读流添加数据。
+
+当我们给可读流对象注册data事件后，可读流会在nextTick中调用_read方法，并触发第一次data事件（读者可能会认为可读流开始读取是在调用构造函数之后，但此时data事件还未注册，可能会捕获不到最初的事件，因此可读流开始产生数据的操作是放在nextTick中的）。
+
+当有消费者从readable中取数据时会自动调用该方法。在上面的例子里我们在_read方法里调用了push方法，该方法用来向可读流中填充数据，下面是一个消费者的例子：
+
+![image-20210426200153588](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200153588.png)
+
+每次触发data事件时都会得到相应的数组元素，当数组为空时，_read方法会被调用。即：
+
+![image-20210426200207576](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200207576.png)
+
+如果end事件被触发，则代表读取完毕。
+
+## 2.9　Events（重要）
+
+Node的Events模块只定义了一个类，就是EventEmitter（以下简称Event），这个类在很多Node本身以及第三方模块中大量使用，通常是用作基类被继承。
+
+### 2.9.1　事件和监听器
+
+Node程序中的对象会产生一系列的事件，它们被称为事件触发器（eventemitter），例如一个HTTP Server会在每次有新连接时触发一个事件，一个Readable Stream会在文件打开时触发一个事件等。
+
+**所有能触发事件的对象都是EventEmitter类的实例。**EventEmitter定义了on方法，该方法的声明如下：
+
+![image-20210426200503848](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200503848.png)
+
+下面是一个事件注册和触发事件的例子
+
+#### 代码2.24　注册一个事件并触发它
+
+![image-20210426200525460](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200525460.png)
+
+上面的代码中，首先初始化了一个EventEmitter实例，然后注册了一个名为begin的事件，之后调用emit方法触发了这一事件。
+
+用户可以注册多个同名的事件，在上面的例子中，如果注册两个名为begin的事件，那么它们都会被触发。
+
+**如果想获取当前的emitter一共注册了哪些事件，可以使用eventNames方法。**
+
+![image-20210426200704207](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200704207.png)
+
+该方法会输出包括全部事件名称的数组。
+
+**就算注册了两个同名的event，输出结果也只有一个，说明该方法的结果集并不包含重复结果。**
+
+注意：在Node v6.x及之前的版本中，event模块可以通过：
+
+![image-20210426200813221](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200813221.png)
+
+引入，在新的版本中这种写法已经被废弃并会抛出一个异常，只能统一由require进行引入，有时能在一些旧版本的第三方模块中还能看到。
+
+### 2.9.2　处理error事件
+
+由于Node代码运行在单线程环境中，那么运行时出现的任何错误都有可能导致整个进程退出。利用事件机制可以实现简单的错误处理功能。
+
+当Node程序出现错误的时候，通常会触发一个错误事件，如果代码中没有注册相应的处理方法，会导致Node进程崩溃退出。例如：
+
+![image-20210426200919733](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200919733.png)
+
+上面的代码主动抛出了一个error，相当于：
+
+![image-20210426200958412](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426200958412.png)
+
+Node程序会打印出整个错误栈：
+
+![image-20210426201045682](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426201045682.png)
+
+如果我们不想因为抛出一个error而使进程退出，那么可以让uncaughtException事件作为最后一道防线来捕获异常。
+
+#### 代码2.25　使用uncaughtException事件捕获异常
+
+![image-20210426201123718](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426201123718.png)
+
+这种错误处理的方式虽然可以捕获异常，避免了进程的退出，但不值得提倡，我们会在错误处理一章详细介绍相关的内容。
+
+Event模块还有一些其他的API，这里不再一一介绍。
+
+### 2.9.3　继承Events模块
+
+在实际的开发中，通常不会直接使用Event模块来进行事件处理，而是选择将其作为基类进行继承的方式来使用Event，在Node的内部实现中，凡是提供了事件机制的模块，都会在内部继承Event模块。
+
+以fs模块为例，下面是其源码中的一部分：
+
+![image-20210426201233112](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426201233112.png)
+
+可以看出fs模块通过util.inherit方法继承了Event模块。
+
+假设我们要用Node来开发一个网页上的音乐播放器应用，关于播放和暂停的处理，就可以考虑通过继承events模块来实现。
+
+![image-20210426201258499](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426201258499.png)
+
+另一种场景，假设我们想要利用原生的数组来模拟一个消息队列，该队列会在新增消息和弹出消息时触发对应的事件，也可以考虑继承Events模块。
+
+详细的内容可以参考第6章。
+
+## 2.10　多进程服务
+
+### 2.10.1　child_process模块
+
+我们现在已经知道了Node是单线程运行的，这表示潜在的错误有可能导致线程崩溃，然后进程也会随着退出，无法做到企业追求的稳定性；另一方面，单进程也无法充分多核CPU，这是对硬件本身的浪费。Node社区本身也意识到了这一问题，于是从0.1版本就提供了**child_process模块，用来提供多进程的支持**。
+
+child_process模块中包括了很多创建子进程的方法，包括fork、spawn、exec、execFile等等。它们的定义如下：
+
+```
+child_process.exec(command[, options][, callback])
+child_process.spawn(command[, args][, options])
+child_process.fork(modulePath[, args][, options])
+child_process.execFile(file[, args][, options][,callback])
+```
+
+在这4个API中以spawn最为基础，因为其他三个API或多或少都是借助spawn实现的。
+
+### 2.10.2　spawn
+
+spawn方法的声明格式如下：
+
+![image-20210426201559747](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426201559747.png)
+
+spawn方法会使用指定的command来生成一个新进程，执行完对应的command后子进程会自动退出。
+
+**该命令返回一个child_process对象，这代表开发者可以通过监听事件来获得命令执行的结果。**
+
+#### 代码2.26　使用spwan来执行ls命令
+
+![image-20210426202128532](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426202128532.png)
+
+其中spawn的第一个参数虽然是command，但实际接收的却是一个file，代码2.25可以在Linux或者Mac OSX上运行，这是由于ls命令也是以可执行文件形式存在的。
+
+类似的，在Windows系统下我们可以试着使用dir命令来实现功能类似的代码：
+
+![image-20210426202258100](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426202258100.png)
+
+然而在Windows下执行上面代码会出现形如Error: spawn dir ENOENT的错误。
+
+原因就在于spawn实际接收的是一个文件名而非命令，正确的代码如下：
+
+![image-20210426202322846](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426202322846.png)
+
+这个问题的原因与操作系统本身有关，在Linux中，一般都是文件，命令行的命令也不例外，例如ls命令是一个名为ls的可执行文件；而在Windows中并没有名为dir的可执行文件，需要通过cmd或者powershell之类的工具提供执行环境。
+
+### 2.10.3　fork
+
+在Linux环境下，创建一个新进程的本质是复制一个当前的进程，当用户调用fork后，操作系统会先为这个新进程分配空间，然后将父进程的数据原样复制一份过去，父进程和子进程只有少数值不同，例如进程标识符（PID）。
+
+对于Node来说，父进程和子进程都有独立的内存空间和独立的V8实例，**它们和父进程唯一的联系是用来进程间通信的IPC Channel。**
+
+此外，Node中fork和POSIX系统调用的不同之处在于**Node中的fork并不会复制父进程**。
+
+Node中的fork是上面提到的spawn的一种特例，前面也提到了Node中的fork并不会复制当前进程。多数情况下，fork接收的第一个参数是一个文件名，使用fork("xx.js")相当于在命令行下调用node xx.js，并且父进程和子进程之间可以通过process.send方法来进行通信。示例代码如下：
+
+#### 代码2.27　master.js——调用fork来创建一个子进程
+
+![image-20210426202800273](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426202800273.png)
+
+代码2.28　worker.js代码
+
+![image-20210426202848107](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426202848107.png)
+
+fork内部会通过spawn调用process.executePath，即Node的可执行文件地址（例如/Users/likai/.nvm/versions/node/v6.9.4/bin/node）来生成一个Node实例，然后再用这个实例来执行fork方法的modulePath参数。
+
+### 2.10.4　exec和execFile（不懂）
+
+如果我们开发一种系统，那么对于不同的模块可能会用到不同的技术来实现，例如Web服务器使用Node，然后再使用Java的消息队列提供发布订阅服务，这种情况下通常使用进程间通信的方式来实现。
+
+但有时开发者不希望使用这么复杂的方式，或者要调用的干脆是一个黑盒系统，即无法通过修改源码来进行来实现进程间通信，这时候往往采用折中的方式，例如通过shell来调用目标服务，然后再拿到对应的输出。
+
+笔者曾经做过一个项目，后台用一个Spark集群来进行数据的分析，然后将结果绘成图表展示给用户，当时一种备选方案就是采用B/S架构并使用Node来做Web服务器，当用户单击页面上的元素时，Node将其转换为Spark集群中的命令，这个过程就是使用Node调用Shell来完成的。
+
+#### 1．Shell简介
+
+Shell其实很简单，在控制台输入cd ~/desktop，然后回车，这就是最简单的shell命令，把这行命令写在文本里就是一个shell脚本。
+
+例如：
+
+![image-20210426203206553](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203206553.png)
+
+在Linux或者Mac OSX下可以使用命令：
+
+![image-20210426203217485](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203217485.png)
+
+来执行这个脚本，效果跟直接输入命令：
+
+![image-20210426203237082](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203237082.png)
+
+是一样的。
+
+#### 2．execFile方法
+
+child_process提供了一个execFile方法，它的声明如下：
+
+![image-20210426203323645](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203323645.png)
+
+![image-20210426203408614](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203408614.png)
+
+可以看出，execfile和spawn在形式上的主要区别在于execfile提供了一个回调函数，通过这个回调函数可以获得子进程的标准输出/错误流。
+
+使用shell进行跨进程调用长久以来被认为是不稳定的，这大概源于人们对控制台不友好的交互体验的恐惧（输入命令后，很可能长时间看不到一个输出，尽管后台可能在一直运算，但在用户看来和死机无异）。
+
+在Linux下执行exec命令后，原有进程会被替换成新的进程，进而失去对新进程的控制，这代表着新进程的状态也没办法获取了，此外还有shell本身运行出现错误，或者因为各种原因出现长时间卡顿甚至失去响应等情况。
+
+Node.js提供了比较好的解决方案，timeout解决了长时间卡顿的问题，stdout和stderr则提供了标准输出和错误输出，使得子进程的状态可以被获取。
+
+
+
+### 2.10.5　各方法之间的比较
+
+#### 1．spawn和execfile
+
+为了更好地说明，我们先写一段简单的C语言代码，并将其命名为example.c：
+
+![image-20210426203509446](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203509446.png)
+
+使用gcc编译该文件：
+
+![image-20210426203529415](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203529415.png)
+
+生成名为example的可执行文件，然后将这个可执行文件放到系统环境变量中（编辑~/.bash_profile），然后打开控制台，输入example，看到最后输出"HelloWorld"。
+
+确保这个可执行文件在任意路径下都能访问。
+
+我们分别用spawn和execfile来调用example文件。
+
+首先是spawn。
+
+##### 代码2.29　使用spwan来调用
+
+![image-20210426203639501](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203639501.png)
+
+程序输出：
+
+![image-20210426203721440](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203721440.png)
+
+程序正确打印出了Hello World，此外还可以看到example最后的return 5会被作为子进程结束的code被返回。
+
+然后是execfile。
+
+##### 码2.30　使用execFile来调用
+
+![image-20210426203843453](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426203843453.png)
+
+同样打印出Hello World，可见除了调用形式不同，二者相差不大。
+
+#### 2．execFile和spawn
+
+在子进程的信息交互方面，spawn使用了流式处理的方式，当子进程产生数据时，主进程可以通过监听事件来获取消息；而exec是将所有返回的信息放在stdout里面一次性返回的，也就是该方法的maxBuffer参数，当子进程的输出超过这个大小时，会产生一个错误。
+
+此外，spawn有一个名为shell的参数，下面是该参数在文档中的定义：
+
+![image-20210426204101236](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426204101236.png)
+
+其类型为一个布尔值或者字符串，如果这个值被设置为true，就会启动一个shell来执行命令，这个shell在UNIX上是bin/sh，在Windows上则是cmd.exe。
+
+#### 3．exec和execfile
+
+exec 在内部也是通过调用 execFile 来实现的，我们可以从源码中验证这一点，在早期的Node源码中，exec 命令会根据当前环境来初始化一个shell，例如cmd.exe或者/bin/sh，然后在shell中调用作为参数的命令。
+
+##### 代码2.31　Node V0.10.0源码/lib/child_process.js
+
+![image-20210426204242548](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426204242548.png)
+
+通常execFile的效率要高于exec，这是因为execFile没有启动一个shell，而是直接调用spawn来实现的。
+
+### 2.10.6　进程间通信
+
+前面介绍的几个用于创建进程的方法，都是属于child_process的类方法，此外childProcess类继承了EventEmitter，在childProcess中引入事件给进程间通信带来很大的便利。
+
+childProcess中定义了如下事件。
+
+![image-20210426204415727](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426204415727.png)
+
+Event: 'error'事件无法保证一定会被触发，因为可能会遇到一些极端情况，例如服务器断电等。
+
+上面也提到，childProcess模块定义了send方法，用于进程间通信，该方法的声明如下：
+
+![image-20210426204456811](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426204456811.png)
+
+通过send方法发送的消息，可以通过监听message事件来获取。
+
+#### 代码2.32　父进程向子进程发送消息
+
+![image-20210426204523693](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426204523693.png)
+
+#### 代码2.33　子进程接收父进程消息
+
+![image-20210426204607171](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426204607171.png)
+
+send方法的第一个参数类型通常为一个json对象或者原始类型，第二个参数是一个句柄，该句柄可以是一个net.Socket或者net.Server对象。下面是一个例子：
+
+#### 代码2.34　父进程发送一个Socket对象
+
+![image-20210426204649749](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426204649749.png)
+
+#### 代码2.35　子进程接收socket对象
+
+![image-20210426205220489](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426205220489.png)
+
+### 2.10.7　Cluster
+
+前面已经介绍了child process的使用，child_process的一个重要使用场景是创建多进程服务来保证服务稳定运行。
+
+为了统一Node创建多进程服务的方式，Node在0.6之后的版本中增加了Cluster模块，**Cluster可以看作是做了封装的child_Process模块。**
+
+Cluster模块的一个显著优点是可以共享同一个socket连接，这代表可以使用Cluster模块实现简单的负载均衡。
+
+#### 代码2.36　Cluster的简单例子
+
+![image-20210426211149349](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426211149349.png)
+
+上面是使用Cluster模块的一个简单的例子，为了充分利用多核CPU，先调用OS模块的cpus()方法来获得CPU的核心数，假设主机装有两个CPU，每个CPU有4个核，那么总核数就是8。
+
+在上面的代码中，Cluster模块调用fork方法来创建子进程，该方法和child_process中的fork是同一个方法。
+
+Cluster模块采用的是经典的主从模型，由master进程来管理所有的子进程，可以使用cluster.isMaster属性判断当前进程是master还是worker，其中主进程不负责具体的任务处理，其主要工作是负责调度和管理，上面的代码中，所有的子进程都监听8000端口。
+
+通常情况下，如果多个Node进程监听同一个端口时会出现Error: listenEADDRINUS的错误，而Cluster模块能够让多个子进程监听同一个端口的原因是master进程内部启动了一个TCP服务器，而真正监听端口的只有这个服务器，当来自前端的请求触发服务器的connection事件后，master会将对应的socket句柄发送给子进程。
+
+## 2.11　Process对象
+
+Process是一个全局对象，无须声明即可访问，每个Node进程都有独立的process对象。该对象中存储了当前进程的环境变量，也定义了一些事件。下面是一些例子：
+
+![image-20210426211458322](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426211458322.png)
+
+### 2.11.1　环境变量
+
+直接在Node repl环境中执行：
+
+![image-20210426211604425](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426211604425.png)
+
+会得到一大串和当前进程相关的环境变量或者全局变量，你可以在其中查看你当前使用的Node版本号等一些信息。
+
+输出结果：
+
+![image-20210426211624951](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426211624951.png)
+
+例如开发者可以在代码中判断当前正在运行的Node属于哪个版本，并根据结果来决定是否运行含有一些最新特性的代码：
+
+![image-20210426211706655](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426211706655.png)
+
+### 2.11.2　方法和事件
+
+![image-20210426211740116](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426211740116.png)
+
+Message、disconnect我们已经介绍过了，unhandledRejection和uncaughtException通常用做错误处理的最后一层保险，下面代码可以保证进程不会因为出错而退出：
+
+![image-20210426211855525](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426211855525.png)
+
+但不代表开发者可以省略具体错误处理的代码，我们会在第8章中详细介绍。
+
+**beforeExit比较有意思，它仅仅会在进程准备退出时触发，准备退出是指目前的事件循环没有要执行的任务了，如果我们手动捕获这一事件并在回调中增加一些额外动作，进程就不会退出。**
+
+![image-20210426212046259](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212046259.png)
+
+**而exit事件不同，当进程触发exit事件后，无论如何都会退出。**
+
+![image-20210426212130526](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212130526.png)
+
+### 2.11.3　一个例子：修改所在的时区
+
+假设开发者要向某台服务器提交数据，但没有和该服务器处在同一个时区内（在国内通常采用标准北京时间，所以不是很常见），这就导致开发者的时间和服务器的时间可能会相差几个小时，有的服务器会拒绝这样的请求。JavaScript获得当前的时间通常使用Date对象来实现，在stackoverflow上搜索相关的问题可以找到类似如下的代码。
+
+#### 代码2.37　旧版本Node中设置时区的方法
+
+![image-20210426212300424](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212300424.png)
+
+上面的一段代码将当前的时区置于零时区，试着在本地运行，输出的结果为：
+
+![image-20210426212327414](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212327414.png)
+
+上面的这段代码已经有些年头了，在早期版本的Node中这样的设置确实有效，笔者初次看到这段代码时还在使用V0.12版本。经过测试，上面的代码在v5.3.0中还可以正常发挥作用，但在比较新的版本，例如6.9.4及以上的版本中，即使TZ设置成Asia/Shanghai，返回的也始终是伦敦时间。
+
+在旧的版本中，打印一个date对象返回的是当前时区的时间，但在新版本中直接返回的就是世界时，即greenwich时间，相比东八区要早8个小时，格式也不再是GMT格式，这代表就算要获取当前时间都要做一下额外转换。
+
+通常可以使用Date对象提供的全局方法来进行转换。
+
+![image-20210426212428446](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212428446.png)
+
+此外date对象还有一个名为getTimezoneOffset的方法可用，用这个方法可以得到当前的时区。
+
+![image-20210426212505600](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212505600.png)
+
+在上面的代码中，虽然直接打印date对象显示的是greenwich时间，但执行getTimezoneOffset()方法返回的却是-480，表示偏移的分钟数。这代表Node其实知道我们位于哪个时区，但返回的都是Greenwich时间。
+
+对于修改时区的问题，我们可以使用Date提供的API来进行修改，但如果不想修改之前使用TZ这一环境变量留下的代码，完全可以自己实现相关的配置。
+
+#### 实现timezone的修改
+
+经过试验，虽然设置process.env.TZ的方法不能用了，但我们完全可以自己实现一套可用代码出来。
+
+为此，我们首先在Date对象的prototype上声明一个map结构作为属性，用于存储时区名称和偏移量的关系，然后对Date类的Date方法进行修改，如果没有声明process.env.TZ变量，就默认返回原来的date对象；如果声明了该属性，就先到对应的数组中进行搜索，然后返回修改后的date对象。
+
+##### 代码2.38　自己实现的修改时区的方法
+
+![image-20210426212632013](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212632013.png)
+
+开发者可能会担心d.getHours()+item[1]这句代码会出现大于24的情况，所幸setHours方法已经内置了对这种情况的处理，如果小时的范围小于0或者大于24，会对日期进行相应的加减。
+
+## 2.12　Timer
+
+定时器相关的API在JavaScript中已经存在了很长时间，Node中的定时器都是全局方法，无须通过require来引入。
+
+### 2.12.1　常用API
+
+JavaScript中常用的timer方法有两个，分别是setTimeout和setInterval，在Node中，setTimeout和setInterval属于Timeout类，调用对应的方法后都会返回相应的对象。
+
+除了这两个方法之外，Node还提出了新的setImmediate方法，该方法已经在第1章详细介绍过了，这里省略相关的内容。
+
+#### 1．setTimeout
+
+一个使用setTimeout方法最简单的例子是延迟一个函数的执行时间，下面的例子中，将会在1秒后打印出Hello。
+
+![image-20210426212819799](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212819799.png)
+
+如果想要在回调执行前清除定时器，可以使用clearTimeout方法：
+
+![image-20210426212839440](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212839440.png)
+
+#### 2．setInterval
+
+如果想要以一个固定的时间间隔运行回调函数，可以使用setInterval方法，使用方式和setTimeout相同，对上面的代码进行修改：
+
+![image-20210426212914421](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212914421.png)
+
+运行后会以1秒为间隔输出Hello，同样的，可以用clearInterval方法来清除定时器：
+
+![image-20210426212931798](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426212931798.png)
+
+#### 3．回调函数的参数
+
+在前面定义的定时器中，第一个参数是回调方法，第二个参数是定时器的超时时间，其后面还可以定义更多的参数，多余的参数会被作为回调函数的参数。
+
+![image-20210426213046156](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426213046156.png)
+
+### 2.12.2　定时器中的this
+
+在JavaScript中，setTimeout和setInterval中的this均指向Windows。原因也很简单，定时器方法的第一个参数是一个匿名函数，而JavaScript中所有匿名函数的this都指向Windows。
+
+#### 代码2.39　前端JavaScript定时器中的this
+
+![image-20210426213224477](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426213224477.png)
+
+在Node中，setTimeout和setInterval的this会指向timeout类，前面也曾提到，该类在setTimeout和setInterval内部创建并返回，开发者通常不会直接用到两个类，但是可以将其打印出来。
+
+#### 代码2.40　Node定时器中的this
+
+![image-20210426213328012](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426213328012.png)
+
+如果在setTimeout方法内部涉及了this的指向问题，通常会使用bind或者call方法来重新绑定this，我们在第3章还会讨论这个问题。
+
+![image-20210426213343170](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426213343170.png)
+
+## 2.13　小结
+
+在本章我们主要介绍了Node的常用模块与使用方法，如果之前没有Node的经验，那么和第一章比起来，本章才是真正的入门章节。关注的重点是模块如何使用，内容比较浅显。
+
+**最为常用的模块是FS和HTTP，Stream和Event通常作为“背后的女人”默默地发挥作用。尽管可以随时参考文档，但还是希望读者能对常用的API熟记于心。**
+
+## 2.14　引用资源
+
+http://www.commonjs.org/ commonjs
+
+https://github.com/amdjs/amdjs-apihttps://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API
+
+https://en.wikipedia.org/wiki/Secure_Sockets_Layer
+
+https://tools.ietf.org/html/rfc6455
+
+# 第3章　用ES6来书写Node
+
+## 3.1　新时代的EMCAScript
+
+JavaScript是EMCAScript标准的一种实现，事实上，是JavaScript发明在先，随后被作为EMCA的一种标准确定下来，称为ECMAScript（简称ES）。
+
+在ES2015推出之前，JavaScript的发展分化出了两股趋势（现在也未停止），第一种是不断开发出新的框架或者类库来适应大型应用开发，例如backbone，angular和react；另一种就是直接在语言层面下手，例如coffeescript和TypeScript。
+
+2015年，ES6（ES2015）正式发布，并且计划每年发布一个新版本，均以ES201X来命名。这是一个重大的版本更新，它从社区中吸收了不少经验和意见，ES2015的一个目标就是让JavaScript在语言层面有支撑大型应用的能力。
+
+本章及之后的内容中出现的ES6均指代ES2015，至于更新的标准，我们直接使用ES2016或者ES2017来称呼。
+
+本章的标题虽然是使用ES6来书写Node，但也会包含一些ES2016或者ES2017的内容。此外关于Promise、Generator、async函数的内容，将会在异步流程控制一章中进行描述，为了避免重复，本章不会覆盖这几部分的内容。
+
+### 3.1.1　JavaScript的缺陷
+
+JavaScript长期以来都被视为一种玩具语言不是没有原因的，它在被发明的时候就没有被寄予厚望——仅仅在浏览器中做一些简单操作的脚本语言，连发明者Brendan Eich本人都不喜欢它。
+
+在Web发展的初级阶段，JavaScript主要做一些dom操作，然后又出现了jQuery、Underscore等一系列类库对其做了扩展（你也可以认为是语法糖）。
+
+Ajax出现后，开发者们意识到可以用JavaScript做更多的事情，随后出现了更多复杂的Web应用，JavaScript渐渐地被重视起来。
+
+但这并不能掩盖其先天不足，随便找个人出来跟他谈JavaScript（ES5）的语法缺陷，都能滔滔不绝地跟你讲上半天，下面列出了一些可能出现的内容：
+
+- 几乎无法支持模块化。
+- 没有很好的面向对象支持。
+- 没有局部作用域。
+- 各种让人“惊喜”的语法细节，例如0.1+0.2或者[] == []等。
+
+在十年前，这些看起来都不成问题，因为人们没有期待JavaScript能做到这些，就像你从来不期望shell脚本能够实现面向对象编程那样，但随着Web应用变得复杂化，这些问题显得越来越突兀。
+
+这些问题还没有经过广泛的讨论和改进就被定义成了标准（也有当时时代的原因），倒逼着后来的Node也要跟着实现同样的“缺陷”。不过ES2015落地之后，这种情况已经大有改善。
+
+### 3.1.2　Node对新标准的支持
+
+Node.js在6.0版本及之后实现了对ES6的全面支持，如果你想使用ES6乃至更新的特性，建议直接将Node版本更新至最新版本，笔者目前常用的版本是v7.6.0。
+
+如果想知道当前使用的Node版本支持哪些新特性，可以参考http://node.green/，这个网站对每个阶段性的Node版本具体支持哪些ES201X的新特性做了详细的列表，如图3-1所示。
+
+![image-20210426220119456](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426220119456.png)
+
+本章将会对ES6的特性进行介绍，重点覆盖了函数、类的部分，关于没有涉及的其他特性，读者可以参照官方文档。如果不希望看冗长的ECMA标准文档，可以试试下面这些在线资料：
+
+https://babeljs.io/learn-es2015/，GitHub上维护的一个ES2015入门文档。
+
+http://es6.ruanyifeng.com/，如果想看中文，那么这本书是最佳推荐。
+
+http://exploringjs.com/，有很详细的关于ES2016/2017的内容介绍。
+
+### 3.1.3　使用nvm管理Node版本
+
+nvm是目前流行的Node版本管理工具，可以在当前的系统中安装多个不同版本的Node，并且可以自由切换，nvm同样可以使用npm进行安装。
+
+具体的安装步骤请参照https://github.com/creationix/nvm。值得注意的是，nvm并没有官方的Windows版本，请使用别的工具来代替。
+
+nvm常用命令如下。
+
+- nvm install <version>：安装某个版本的Node。
+- nvm use <version>：切换到某个版本的Node。
+- nvm ls：列出当前安装的所有Node版本，并且显示当前使用的Node版本。
+
+笔者系统的版本状态如图3-2所示。
+
+![image-20210426220305096](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426220305096.png)
+
+## 3.5　Set和Map
+
+### 3.5.1　Set和WeakSet
+
+ES6提出了两种新的数据结构，Set和Map，Set的实现类似于数组，和普通数组的不同之处在于Set中不能包含重复数据，例如：
+
+#### 代码3.7　Set的使用
+
+![image-20210426220421699](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426220421699.png)
+
+#### 1．Set的遍历
+
+除了使用for循环遍历外，Set本身也提供几种方法来进行遍历其中的元素。
+
+##### 代码3.8　Set的遍历
+
+![image-20210426220523065](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426220523065.png)
+
+在这三种方法中，只有entries方法返回的类型为键值对。
+
+#### 2．WeakSet
+
+WeakSet和Set的主要区别在于WeakSet的成员只能是对象，我们可以试着将一些基本类型的值加入到WeakSet中：
+
+![image-20210426220630342](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426220630342.png)
+
+**此外，WeakSet中的“weak”一词指的是弱引用的意思，它表示WeakSet中存储的是对象的弱引用，这是一个垃圾回收中的概念，在垃圾回收器的扫描过程中，一旦发现了只有弱引用的对象，就会在回收阶段将其内存回收。**
+
+这也就表示WeakSet中存储的对象如果没有被其他的对象所引用，其内存空间就会被回收。由于开发者通常无法控制垃圾回收器的运行，因此WeakSet中的值是无法预测的。 WeakSet不支持遍历，也不能用size属性来得到其大小。
+
+WeakSet的优点在于对垃圾回收有利，假设在一个局部作用域中产生了一个中间值的对象，如果作用域之外没有引用这个对象，那么就可以使用WeakSet来存储它，在离开局部作用域之后，该对象就会在下一轮垃圾回收时被销毁。
+
+### 3.5.2　Map和WeakMap
+
+#### 1．Map
+
+Map表示由键值对组成的有序集合，有序表现在Map的遍历顺序即为插入顺序，在ES5中，虽然也有类似的结构，但ES5中键值对的键值只能为字符串类型，ES6新增的Map则支持多种类型作为键值，包括对象和布尔值。
+
+和Set相似，Map提供了一系列方法来访问或操作其中的数据。
+
+![image-20210426220839654](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426220839654.png)
+
+#### 2．WeakMap
+
+WeakMap的用法和WeakSet相似，作为key的变量必须是个对象，关于弱引用的特性和WeakSet相同，这里不再叙述。
+
+## 3.6　Iterator
+
+### 3.6.1　Java中的Iterator
+
+如果读者有Java基础，那么一定会了解Java中的各种数据结构，Map、List、HashMap、ArrayList等，笔者在初学Java时就被这些概念搞得晕头转向。在下面的内容里我们统一用集合来指代上面的数据结构。关于这些数据结构一个重要的概念就是如何进行遍历。
+
+在Java中，一种便利的方法就是使用Iterator接口。
+
+例如我们想要遍历一个Map，那么就会写出下面的代码：
+
+![image-20210426221056414](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426221056414.png)
+
+上面的代码定义了一个Iterator，使用hasNext来判断是否到了集合的末尾，并且用next方法来取出下一个元素。
+
+### 3.6.2　ES6中的Iterator
+
+ES6中的 Iterator 接口通过 Symbol.iterator 属性来实现，如果一个对象设置了Symbol.iterator属性，就表示该对象是可以被遍历的，我们就可以用next方法来遍历它。
+
+#### 代码3.9　给对象加上Iterator接口
+
+![image-20210426221157455](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426221157455.png)
+
+在上面的代码中，我们给Iter对象加上了[Symbol.iterator]接口，这个方法的特点是每次调用 next 方法，返回值就会增加1，由于我们没有设置边界条件，就算一直调用next也不会出错。
+
+**在ES6中Iterator广泛存在于各种数据结构中，array、Map、Set，以及字符串，都实现了该接口。**
+
+![image-20210426221256695](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426221256695.png)
+
+### 3.6.3　Iterator的遍历
+
+在ES6中，所有内部实现了Symbol.iterator接口的对象都可以使用for/of循环进行遍历，在数组一节，我们在最后提到了entries、keys和values三个方法，这三个方法都会返回一个iterator对象，因此我们可以使用for of循环来进行遍历。
+
+代码3.9 中我们自定义了一个 Iter 对象，它虽然可以可以使用next方法来获得下一个元素，但没办法使用for/of遍历，下面我们实现一个更加复杂一些的例子：
+
+![image-20210426221506169](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426221506169.png)
+
+我们定义了一个方法myIter，该方法接收一个数组作为参数，然后在它的原型方法上部署了Symbol.iterator，这样我们就可以用for/of来遍历myIter的实例。
+
+![image-20210426221627160](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426221627160.png)
+
+## 3.7　对象
+
+### 3.7.1　新的方法
+
+#### 1．object.assign()
+
+该方法将一个对象的属性复制到另一个对象上，很多开发者看到这个方法第一时间想到的就是确认该方法是深复制或者是浅复制，我们可以写段测试代码来测试一下。
+
+![image-20210426221830562](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426221830562.png)
+
+**很明显，该方法实现的是一种浅拷贝。**
+
+#### 2. object.setPrototypeOf()
+
+Object.setPrototypeOf方法用来设置一个对象的prototype对象，返回参数对象本身，它的作用和直接设置__proto__属性相同。
+
+在ES6之前，__proto__属性只是一种事实的标准，不是ECMAScript标准中的内容，ES6将__proto__写入了附录中，但仍然不推荐直接使用该属性。
+
+#### 3．Object.getPrototypeOf()
+
+**该方法与Object.setPrototypeOf方法配套，用于获得一个对象的原型对象。**
+
+下面是一个例子，我们首先定义两个方法，Person和Student，并且将Stuent的prototype设置为Person。
+
+##### 代码3.10　getPrototypeOf方法
+
+![image-20210426222203185](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426222203185.png)
+
+### 3.7.2　对象的遍历
+
+在ES5中，遍历对象的方式有如下几种，我们以一个简单的对象为例来辅助说明。
+
+![image-20210426222327640](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426222327640.png)
+
+#### （1）使用for/in遍历
+
+![image-20210426222352327](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426222352327.png)
+
+#### （2）使用Object.keys()遍历
+
+该方法会返回包含所有键值的数组，不包含不可枚举的属性。
+
+![image-20210426222424952](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426222424952.png)
+
+#### （3）使用Object.getOwnPropertyNames()遍历
+
+该方法的作用和Object.keys相同，区别是返回全部的属性，无论是否可枚举。
+
+#### 1．枚举属性
+
+**在ES5中，可以将一个对象的属性设置为不可枚举的，不可枚举的属性可以正常地通过a.b的形式访问，但无法通过for/in循环和Object.keys方法遍历到。**以上面的代码为例，可以通过Object.defineProperty来设置一个属性是否可以被枚举
+
+![image-20210426222616326](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210426222616326.png)
+
+将sex的enumerable属性设置为false后，只有getOwnPropertyNames可以遍历到该属性。
+
+#### 2．ES6中的遍历方法
+
+ES6在此基础上增加了Object.getOwnPropertySymbols()和Reflect.ownKeys()两个方法，它们都接受一个对象作为参数，前者会返回参数对象的全部Symbol属性，后者会返回全部属性。
+
+**注意：Symbol属性也是ES2015规范的一部分，这里不再讲述，读者可以认为Symbol属性是一种不会和其他属性重名的属性。**
