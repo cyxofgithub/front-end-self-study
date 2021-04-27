@@ -1568,3 +1568,579 @@ Object.setPrototypeOf方法用来设置一个对象的prototype对象，返回�
 ES6在此基础上增加了Object.getOwnPropertySymbols()和Reflect.ownKeys()两个方法，它们都接受一个对象作为参数，前者会返回参数对象的全部Symbol属性，后者会返回全部属性。
 
 **注意：Symbol属性也是ES2015规范的一部分，这里不再讲述，读者可以认为Symbol属性是一种不会和其他属性重名的属性。**
+
+## 3.8　类（讲的挺好）
+
+——Java的类没有缺陷，如果有，就新增一种设计模式。
+
+Class这一特性的引入，标志着在ECMAScript语言层面提供了对“经典类”的原生支持。提到“经典类”，我们脑海里通常会联想到Java中的类。如果读者之前有过Java或C++的编程经验，比起使用prototype实现的类，会更容易接受一些。
+
+对ES6来说，这种支持更多地是在语法层面上，其底层的实现并未发生变化。
+
+至于JavaScript为什么一定要像Java那样声明一个类，这个就见仁见智了。支持者认为这种写法更“友好”，更接近于传统语言的写法，可以减少程序员的学习成本。
+
+反对者则认为这样的语法糖毫无意义，JavaScript和Java类底层的实现本来就不同，强行统一写法只怕会造成更深的误解。
+
+**我们先来看看在ES5时期JavasScript对class这一概念的实现**。
+
+在JavaScript中，类的所有实例对象都从同一个原型对象上继承属性。
+
+### 3.8.0　ES5定义类（重点）
+
+![image-20210427193922480](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427193922480.png)
+
+**ES6提供了更接近传统语言的class定义，这种新特性更多地是语法糖，在ES6中定义的类可以转换为等价ES5代码。**
+
+**总而言之，ES6 类的本质就是这种方式定义出来的，不过是提供了语法糖**
+
+### 代码3.11　ES6中定义一个类
+
+![image-20210427194008298](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194008298.png)
+
+### 3.8.1　属性和构造函数
+
+Class中的属性定义在constructor函数（构造函数）中。构造函数负责类的初始化，包括初始化属性和调用其他类方法等，构造函数同样支持默认值参数。
+
+如果声明一个类的时候没有声明构造函数，那么会默认添加一个空的构造函数。
+
+构造函数只有在使用关键字new实例化一个对象的时候才会被调用。
+
+![image-20210427194104849](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194104849.png)
+
+### 3.8.2　类方法
+
+类方法的定义无须使用function关键字，方法内部使用this来访问类属性，方法之间也不需要逗号间隔。
+
+![image-20210427194134840](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194134840.png)
+
+类方法也可以作为属性定义在构造函数中，这时的写法略有不同。
+
+![image-20210427194239435](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194239435.png)
+
+### 3.8.3　__proto__
+
+在ES5中，类的实例通过__proto__属性来指向构造函数的prototype对象。以上面的Student类为例：
+
+![image-20210427194316257](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194316257.png)
+
+__proto__**属性本身不是ECMAScript规范的内容，只是各大浏览器都对该属性进行了支持，才成为了事实上的标准，既然该属性指向类的prototype属性，那么表示我们可以用该属性来修改prototype，但这也代表任何一个类的实例都可以修改原型对象，在实际开发中应该禁用这种做法。**
+
+![image-20210427194416841](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194416841.png)
+
+**即使开发者完全不关注proto这个属性，也不会对开发工作带来消极的影响，ES6也建议在实际开发过程中认为这个属性不存在。**
+
+**在上一节的代码中，getInfo方法和constructor方法虽然看似是定义在类的内部，但实际上还是定义在prototype上，这也从侧面证明了ES6对class的实现依旧基于prototype。**
+
+我们可以使用代码来证实这一点：
+
+![image-20210427194547645](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194547645.png)
+
+对象的__proto__属性指向类的原型，这点对ES5和ES6均适用。
+
+![image-20210427194607193](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194607193.png)
+
+类名本质上就是构造函数，ES6的写法仅仅是做了一层包装：
+
+![image-20210427194628373](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427194628373.png)
+
+### 3.8.4　静态方法（易忘）
+
+在定义类时如果定义了方法，那么该类的每个实例在初始化时都会有一份该方法的备份。有时我们不希望一些方法被继承，而是希望作为父类的属性来使用，例如常用的Math类，它有一些直接通过类名来调用的方法，即静态方法。
+
+**ES6中使用static关键字来声明一个静态方法，该方法只能通过类名来直接调用，而不能通过类的实例调用。**
+
+![image-20210427195042531](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427195042531.png)
+
+**如果一个类继承了一个包含静态方法的类，那么它可以通过super关键字来调用父类的静态方法，同样的，包含super关键字的子类方法也必须是静态方法，例如：**
+
+![image-20210427195115562](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427195115562.png)
+
+## 3.9　类的继承
+
+### 3.9.1　ES5中的继承（易忘）
+
+在ES5中，类的继承可以有多种方式，然而过多的选择有时反而会成为障碍，ES6统一了类继承的写法，避免开发者在不同写法的细节之中过多纠缠，但在介绍新方法之前，还是有必要先回顾下ES5中类的继承方式。
+
+首先假设我们有一个父类Person，并且在类的内部和原型链上各定义了一个方法：
+
+#### 代码3.12　用于继承的基类Person
+
+![image-20210427195559805](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427195559805.png)
+
+#### 1．修改原型链
+
+这是最普遍的继承做法，通过将子类的prototype指向父类的实例来实现：
+
+![image-20210427195751865](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427195751865.png)
+
+在这种继承方式中，stud对象既是子类的实例，也是父类的实例。然而也有**缺点**，在子类的构造函数中无法通过传递参数对父类继承的属性值进行修改，只能通过修改prototype的方式进行修改。
+
+#### 2．调用父类的构造函数
+
+##### 代码3.14　通过调用父类构造函数的继承
+
+![image-20210427195947299](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427195947299.png)
+
+这种方式避免了原型链继承的缺点，直接在子类中调用父类的构造函数，在这种情况下，stud对象只是子类的实例，不是父类的实例，而且只能调用父类实例中定义的方法，不能调用父类原型上定义的方法。
+
+#### 3．组合继承（重点）
+
+这种继承方式是前面两种继承方式的结合体。
+
+##### 代码3.15　组合继承
+
+![image-20210427200226875](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427200226875.png)
+
+**这种方式结合上面两种继承方式的优点，也是Node源码中标准的继承方式。**
+
+**唯一的问题是**调用了父类的构造函数两次，分别是在设置子类的prototype和实例化子类新对象时调用的，这造成了一定的内存浪费。
+
+### 3.9.2　ES6中的继承（知识点多）
+
+在ES6中可以直接使用extends关键字来实现继承，形式上更加简洁。我们前面也提到了，ES6对Class的改进就是为了避免开发者过多地在语法细节中纠缠。
+
+我们设计一个student类来继承代码3.15定义的person类。
+
+#### 代码3.16　继承Person类
+
+![image-20210427200856922](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427200856922.png)
+
+在代码3.16中我们定义了Student类，在它的构造方法中调用了super方法，该方法调用了父类的构造函数，并将父类中的属性绑定到子类上。
+
+super方法可以带参数，表示哪些父类的属性会被继承，在代码3.16中，子类使用super继承了Person类的name以及age属性，同时又声明了一个sex属性。
+
+**在子类中，super方法是必须要调用的，原因在于子类本身没有自身的this对象，必须通过super方法拿到父类的this对象，可以在super函数调用前尝试打印子类的this，代码会出现未定义的错误。**（为什么？）
+
+**如果子类没有定义constructor方法，那么在默认的构造方法内部自动调用super方法，并继承父类的全部属性。**
+
+**除了用在子类的构造函数中，super还可以用在类方法中来引用父类的方法。**
+
+![image-20210427201314959](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427201314959.png)
+
+**值得注意的是，super只能调用父类方法，而不能调用父类的属性，因为方法是定义在原型链上的，属性则是定义在类的内部（就像代码3.15实例的组合继承那样，属性定义在类的内部）。**
+
+![image-20210427201435434](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427201435434.png)
+
+**此外，当子类的函数被调用时，使用的均为子类的this（修改父类的this得来），即使使用super来调用父类的方法，使用的仍然是子类的this。**
+
+![image-20210427201535229](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427201535229.png)
+
+在上面的例子中，super调用了父类的方法，输出的内容却是子类的属性，说明super绑定了子类的this。
+
+**同样的，我们还可以对super的属性赋值，例如super.name =“Thea”，这个赋值修改的是子类的属性，如果尝试打印super.name，还是会输出undefined。**（属性是定义在类的内部不能通过this获取，而方法是定义在原型链上的）
+
+### 3.9.3　Node中的类继承
+
+在Node的源码中同样大量使用了继承，我们可以观察在源码中对继承的实现，从而找到最优的继承方式。即使extends已经是官方推荐的继承方方式，但在底层实现中依然保留了之前的做法。
+
+#### Node 官方推荐形式
+
+例如下面的代码就是源码中fs模块继承events模块的实现。
+
+![image-20210427201955578](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427201955578.png)
+
+上面这种形式是Node官方推荐的继承方式，可见使用了util.inherits方法，我们到源码中查找对应的实现。
+
+![image-20210427202113841](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427202113841.png)
+
+抛开错误处理，可以发现inherits方法其实是通过调用setPrototypeOf来实现继承的。
+
+在ES5中，还有一个方法被经常用在类的继承中，那就是Object.create方法，事实上在Node比较老的版本，例如v0.10中，inherits内部是通过调用该方法实现的。
+
+![image-20210427203120697](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427203120697.png)
+
+## 3.10　ES6的模块化标准
+
+## 3.11　使用babel来转换代码
+
+## 3.12　小结
+
+本章我们主要介绍了ES2015中定义的一些新的规范和特性，这些新特性大都是原有写法的一些语法糖。
+
+ES2015比较重要的更新有两个，一个是对类与继承的改进，长久以来JavaScript缺少一种统一的编写类以及类继承的方式，这毫无疑问地浪费了开发者的时间，ES2015的改进有利于让开发者从语法细节中摆脱出来（就像我一点都不想知道子类调用了几次父类的构造函数）。
+
+另一个比较重要的更新是Promise（对Node来说或许是最重要的），我们会在下一章介绍。
+
+## 3.13　引用资源
+
+```
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakSet
+https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Symbol/it eratorhttp://es6.ruanyifeng.com/
+https://github.com/hanzichi/underscore-analysis/issues/14https://github.com/jashkenas/underscore/blob/master/underscore.js
+http://kangax.github.io/compat-table/es6/https://bugzilla.mozilla.org/show_bug.cgi?id=1299593
+```
+
+# 第4章　书写异步代码
+
+## 4.0　概述
+
+如何用最简洁的方式组织异步代码？这个问题曾经困扰了社区很长时间，甚至被认为是Node的最大弊端，不过问题现在已经基本得到解决。
+
+### 嵌套回调
+
+我们已经很熟悉回调函数的写法了，下面我们将读取文件的readFile方法封装成一个单独的read方法，它接受一个path参数。
+
+#### 代码4.1　封装了readFile的read方法
+
+![image-20210427203837769](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427203837769.png)
+
+如果我们需要调用read方法来读取多个文件，则无法保证哪个先完成。
+
+![image-20210427203852916](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427203852916.png)
+
+但有时需要依赖上一个异步操作的结果，假设foo.txt是一个配置文件，里面有一个用来解密的key，我们需要拿到里面的内容才能解密bar.txt里面的文本，那么这个时候我们就不能像上面那样使用read方法了。
+
+一般我们会写成下面这种方式（暂且不考虑readFileSync）。
+
+#### 代码4.2　嵌套的回调函数
+
+![image-20210427204029222](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427204029222.png)
+
+将下一个异步操作放到上一个异步操作的回调方法中，这样虽然能保证执行是串行的，但当代码嵌套的层数增加，代码的层次结构就会变得不清晰并且难以维护。
+
+**回调地狱（callback hell）**这个词就被用来描述这种写法。它本身没有任何问题，只是因为不利于开发者阅读和维护才会遭到摒弃。
+
+本章会重点讲述Node社区是如何一步步（经过好几年的摸索和实践）地解决这个问题的。
+
+为了便于说明，我们先来假设一种应用场景，即有三个文件需要顺序地进行读取，以后的内容都围绕这个场景展开。
+
+## 4.1　异步操作的返回值
+
+假设一个方法封装了一个异步操作，那么我们如何能拿到返回值呢？
+
+在代码4.1中，如果我们能通过最简单的函数调用拿到read方法中异步操作的返回值就好了，就像下面这样：
+
+**代码4.3　美好的愿望——直接拿到异步方法的返回值**
+
+![image-20210427204339920](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427204339920.png)
+
+**然而直接像代码4.3这样调用read方法不会得到任何返回值，data打印出来也是undefined。原因是read方法会先于内部的回调函数返回，即回调函数内部的return关键字不会将值返回到外部。**
+
+让人沮丧的是我们基本上没法用通常的办法得到一个异步调用的返回值，如果代码下一步的操作依赖于data的值，只能将下一步的逻辑放到回调函数的内部，就像代码4.2那样。
+
+但社区的开发者们明显不会放弃，他们仍然向着代码4.3的方向努力，在介绍最后的解决方案之前，我们先说点别的。
+
+## 4.2　组织回调方法
+
+### 4.2.1　回调与CPS（了解即可）
+
+当开发者刚开始接触回调时，通常都会写成下面的样式：
+
+![image-20210427204523908](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427204523908.png)
+
+如果对于多个功能相同的异步操作，它们的回调函数都是相同的，这样的写法会产生很多功能重复的代码。
+
+另一种做法是将回调函数作为参数传递，这种书写方式通常被称为**ContinuationPassing Style（CPS）**，它的本质仍然是一个高阶函数。
+
+**代码4.4　CPS风格的回调**
+
+![image-20210427204659465](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427204659465.png)
+
+如果需要调用readFile方法多次，并且它们的回调方法都相同的情况下，CPS可以省去一些重复代码。
+
+关于CPS的应用，比较常见的是各大语言对于排序这一方法的实现，假设a是一个长度为1000的数组，下面的代码调用qsort函数进行排序：
+
+![image-20210427204750204](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427204750204.png)
+
+用户可以自定义comp函数来决定升序或者是降序，下面是一个升序的例子（使用C语言实现）：
+
+![image-20210427204822355](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427204822355.png)
+
+CPS可以在一定程度上解决回调嵌套的问题。
+
+**代码4.5　使用CPS来处理多个回调**
+
+![image-20210427204911141](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427204911141.png)
+
+上面的代码是代码4.2嵌套回调的另一种写法，其本质上仍然是在回调中调用下一个异步方法，只是避免了多个回调函数在形式上嵌套在一起。虽然比嵌套调用看起来美观了一些，但仍然显得冗长，而且业务逻辑分散在不同的callback中，初次接触代码的开发者也不容易理清它们之间的关系。
+
+### 4.2.2　使用async模块简化回调
+
+async（**为了区别下面内容的async/await方法，用async模块表示第三方模块，async方法表示ES2017的新特性**）是一个著名的第三方模块，它的初衷也是为了解决多个异步调用嵌套的问题。根据业务场景提供了一系列常用的方法，例如series、map、parallel等，下面是一些实际的例子。
+
+#### 1．async.series
+
+**代码4.6　使用series方法处理多个回调**
+
+![image-20210427205116369](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427205116369.png)
+
+series方法接收一个数组和一个回调函数，回调函数的第二个参数是一个数组，包含了全部异步操作的返回结果，结果集中的顺序和series参数数组的顺序是对应的。
+
+该方法实际上是嵌套回调的语法糖，所有的异步调用都是顺序执行的，即执行完一个操作再进行下一个操作。以代码4.6为例，最后的打印结果为[ 'foo.txt', 'bar.txt','baz.txt' ]。
+
+#### 2．async.parallel
+
+调用方式和参数都与series相同，也会顺序返回所有的调用结果，区别在于所有的方法是并行执行，执行时间由耗时最长的调用决定。
+
+parallel方法在数组中的某个异步调用结束之后并没有立刻返回，而是将结果暂存起来，等所有的异步操作完成之后，再根据调用顺序将结果组装成顺序的结果集返回。
+
+#### 3．async.waterfall
+
+同样是顺序执行异步操作，和前两个方法的区别是每一个异步操作都会把结果传递给下一个调用。
+
+**代码4.7　使用waterfall处理多个回调**
+
+![image-20210427212653448](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427212653448.png)
+
+#### 4．async.map
+
+map和上面的几个方法稍有不同，map接收一个数组作为参数，数组的元素不是方法名而是方法的参数，数组里的值会依次传递给定义的异步方法。
+
+map的第二个参数就是异步的方法，不需要再做额外封装。
+
+![image-20210427212845950](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427212845950.png)
+
+然而map方法有一个缺点，就是它只能接受三个参数，分别是一个数组、对应的异步方法和回调函数。以readFile为例，我们会发现没有多余的参数来定义编码格式，这种情况下还是需要对readFile做一层封装。
+
+![image-20210427212918198](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427212918198.png)
+
+async模块一度是管理异步调用的首选，然而它并不适用所有的场合。
+
+从上面的介绍中我们可以看出，async通常使用一个数组来包含所有的异步方法或者调用的参数，然而有时我们无法在调用前就决定哪些异步方法会被调用。例如使用上一个异步过程的结果来决定下一个调用的异步方法，这时候使用async模块就不是特别方便。
+
+## 4.3　使用Promise
+
+在Node中率先得到广泛应用的是async这样的第三方模块，它可以将多个回调函数组合在一起，async模块中没有应用什么新概念，只是做了形式上的简化。
+
+社区自然不会满足止步于此，开发者们把目光投向了别处，希望有一种新的方式来解决问题，在这种环境下，Promise进入视野似乎是自然而然的事情。
+
+### 4.3.1　Promise的历史（对了解Pm很有帮助）
+
+Promise的概念最早可以追溯到1976年，future、promise、delay、deferred这几个词经常放在一块讨论，它们都用来指代一个开始时状态未知的对象，读者可以自行搜索相关文献，这里不再介绍。
+
+jQuery在1.5及之后的版本（2011年1月及以后）中增加了deferred方法，该方法是Promise的一种实现，并且随着jQuery本身流行起来，以一个Ajax操作为例，传统的写法是这样的。
+
+**代码4.8　普通的Ajax操作**
+
+![image-20210427213216645](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427213216645.png)
+
+success和fail方法都是作为参数的一部分传递给$.ajax()方法，它们是Ajax执行完成后的回调函数。
+
+使用deferred改写Ajax底层实现之后，代码4.8变成了下面这种样子。
+
+**代码4.9　使用deferred来书写Ajax**
+
+![image-20210427213259468](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427213259468.png)
+
+代码4.9和代码4.8在结构上最大的区别是使用deferred改写的Ajax方法，将success和error两个回调函数从$.ajax()方法中剥离，而且链式调用也表明了$.ajax("test.html")这个异步方法产生了返回值，这是一个很大的进步。
+
+使用了Promise之后，我们可以从封装的异步方法里拿到一个返回值，虽然它并不是最终的结果，但比起不产生任何返回值的代码4.1，我们终于开始向代码4.3的目标迈进了。
+
+后面Promise概念得到推广并出现了一些规范，以Promise/A+最为出名，社区也出现了一些支持Promise的第三方库，例如q.js和bluebird，它们都实现了Promise/A+标准，开发者开始用Promise来书写异步。
+
+后来Promise/A+标准被社区接受，ES2015中的Promise就是按照它来实现的。
+
+### 4.3.2　Promise是什么
+
+![image-20210427213557100](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427213557100.png)
+
+Promise表示一个异步操作的最终结果。
+
+**直译过来的结果不太容易理解，可以将Promise理解为一个状态机，它存在下面三种不同的状态，并在某一时刻只能有一种状态。**
+
+- Pending：表示还在执行。
+- Fulfilled（或者resolved）：执行成功。
+- Rejected：执行失败。
+
+一个Promise是对一个操作（通常是一个异步操作）的封装，异步操作有等待完成、成功、失败三种可能结果，对应了Promise的三种状态。
+
+**Promise的状态只能由Pending转换为Resolved或者由Pending转换为Rejected，一旦状态转换完成就无法再改变。**
+
+假设我们用Promise封了一个异步操作，那么当它被创建的时候就处于Pending状态，当异步操作成功完成时，我们将状态转换为Fulfilled；如果执行中出现错误，将状态转换为Rejected（如果开发者希望，也可以将这两者对调过来，但通常没什么意义）。
+
+### 4.3.3　ES2015中的Promise（重要）
+
+Promise和Class堪称ES2015的两个最重要的特性，在如何组织异步代码这个问题上，ES2015中的Generator或者ES2017的async方法，都是以Promise作为基础的，后面内容介绍的种种方案，也都是围绕Promise进行展开的。
+
+#### 1．将异步方法封装成Promise
+
+![image-20210427214022553](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427214022553.png)
+
+以读取文件内容的fs.readFile为例，使用Promise封装后的方法如下所示：
+
+**代码4.11　使用Promise封装的readFile**
+
+![image-20210427214053040](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427214053040.png)
+
+**将一个异步方法封装成Promise其实很简单，只要在回调函数中针对不同的返回结果调用resolve或者reject方法即可。**
+
+**resolve和reject同样是两个函数，在代码4.11中，resolve函数会在异步操作成功完成时被调用，并将异步操作的返回值作为参数传递到外部。**
+
+**reject则是在异步操作出现异常时被调用，会将错误信息作为参数传递出去。**
+
+刚刚接触Promise概念的开发者可能会对这两个方法感到困惑，简单地说，一个封装了异步操作的Promise对象实际上并没有做任何事情，它仅仅针对回调函数的不同结果定义了不同的状态。
+
+resolve方法和reject方法也没有做多余的操作，仅仅是把异步的结果传递出去而已，对于异步结果的处理，是交给then方法来完成的。
+
+#### 2．使用then方法获取结果
+
+在封装好Promise对象后，就可以调用then方法来获取异步操作的值了，一个then方法通常是如下这种形式：
+
+![image-20210427214529017](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427214529017.png)
+
+**then方法接收两个匿名函数作为参数，它们代表onResolved和onRejected函数。**
+
+**value和error参数代表回调的结果，以readFile为例，value就是执行成功时文本内容，error则是执行出错时的错误信息，两者中必有一个不为空。**
+
+通常来说，如果onRejected的回调方法被调用就表示异步过程中出现错误，这时可以使用catch方法而不是回调函数来处理异常。
+
+![image-20210427214734853](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427214734853.png)
+
+#### 3．then方法的返回值
+
+then方法总是返回一个新的Promise对象，这也就表示对于一个Promise，可以多次调用它的then方法，但由于默认返回的Promise是一个空的对象，除非做一些额外的操作，否则这一操作通常得不到有意义的值。
+
+以代码4.11为例，调用两次then方法的结果：
+
+![image-20210427215001871](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427215001871.png)
+
+开发者可以在回调函数定义一个新的Promise，然后使用return来返回。例如我们可以在readFile的onResolved回调函数中再次调用readFile_promise。
+
+**代码4.12　在then方法中返回一个新的Promise**
+
+![image-20210427215153055](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427215153055.png)
+
+**在上面第一个then方法中，再次调用了read_ promise，其返回的新的Promise覆盖了默认返回的Promise，我们因此可以在下一个then方法中获取另一个异步操作的执行结果。**
+
+如果将代码4.12第3行的return关键字去掉，第5行打印的value就为undefined。
+
+#### 4．Promise的执行
+
+虽然我们会通过then方法来获取Promise的结果，但Promise是当then方法调用之后才会执行吗？举个例子，下面的代码会如何输出？
+
+**代码4.13　Promise的执行**
+
+![image-20210427215350975](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427215350975.png)
+
+实际运行下就会发现，程序立刻打印出begin，然后等待5秒，随后再打印出end。
+
+**Promise从被创建的那一刻起就开始执行，then方法只是提供了访问Promise状态的接口，与Promise的执行无关。**
+
+### 4.3.4　Promise的常用API
+
+#### 1．Promise.resolve
+
+Promise提供了resolve方法用来将一个非Promise对象转化为Promise对象。
+
+**在通常情况下，主动调用resolve方法的场景并不多，因为该方法能转换的通常只有thenable对象和一些原始类型的对象。**
+
+就像第3章提到的array-like object一样，thenable对象是指有then方法的对象，一个常见的例子就是jQuery中的deferred对象，或者你可以自己定义一个简单的对象，例如下面这样，然后再把它转换成一个Promise，转换后的Promise会自动执行其then方法。
+
+![image-20210427215531879](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427215531879.png)
+
+如果转换的对象是一个常量或者不具备状态的语句，转换后的对象自动处于resolve状态，转换的对象作为resolved的结果原封不动地保留。
+
+![image-20210427215738771](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427215738771.png)
+
+或许读者想着可以使用resolve来转换一个异步方法，例如readFile之类的，很遗憾resolve方法做不到这一点。例如下面的代码就不会起作用：
+
+![image-20210427215833204](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427215833204.png)
+
+要转换异步方法，要么手动封装一个Promise，要么就使用一些现成的方法或者模块来操作，例如util.promisify或者bluebird，我们会在后面介绍。
+
+#### 2．promise.reject()
+
+#### 3．promise.all
+
+#### 4．promise.race
+
+#### 5．promise.catch
+
+### 4.3.5　使用Promise组织异步代码
+
+## 4.4　Generator，一种过渡方案
+
+### 4.4.0　概述
+
+在使用Generator前，首先知道Generator是什么
+
+Generator本质上是一个函数，**它最大的特点就是可以被中断，然后恢复执行。**
+
+**通常来说，当开发者调用一个函数之后，这个函数的执行就脱离了开发者的控制，只有函数执行完毕之后，控制权才能重新回到调用者手中，因此程序员在编写方法代码时，唯一能够影响方法执行的只有预先定义的return关键字。**
+
+Promise也是如此，我们也无法控制Promise的执行，新建一个Promise后，其状态自动转换为pending，同时开始执行，直到状态改变后我们才能进行下一步操作。
+
+**而Generator函数不同，Generator函数可以由用户执行中断或者恢复执行的操作，Generator中断后可以转去执行别的操作，然后再回过头从中断的地方恢复执行。**
+
+**这其实是一种协程的概念**，关于协程，读者可以阅读附录A以及附录B的内容。
+
+### 4.4.1　Generator的使用
+
+Generator函数和普通函数在外表上最大的区别有两个：
+
+- 在function关键字和方法名中间有个星号（*）。
+- 方法体中使用“yield”关键字。
+
+**代码4.21　一个简单的Generator函数**
+
+![image-20210427220614929](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427220614929.png)
+
+和普通方法一样，Generator可以定义成多种形式：
+
+![image-20210427220637618](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427220637618.png)
+
+**Generator函数的状态**
+
+Yield关键字用来定义函数执行的状态，在代码4.21中，如果Generator中定义了x个yield关键字，那么就有x+1种状态（+1是因为最后的return语句）。
+
+### 4.4.2　Generator函数的执行
+
+跟普通函数相比，Generator函数更像是一个类或者一种数据类型，以下面的代码为例，直接执行一个Generator会得到一个Generator对象，而不是执行方法体中的内容。
+
+![image-20210427220955859](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427220955859.png)
+
+按照通常的思路，gen应该是Generator()函数的返回值，上面也提到Generator函数可能有多种状态，读者可能会因此联想到Promise，一个Promise也可能有三种状态。**不同的是Promise只能有一个确定的状态，而Generator对象会逐个经历所有的状态，直到Generator函数执行完毕。**
+
+**当调用Generator函数之后，该函数并没有立刻执行，函数的返回结果也不是字符串，而是一个对象，可以将该对象理解为一个指针，指向Generator函数当前的状态。（为了便于说明，我们下面采用指针的说法）。**
+
+**当Generator被调用后，指针指向方法体的开始行，当next方法调用后，该指针向下移动，方法也跟着向下执行，最后会停在第一个遇到的yield关键字前面，当再次调用next方法时，指针会继续移动到下一个yield关键字，直到运行到方法的最后一行，以代码4.21为例，完整的执行代码如下：**
+
+![image-20210427221533185](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427221533185.png)
+
+上面的代码一共调用了三次next方法，每次都返回一个包含执行信息的对象，包含一个表达式的值和一个标记执行状态的flag。
+
+第一次调用next方法，遇到一个yield语句后停止，返回对象的value的值就是yield语句的值，done属性用来标志Generator方法是否执行完毕。
+
+第二次调用next方法，程序执行到return语句的位置，返回对象的value值即为return语句的值，如果没有return语句，则会一直执行到函数结束，value值为undefined，done属性值为true
+
+第三次调用next方法时，Generator已经执行完毕，因此value的值为undefined。
+
+#### 1．yield关键字
+
+yield本意为“生产”，在Python、Java以及C#中都有yield关键字，但只有Python中yield的语义和Node相似（理由前面也说了）。
+
+当next方法被调用时，Generator函数开始向下执行，遇到yield关键字时，会暂停当前操作，并且对yield后的表达式进行求值，无论yield后面表达式返回的是何种类型的值，yield操作最后返回的都是一个对象，该对象有value和done两个属性。
+
+value很好理解，如果后面是一个基本类型，那么value的值就是对应的值，更为常见的是yield后面跟的是Promise对象。
+
+done属性表示当前Generator对象的状态，刚开始执行时done属性的值为false，当Generator执行到最后一个yield或者return语句时，done的值会变成true，表示Generator执行结束。
+
+值得注意的是，yield关键字本身不产生返回值。例如下面的代码：
+
+**代码4.22　yield不产生返回值**
+
+![image-20210427221932183](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427221932183.png)
+
+这可能让人有些费解，为什么第二个next方法执行后，y的值却是undefined。
+
+实际上，我们可以做如下理解： next方法的返回值是yield关键字后面表达式的值，而yield关键字本身可以视为一个不产生返回值的函数，因此y并没有被赋值。上面的例子中如果要计算y的值，可以将代码改成：
+
+![image-20210427222122796](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427222122796.png)
+
+Next方法还可以接受一个数值作为参数，代表上一个yield求值的结果。
+
+**代码4.23　next方法可以接收一个参数**
+
+![image-20210427222224880](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427222224880.png)
+
+上面的代码等价于：
+
+![image-20210427222242216](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210427222242216.png)
+
+next可以接收参数代表可以从外部传一个值到Generator函数内部，乍一看没有什么用处，实际上正是这个特性使得Generator可以用来组织异步方法，我们会在后面介绍。
+
+## 4.5　回调的终点——async/await
+
+### 4.5.1　async函数的概念
+
+ES2017标准引入了async函数，作为最后的补刀终结了回调处理的问题，该特性在Node v7.6.0之后的版本中已经获得原生支持。
