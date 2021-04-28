@@ -2139,8 +2139,268 @@ Next方法还可以接受一个数值作为参数，代表上一个yield求值�
 
 next可以接收参数代表可以从外部传一个值到Generator函数内部，乍一看没有什么用处，实际上正是这个特性使得Generator可以用来组织异步方法，我们会在后面介绍。
 
+#### 2．next方法与Iterator接口（Iterator？）
+
+在上一章曾经提到过ES2015中的Iterator，一个Iterator同样使用next方法来遍历元素。
+
+由于Generator函数会返回一个对象，而该对象实现了一个Iterator接口，因此所有能够遍历Iterator接口的方法都可以用来执行Generator，例如for/of、array.from()等。
+
+可以使用for/of循环的方式来执行Generator函数内的步骤，由于for/of本身就会调用next方法，因此不需要手动调用。
+
+值得注意的是，循环会在done属性为true时停止，以下面的代码为例，最后的“end”并不会被打印出来，如果希望被打印，需要将最后的return改为yield。
+
+**代码4.24　使用for/of循环执行Generator**
+
+![image-20210428090712727](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428090712727.png)
+
+前面提到过，直接打印Generator函数的示例没有结果，但既然Generator函数返回了一个遍历器，那么就应该具有Symbol.iterator属性。
+
+![image-20210428090812424](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428090812424.png)
+
+### 4.4.3　Generator中的错误处理
+
+Generator函数的原型中定义了**throw方法**，用于抛出异常。
+
+##### **代码4.25　使用throw方法抛出异常**
+
+![image-20210428090922583](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428090922583.png)
+
+上面代码中，执行完第一个yield操作后，Generator对象抛出了异常，然后被函数体中try/catch捕获。**值得注意的是，当异常被捕获后，Generator函数会继续向下执行，直到遇到下一个yield操作并输出yield表达式的值。**
+
+##### **代码4.26　使用try/catch捕获异常**
+
+![image-20210428091133436](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428091133436.png)
+
+如果Generator函数在执行的过程中出错，也可以在外部进行捕获。
+
+![image-20210428091150453](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428091150453.png)
+
+Generator的原型对象还定义了return()方法，用来结束一个Generator函数的执行，这和函数内部的return关键字不是一个概念。
+
+![image-20210428091210226](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428091210226.png)
+
+### 4.4.4　用Generator组织异步方法
+
+我们之所以可以使用Generator函数来处理异步任务，原因有二：
+
+- Generator函数可以中断和恢复执行，这个特性由yield关键字来实现。
+- Generator函数内外可以交换数据，这个特性由next函数来实现。
+
+**概括一下Generator函数处理异步操作的核心思想**：先将函数暂停在某处，然后拿到异步操作的结果，然后再把这个结果传到方法体内。
+
+yield关键字后面除了通常的函数表达式外，比较常见的是后面跟的是一个Promise，由于yield关键字会对其后的表达式进行求值并返回，那么调用next方法时就会返回一个Promise对象，我们可以调用其then方法，并在回调中使用next方法将结果传回Generator。
+
+#### 代码4.27　使用Generator处理异步
+
+![image-20210428092031301](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428092031301.png)
+
+上面的代码中，Generator函数封装了readFile_promise方法，该方法返回一个Promise，Generator函数对readFile_promise的调用方式和同步操作基本相同，除了yield关键字之外。上面的Generator函数中只有一个异步操作，当有多个异步操作时，就会变成下面的形式。
+
+#### 代码4.28　使用Generator进行异步流程控制
+
+![image-20210428092139291](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428092139291.png)
+
+慢着，怎么看起来还是嵌套的回调？难道使用Generator的初衷不是优化嵌套写法吗？
+
+说的没错，虽然在调用时保持了同步形式，但我们需要手动执行Generator函数，于是在执行时又回到了嵌套调用。这是Generator的缺点。
+
+### 4.4.5　Generator的自动执行
+
+开发者肯定不希望调用个函数还要一步步地写代码，我们想要的就是和代码4.3一样的调用形式。
+
+对Generator函数来说，我们也看到了要顺序地读取多个文件，就要像代码4.29那样写很多用来执行的代码。
+
+无论是Promise还是Generator，就算在编写异步代码时能获得便利，但执行阶段却要写更多的代码，Promise需要手动调用then方法，Generator中则是手动调用next方法。
+
+当需要顺序执行异步操作的个数比较少的情况下，开发者还可以接受手动执行，但如果面对多个异步操作就有些难办了，我们避免了回调地狱，却又陷到了执行地狱里面。
+
+我们不会是第一个遇到自动执行问题的人，社区已经有了很多解决方案，但为了更深入地了解Promise和Generator，我们不妨先试着独立地解决这个问题，如何能够让一个Generator函数自动执行？
+
+#### 1．自动执行器的实现
+
+既然Generator函数是依靠next方法来执行的，那么我们只要实现一个函数自动执行next方法不就可以了吗，针对这种思路，我们先试着写出这样的代码：
+
+##### 代码4.29　自动执行的初次尝试
+
+![image-20210428093009047](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428093009047.png)
+
+思路虽然没错，但这种写法并不正确，首先这种方法只能用在最简单的Generator函数上，例如下面这种：
+
+![image-20210428093056446](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428093056446.png)
+
+另一方面，由于Generator没有hasNext方法，在while循环中作为条件的：
+
+![image-20210428093118211](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428093118211.png)
+
+在第一次条件判断时就开始执行了，这表示我们拿不到第一次执行的结果。因此这种写法行不通。
+
+那么换一种思路，我们前面介绍了for/of循环，那么也可以用它来执行Generator。
+
+![image-20210428093244217](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428093244217.png)
+
+看起来没什么问题了，但同样地也只能拿来执行最简单的Generator函数，然而我们的主要目的还是管理异步操作。
+
+#### 2．基于Promise的执行器
+
+前面实现的执行器都是针对“普通”的Generator函数，即里面没有包含异步操作，在实际应用中，yield后面跟的大都是Promise，这时候for/of实现的执行器就不起作用了。
+
+通过观察，我们发现Generator的嵌套执行是一种递归调用，每一次的嵌套的返回结果都是一个Promise对象。
+
+![image-20210428093541627](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428093541627.png)
+
+那么好了，我们可以据此写出新的执行函数。
+
+##### 代码4.30　升级后的执行函数
+
+![image-20210428093644576](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428093644576.png)
+
+这个执行器因为调用了then方法，因此只适用于yield后面跟一个Promise的方法。
+
+#### 3．使用co模块来自动执行
+
+为了解决generator执行的问题，TJ于2013年6月发布了著名co模块，这是一个用来自动执行Generator函数的小工具，和Generator配合可以实现接近同步的调用方式，co方法仍然会返回一个Promise。
+
+##### 代码4.31　使用co模块执行Generator
+
+![image-20210428093905738](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428093905738.png)
+
+只要将Generator函数作为参数传给co方法就能将内部的异步任务顺序执行，**要使用co模块，yield后面的语句只能是promsie对象。**
+
+co模块的源码这里不再介绍，它和代码4.31的主要区别是co模块仍会返回一个Promise。
+
+到此为止，我们对异步的处理有了一个比较妥当的方式，利用generator+co，我们基本可以用同步的方式来书写异步操作了。
+
+**但co模块仍有不足之处，由于它仍然返回一个Promise，这代表如果想要获得异步方法的返回值，还要写成下面这种形式：**
+
+![image-20210428094029675](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428094029675.png)
+
+另外，当面对多个异步操作时，除非将所有的异步操作都放在一个Generator函数中，否则如果需要对co的返回值进行进一步操作，**仍然要将代码写到Promise的回调中去。**
+
+注意，阅读源码就能发现yield后面还可以是一个thunk函数，它是一种求值策略，这里不再做具体讲述，读者可以自行搜索相关内容。
+
 ## 4.5　回调的终点——async/await
 
 ### 4.5.1　async函数的概念
 
-ES2017标准引入了async函数，作为最后的补刀终结了回调处理的问题，该特性在Node v7.6.0之后的版本中已经获得原生支持。
+**ES2017标准引入了async函数，作为最后的补刀终结了回调处理的问题**，该特性在Node v7.6.0之后的版本中已经获得原生支持。
+
+async函数可以看作是自带执行器的Generator函数，我们之前有形如下面的Generator方法：
+
+![image-20210428094456075](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428094456075.png)
+
+如果用async函数改写的话，会变成如下的形式：
+
+**代码4.32　async函数示意**
+
+![image-20210428094619851](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428094619851.png)
+
+形式看起来没有什么大的变化，yield关键字换成了await，方法名前的*号变成了async关键字。
+
+在使用上的一个区别是await关键字，await关键后面往往是一个Promise，如果不是就隐式调用promise.resolve来转换成一个Promise。Await的动作和它的名字含义相同——等待后面的Promise执行完成后再进行下一步操作。
+
+另一个重要区别在于调用形式，调用一个async方法完全可以直接通过方法名来调用，以代码4.32为例，该函数可以直接使用：
+
+![image-20210428094843589](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428094843589.png)
+
+的方式来进行调用。
+
+在这个过程中，完全没有了回调的影子，也没有引入任何第三方模块，困扰了Node社区多年的回调问题在这里终结。
+
+#### 1．声明一个async方法
+
+async方法的声明和普通方法并无二致。
+
+![image-20210428094927502](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428094927502.png)
+
+#### 2．async的返回值
+
+**async函数总是会返回一个Promise对象，如果return关键字后面不是一个Promise，那么默认调用promise.resolve方法进行转换。**
+
+下面是一个async函数返回Promise的例子。
+
+![image-20210428095148497](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428095148497.png)
+
+上面的asyncFunc()方法虽然看似返回了一个字符串，却能使用then方法来获得最终值，这是内部将字符串转换成了Promise的缘故。
+
+#### 3．async函数的执行过程（重要，有疑惑）
+
+（1）在async函数开始执行的时候，会自动生成一个Promise对象。
+
+（2）当方法体开始执行后，如果遇到return关键字或者throw关键字，执行会立刻退出，如果遇到await关键字则会暂停执行（await后面的异步操作结束后会恢复执行）。
+
+（3）执行完毕，返回一个Promise。
+
+我们用下面的例子来看看async函数是怎么工作的。
+
+![image-20210428095742832](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428095742832.png)
+
+**先 end 后 Hello 的原因：执行了asyncFunc()函数后就去执行下一步了，**（自己说的有点勉强还要深究）
+
+async函数返回的Promise，既可以是resolved状态，也可以是reject状态，不过通常使用throw Error的方式来代替reject。
+
+![image-20210428095955946](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428095955946.png)
+
+### 4.5.2　await关键字（重点）
+
+对于async函数来说，await关键字不是必需的，我们从上面也看出了，由于async本质上是对Promise的封装，那么可以使用执行Promise的方法来执行一个async方法。
+
+而await关键字则是对这一情况的语法糖，它可以“自动执行”一个Promise（其实是等待后面的Promise完成后再进行下一步动作），当async函数内有多个Promise需要串行执行的时候，这种特性带来的好处是十分明显的，因为我们也看到了前面为了执行Promise和Generator写的一大堆代码。
+
+**await操作符的结果是由其后面Promise对象的操作结果来决定的，如果后面Promise对象变为resolved，await操作符返回的值就是resolve的值；如果Promise对象的状态变成rejected，那么await也会抛出reject的值。**
+
+我们还以读文件的代码为例，来观察await函数的特性。
+
+#### 代码4.33　异步读取一个文件
+
+![image-20210428100636139](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428100636139.png)
+
+由于await可以看作是一个Promise的执行器，那么上面第二行的代码：
+
+![image-20210428100657319](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428100657319.png)
+
+也可以写成下面这种形式：
+
+#### **代码4.34　await的另一种写法**
+
+![image-20210428100909441](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428100909441.png)
+
+这种写法和原先Promise的调用区别在于在前面加了一个await关键字，由于then方法总是会返回一个Promise，那么上面的代码相当于：
+
+![image-20210428101101173](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428101101173.png)
+
+因此形如代码4.34形式的代码也是没问题的，在需要对promise结果进行进一步操作后再返回时有一些作用。
+
+在使用了await关键字之后，无论是代码还是执行，都变得和同步操作没什么两样，这就是await的威力所在。
+
+#### 1．await与并行（重要）
+
+**await会等待后面的Promise完成后再采取下一步动作，这意味着当有多个await操作时，程序会变成完全的串行操作。**
+
+**为了发挥Node的异步优势，当异步操作之间不存在结果的依赖关系时，可以使用promise.all来实现并行。**
+
+**代码4.35　await与promise.all**
+
+![image-20210428102151896](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428102151896.png)
+
+#### 2．错误处理
+
+当async函数中有多个await关键字时，如果有一个await的状态变成了rejected，那么后面的操作就不会继续执行。
+
+![image-20210428103948292](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428103948292.png)
+
+执行上面的代码，控制台就会打印出如下消息：
+
+![image-20210428104049977](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428104049977.png)
+
+这个信息我们也介绍过了，这表明了代码中有一个没有被处理的处于rejected状态的Promise。因此使用await时为了避免潜在的错误，最好用try/catch将所有的await包裹起来。
+
+![image-20210428104209178](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428104209178.png)
+
+### 4.5.3　在循环中使用async方法
+
+到ES2017为止，Node中一共提供了下面的几种循环：
+
+- while循环。
+- 普通的for循环，例如for(var i = 0; i<10 ; i++)，这是最常用的循环。
+- forEach循环。
+- ES2015新增的for of循环。

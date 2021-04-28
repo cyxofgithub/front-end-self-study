@@ -862,3 +862,73 @@ return unescape(document.cookie.substring(c_start,c_end));
 ```
 
 这样就不用担心因为在cookie值中出现了特殊符号而导致cookie信息出错了。
+
+# var 和 let 总结
+
+```
+for(var i = 0; i<10 ; i++) {
+       
+        console.log(i,'var');
+}
+console.log(i,'var'); // 10
+for(let j = 0; j<10 ; j++) {
+   
+   console.log(j,'let');
+}
+console.log(j,'let');
+```
+
+![image-20210428110158417](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428110158417.png)
+
+- 当使用var声明变量的时候，没有块级作用域，因此每次循环中声明的setTimeout的回调，是去更高一级的作用域中寻找变量i。 
+- 当使用let声明变量的时候，有独立的块级作用域，因此声明setTimeout回调的时候，是在本次循环的块级作用域{}中寻找变量i。
+
+```
+for(var i = 0; i<10 ; i++) {
+        setTimeout(
+            () => {
+                console.log(i,'var');
+            }
+        )
+ }
+console.log(i,'var');
+
+等价于
+var i
+for(i = 0; i<10 ; i++) {
+        setTimeout(
+            () => {
+                console.log(i,'var');
+            }
+        )
+ }
+console.log(i,'var');
+```
+
+**setTimeout会把回调放到代码执行完毕后，再做处理，so**
+
+![image-20210428110536710](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428110536710.png)
+
+```
+for(let j = 0; j<10 ; j++) {
+        setTimeout(
+            () => {
+                console.log(j,'let');
+            }
+        )
+ }
+ console.log(j,'let');
+```
+
+**在setTimeout把方法放到任务队列之后，会保留上下文环境**
+
+- 无论函数是在哪里调用，也无论函数是如何调用的，其确定的词法作用域永远都是在函数被声明的时候确定下来的。
+- 当定义一个函数时，它实际上保存一个作用域链。
+- 当调用这个函数时，它创建一个新的对象来储存它的参数或局部变量，并将这个对象添加保存至那个作用域链上，同时创建一个新的更长的表示函数调用作用域的“链”。
+
+总结：每一个setimeout 的回调函数都有一个单独的i和j，j和i的不同之处在于，每一个回调函数中的i是引用上一个执行上下文的变量i，所以每一个执行上下文的变化都会作用到其他执行上下文，而j有自己的块级作用域，是当前上下文的变量，每一块执行上下文的变化不会作用到其他执行上下文
+
+![image-20210428110603076](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428110603076.png)
+
+
+
