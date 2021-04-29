@@ -2396,7 +2396,7 @@ async函数返回的Promise，既可以是resolved状态，也可以是reject状
 
 ![image-20210428104209178](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210428104209178.png)
 
-### 4.5.3　在循环中使用async方法
+### 4.5.3　在循环中使用 async 方法
 
 到ES2017为止，Node中一共提供了下面的几种循环：
 
@@ -2404,3 +2404,378 @@ async函数返回的Promise，既可以是resolved状态，也可以是reject状
 - 普通的for循环，例如for(var i = 0; i<10 ; i++)，这是最常用的循环。
 - forEach循环。
 - ES2015新增的for of循环。
+
+通常遇到多个异步任务时，如果我们希望它们能串行执行，可以使用循环的方式来进行调用。
+
+#### 1．for/while循环
+
+![image-20210429160543210](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429160543210.png)
+
+会按顺序输出4个文本文件的内容。
+
+#### 2．forEach循环
+
+![image-20210429160627248](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429160627248.png)
+
+值得注意的是，即使是在匿名函数中使用await关键字，也要在匿名函数前加上async关键字。
+
+**此外，上面的代码不能保证顺序执行。**
+
+#### 3．for of循环
+
+![image-20210429160836820](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429160836820.png)
+
+另一方面，如果异步方法的执行全都变成串行的话，就不能发挥出**Node非阻塞IO的优势**了，如果想要使用并行来提高执行效率，那么需要使用promise.all()，前面已经介绍过了。
+
+![image-20210429161012231](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429161012231.png)
+
+### 4.5.4　async和await小结（懵）
+
+**这里有点懵** begin
+
+async函数是用async/await关键字来标识的，**async函数返回一个Promise对象，当在方法体中遇到异步操作时，会立刻返回**，随后不断轮询直到异步操作完成，随后再继续执行方法体内剩下的代码。
+
+![image-20210429161317037](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429161317037.png)
+
+上面的代码，每间隔一秒依次输出0、1、2、3、4，到了这一步，终于可以在for循环内部顺序执行多个异步操作了。
+
+读者可能注意到了，即使将timeout写成了async/await的形式，但在asyncPrint方法中依然需要使用await关键字来调用，同时也让asyncPrint函数也带上了async关键字。
+
+**通常在希望顺序处理的过程中，只要函数体中调用了async操作，该函数就不得不带上async关键字。这有可能导致所有的函数都变成async函数，就像采用同步事件处理的语言一样，还是以上面的代码为例，如果我们想要顺序调用多个asyncPrint方法，还是要使用async方法。**
+
+![image-20210429161708126](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429161708126.png)
+
+await关键字后面的代码需要是Promise对象才能使用，如果要将现有的异步流程改造成async方法，通常要先将异步操作改造成Promise。
+
+**end**
+
+#### await关键字小结
+
+- 对于await关键字使用的一些关键点如下：
+- await关键字必须位于async函数内部。
+- await关键字后面需要是一个Promise对象（不是的话就调用resolve转换它）。
+- await关键字的返回结果就是其后面Promise执行的结果，可能是resolved或者rejected的值。
+- 不能在普通箭头函数中使用await关键字，需要在箭头函数前面增加async关键字。await用来串行地执行异步操作，想实现并行可以考虑promise.all。
+
+### 4.5.5　async函数的缺点（感觉这里说得怪怪的）
+
+async函数和Generator函数比起来，有着不少的优点，例如可以实现自动执行，无须借助第三方模块等，也免去了Generator函数中一些复杂的概念，async函数的声明和执行与普通同步函数几乎一模一样（除了async和await关键字外）。
+
+乍一看async方法十分完美，可以用最简洁的方式解决异步处理，但**仍然有一些不足**。
+
+假设我们有很多层的方法调用，最底层的异步操作被封装成了async方法，那么该函数的所有上层方法可能都要变成async方法。
+
+下面就用一个例子来说明这一点：假设我们有一个get方法，用来从数据库中找出一条id最大值的记录，然后调用set方法将这个值增加1后存入数据库，然后再返回修改后的值。
+
+我们将两个操作封装在一个方法里，叫做update，显然，get应该在set之前调用，为此我们将update函数声明为async方法。
+
+![image-20210429162217447](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429162217447.png)
+
+假设update是由一个对象触发update事件时执行的回调函数，通常情况下上一级的调用会是如下形式。
+
+![image-20210429162316795](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429162316795.png)
+
+**对于async函数update来说，这种调用得不到正确的value值，因为async方法返回的永远是一个Promise，即使开发者返回的是一个常量，也会被自动调用的promise.resolve方法转换为一个Promise。**
+
+因此，上层的调用方法也要是一个async函数，如下所示。
+
+![image-20210429162435523](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429162435523.png)
+
+如果还存在更高层次的方法调用，那么从最底层的异步操作开始，到最顶层一个不需要返回值的函数为止，全部的方法都变成了async方法。
+
+**注意：then方法中回调函数的参数是 async 函数内部 return 语句返回的值**
+
+## 4.6　总结（有疑惑）
+
+本章按照时间顺序介绍了曾在回调处理中流行的方法和第三方模块，从原始的嵌套回调到现在的async方法
+
+目前我们推荐统一使用Promise作为处理异步的方式，虽然async/await看起来更加简洁，但在大型项目中开发者不一定非要使用async方法来处理异步，因为相比之下Promise更加灵活，而作为中间过渡的Generator函数，现在已经并不推荐使用了。**（现在呢？）**
+
+## 4.7　引用资源
+
+```
+http://es6.ruanyifeng.com/#docs/promise#Promise-all
+https://github.com/tj/co
+http://exploringjs.com/es2016-es2017/ch_async-functions.html
+https://pouchdb.com/2015/05/18/we-have-a-problem-with-promises.html
+http://www.ruanyifeng.com/blog/2015/05/thunk.html
+```
+
+# 第5章　使用Koa2构建Web站点
+
+## 5.0　概述
+
+在这一章，我们会试着从零开始实现一个完整的Web应用，它是一个简单的BLOG系统，具有发布、归类、展示等功能，对于入门的开发者来说这是一个合适的例子。如果读者已经有了使用其他语言开发Web应用的经验，那么对于本章的大多数概念应该都不会陌生。
+
+本章演示使用框架为Koa 2.0，它由Express的核心团队开发，目的是使用ECMAScript的最新特性来开发下一代的Web应用，要使用这些新特性，Node版本要求在7.6.0以上，建议读者安装Node的最新版本。
+
+虽然本章的重点是围绕Koa框架来展开的，但也会有一些原生的Node或者使用Express框架书写的代码，它们通常是为了便于读者更好地理解各种概念而存在的。
+
+## 5.1　Node Web框架的发展历程
+
+我们首先梳理一下Node Web框架的发展历程，从2009年到现在，最为出名的Web框架有三个。
+
+### 5.1.1　Connect
+
+Connect诞生于2010年，这个时间相当早（Node项目始于2009年），其官方描述如下：
+
+![image-20210429170323784](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429170323784.png)
+
+可以将Connect理解成一个Node中间件的脚手架，只提供了基本的调用逻辑，没有具体的处理逻辑。
+
+Connect的源码结构十分简单，只有一个文件，去掉注释后的代码不超过两百行。
+
+之所以首先提到Connect，是因为它首先在Node服务器编程中引入了**中间件（middleware）**的概念。
+
+中间件的概念并不新鲜，早就广泛存在于其他语言的开发中，例如Java Web的各种中间件，但对于当时还是一片荒芜的Node来说，中间件概念的引入有很重要的意义，因为之后产生的大多数框架都开始采用这一思路，为后面Express的诞生与繁荣打下了基础。
+
+中间件的引入将Web开发变成了不同模块之间的层级调用，有助于开发者将业务逻辑进行拆分。
+
+此外，**Connect的实现已经成了某种事实的规范，例如使用use方法加载中间件并且通过next方法调用中间件等**，这在Express和Koa中得以延续（这很大程度上也和三个项目的贡献者之一的TJ本人有关）。
+
+### 5.1.2　Express
+
+Express框架开发的时间也很早（2010年），它继承了Connect的大部分思想（连源码都继承了），其发展分为两个阶段，Express3.x与Express4.x。
+
+在3.x及之前的版本中，Express直接依赖Connect的源码，并且内置了不少中间件，这种做法的缺点是如果内置的中间件更新了，那么开发者就不得不更新整个Express。
+
+在4.x中，Express摆脱了对Connect的依赖，并且摒弃了除了静态文件模块之外的所有中间件，只保留了核心的路由处理逻辑以及一些其他的代码。
+
+在过去的几年中，Express取得了巨大的成功，无论是开发者的数量还是社区的活跃程度都是现象级的，MEAN架构（MongoDB+Express+Angular+Node）成为了不少初创网站的开发首选，至今依旧非常流行。
+
+### 5.1.3　Koa
+
+#### express 存在问题
+
+但是Express依旧存在不少问题，面对异步中间件的层级调用，往往还要借助第4章的那一套东西去解决（这种情况已经在ES2015及Node v7.6.0之后有所改善）。
+
+在某些需要同步调用的场景下处理异步让人窝火，开发者往往会在这上面耗费大量的时间，而不是把主要精力放在业务逻辑上。
+
+
+
+因此在2013年底，Express的原班开发人马使用ES2015中的新特性（主要是Generator）重新打造了新的Web框架——Koa，Koa的初衷就是彻底解决在Node Web开发中的异步问题，在ES2015还没有被Node完全支持的时候，运行Koa项目需要在启动Node时加上--harmony参数。
+
+Koa的理念与Connect更加相似，内部没有提供任何中间件，Express中保留的静态文件和路由也被剔除，仅仅作为中间件的调用的脚手架。
+
+Koa的发展同样存在Koa1.x和Koa2两个阶段，两者之间的区别在于Koa2使用了ES2017中async方法来处理中间件的调用（Koa1.x使用的是generator），该特性已经在v7.6.0之后的Node版本中提供原生支持。
+
+Connect、 Express、 Koa这三个框架可谓一脉相承，Connect目前已经少有人问津，Express和Koa占据了绝大部分的市场。
+
+## 5.2　内容规划
+
+### 5.2.1　需求分析
+
+#### 1．上传文章
+
+文章实现的博客系统里，采用本地编写文章，然后上传到网站上的方式实现，这能让我们更关注路由和数据库存储方面的内容。每一篇博客都有ID以及kind两个属性，ID可以是自增的，也可以是一串随机的字符串。
+
+#### 2．路由设计
+
+初步设计的路由如表5-1所示，我们会随时对其进行补充。
+
+![image-20210429171128938](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429171128938.png)
+
+### 5.2.2　技术选型
+
+传统的Web开发分为前后端，前端使用HTML/JS/CSS配套进行页面设计，后端使用Java、Python等来进行数据处理，对于本书来说，唯一的区别在于后端语言换成了Node。
+
+为了实现这个目标网站，我们需要解决下面几个问题：
+
+- 静态文件服务
+- 路由设计
+- 数据存储
+- 页面渲染（使用页面模板还是框架）
+
+本章使用的技术栈为Node+Koa+Mongo+Redis+Ejs，它们分别扮演的角色如下所示：
+
+- Node：开发语言。
+- Koa：Web开发框架。
+- MongoDB：基础的数据存储服务。
+- Redis：主要用来存储Session。
+- Ejs：页面模板引擎。
+
+对于本章的实现来说，Redis不是必需的，但因为其在Web领域应用十分广泛，因此花了一些篇幅进行介绍。
+
+**为什么不是Express**
+
+相比Express，Koa足够“新”，不仅体现在诞生时间，还有使用的最新特性，更能贴合本书的理念。
+
+## 5.3　Koa入门
+
+### 5.3.1　Koa1.x与Koa2
+
+前面已经提到，Koa1.x和Koa2的主要区别在于前者使用Generator，后者使用async方法来进行中间件的管理。
+
+在Web开发中，尽管Node本身是异步的，但我们还是希望能够顺序执行某些操作，而且代码实现要尽可能简洁。例如在收到HTTP请求时，我们希望先将请求信息写入日志，接着进行数据库相关的操作，最后返回对应的结果。
+
+**在实际开发中，这些操作会抽象为一个个中间件，通常都是异步进行调用的，我们的问题就回到了如何控制中间件的调用顺序上。**
+
+在Koa1.x的版本中，由于当时ES2017还没有影子（2013年底），因此使用了ES2015提案中的Generator函数来作为异步处理的主要方式。为了实现Generator的自动执行，还使用了上一章介绍的co模块作为底层的执行器——它们都是出自同一作者之手。
+
+**下面是一个Koa1.x的例子。**
+
+**代码5.1　Koa 1.x示意**
+
+![image-20210429171938549](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429171938549.png)
+
+当用户访问localhost:3000时，首先打印出hello world，再输出log信息。
+
+Koa1.x对中间件的处理基于co模块，这仍然是一种比较hack（陈旧的）的方法。
+
+ES2017的草案里增加了async函数，Koa为此发布了2.0版本，这个版本舍弃了Genrator函数和co模块，完全是使用async函数来实现的，async函数在Nodev7.6.0之后才得到了完整的支持，**因此要使用Koa2进行开发，本地的Node环境最好大于7.6.0。**
+
+除此之外，**Koa和Express最大的不同之处在于Koa剥离了各种中间件，这种做法的优点是可以让框架变得更加轻量，缺点就是Koa发展时间还较短，各种中间件质量参差不齐，1.x和2.x的中间件也存在一些兼容性问题，但对于多数常用的中间件来说，都已经实现了对Koa2.0的支持。**
+
+在Koa项目的GitHub主页https://github.com/Koajs中，列出了Koa项目本身和被一些官方整理的中间件列表，开发者也可以在GitHub中搜索，查找比较活跃的中间件。
+
+在本章中，我们主要介绍Koa2的使用，在后面内容里提到的Koa均代表Koa2.0。
+
+### 5.3.2　context对象
+
+**代码5.2　使用Koa2.0创建http服务器**
+
+![image-20210429172344960](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172344960.png)
+
+**Node提供了request(IncomingMessage)和response(ServerReponse)两个对象，Koa把两者封装到了同一个对象中，即context，缩写为ctx。**
+
+context中封装了许多方法和属性，大部分是从request和response对象中使用委托方式得来的，下面列出了ctx对象封装的一些属性以及它们的来源：
+
+#### 1．From request
+
+![image-20210429172510919](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172510919.png)
+
+#### 2．From response
+
+![image-20210429172525142](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172525142.png)
+
+**除了自行封装的属性外，ctx也提供了直接访问原生对象的手段，ctx.req和ctx.res即代表原生的request和response对象，例如ctx.req.url和ctx.url就是同一个对象。**
+
+除了上面列出的属性之外，ctx对象还自行封装了一些对象，例如ctx.request和ctx.response，它们和原生对象之间的区别在于里面只有一部分常用的属性，我们可以试着将原生对象和ctx封装后的对象分别打印出来进行比较：
+
+![image-20210429172644130](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172644130.png)
+
+访问localhost:3001，打印ctx.request的内容如下：
+
+![image-20210429172656515](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172656515.png)
+
+ctx.response的内容如下：
+
+![image-20210429172714538](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172714538.png)
+
+可以看出，二者的结构和原生对象还是有很大区别的，**ctx.response只有最基本的几个属性，上面没有注册任何事件或方法**，这表示下面的使用方法是错误的：
+
+![image-20210429172748787](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172748787.png)
+
+代码要改成：
+
+![image-20210429172916053](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429172916053.png)
+
+#### 3．ctx.state
+
+state属性是官方推荐的命名空间，如有开发者从后端的消息想要传递到前端，可以将属性挂在ctx.state下面，这和react中的概念有些相似，例如我们从数据库中查找一个用户id：
+
+![image-20210429173025270](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429173025270.png)
+
+#### 4．其他的一些属性和方法
+
+![image-20210429173039522](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429173039522.png)
+
+#### 5．处理http请求
+
+上面的内容也提到，Koa在ctx对象中封装了request以及response对象，那么在处理http请求的时候，使用ctx就可以完成所有的处理。
+
+在上面的代码中，我们使用：
+
+![image-20210429173233110](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429173233110.png)
+
+相当于：
+
+![image-20210429173243751](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429173243751.png)
+
+ctx相当于ctx.request或者ctx.response的别名，判断http请求类型可以通过ctx.method来进行判断，get请求的参数可以通过ctx.query获取。
+
+例如，当用户访问localhost:3000?kindName=Node时，可以设置如下的路由。
+
+##### 代码5.3　获取get请求参数
+
+![image-20210429173504011](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429173504011.png)
+
+Koa处理get请求比较简单，直接通过ctx.req.<param>就能拿到get参数的值，**post请求的处理稍微麻烦一些，通常使用bodyParser这一中间件进行处理，但也仅限于普通表单，获取格式为ctx.request.body.<param>（文件上传在后面介绍）。·**
+
+例如我们构造一个简单的form用来输入用户名和密码：
+
+![image-20210429173609715](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429173609715.png)
+
+服务端相应路由的代码就可以写成：
+
+![image-20210429173623057](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429173623057.png)
+
+## 5.4　middleware
+
+### 5.4.1　中间件的概念
+
+在介绍Koa中间件之前，我们暂时先把目光投向Express，因为Koa中间件的设计思想大部分来自Connect，而Express又是基于Connect扩展而来的。
+
+Express本身是由路由和中间件构成的，**从本质上来说，Express的运行就是在不断调用各种中间件**。
+
+**中间件本质上是接收请求并且做出相应动作的函数**，该函数通常接收req和res作为参数，以便对request和response对象进行操作，在Web应用中，客户端发起的每一个请求，首先要经过中间件的处理才能继续向下。
+
+**中间件的第三个参数一般写作next，它代表一个方法，即下一个中间件。如果我们在中间件的方法体中调用了next方法，即表示请求会经过下一个中间件处理。**
+
+**例如下面的函数就可以拿来做一个中间件。**
+
+![image-20210429174205423](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429174205423.png)
+
+#### 1．中间件的功能
+
+由于中间件仍然是一个函数，那么它就可以做到Node代码能做到的任何事情，除此之外还包括了修改request和response对象、终结请求-响应循环，以及调用下一个中间件等功能，这通常是通过在内部调用next方法来实现的。**如果在某个中间件中没有调用next方法，则表示对请求的处理到此为止，下一个中间件不会被执行。**
+
+#### 2．中间件的加载
+
+中间件的加载使用use方法来实现，该方法定义在Express或者Koa对象的实例上，例如加载上面定义的中间件md：
+
+![image-20210429174737963](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429174737963.png)
+
+#### 3．Express中的中间件
+
+Express应用可使用如下几种中间件：
+
+- 应用级中间件
+- 路由级中间件错误处理中间件？
+- 内置中间件
+- 第三方中间件
+
+上面是官网的分类，实际上这几个概念有一些重合之处。
+
+##### （1）应用级中间件
+
+使用app.use方法或者app.METHOD()（Method表示http方法，即get/post等）绑定在app对象上的中间件。
+
+**代码5.4　Express中间件示例**
+
+![image-20210429175039077](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429175039077.png)
+
+在第一个中间件中调用了next方法，因此会转到第二个中间件，第二个由于没有调用next方法，其后的中间件都不会执行。
+
+##### （2）路由级中间件
+
+和Koa不同，路由处理是Express的一部分，通常通过router.use方法来绑定到router对象上：
+
+![image-20210429175137171](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429175137171.png)
+
+##### （3）错误处理中间件
+
+错误处理中间件有4个参数，即使不需要通过next方法来调用下一个中间件，也必须在参数列表中声明它，否则中间件会被识别为一个常规中间件，不能处理错误。
+
+![image-20210429175453369](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210429175453369.png)
+
+##### （4）内置中间件
+
+从4.x版本开始，Express已经不再依赖Connect了。除了负责管理静态资源的static模块外，Express以前内置的中间件现在已经全部单独作为模块安装使用。
+
+##### （5）第三方中间件
+
+第三方中间件可以为 Express 应用增加更多功能，通常通过npm来安装，例如获取Cookie信息常用的cookie-parser模块，或者解析表单用的 bodyParser 等。
+
+Koa没有任何内置的中间件，连路由处理都没有包括在内，所有中间件都要通过第三方模块来实现，比起Express来，其实更像是Connect。
+

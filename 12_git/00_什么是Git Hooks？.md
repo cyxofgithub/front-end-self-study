@@ -370,3 +370,15 @@ git reflog 查看所有分支记录
 
 git rest -- hard 版本号 （回到回来的版本）
 
+#  git push 和 pull request 的区别
+
+## 1、pull request
+
+A负责a分支，B负责b分支
+ 如果提交一致或者b分支比a分支多了一个提交，那么b的z文件和a对应z文件数据不一致，b新的commit后，push后z文件可以覆盖上去。如果a比b多了一个提交，并且该提交涉及到了修改z文件，那么b也修改z文件 b->pull request->a后，该文件会冲突，如果b没有修改z文件，就不会冲突，可以pull request。
+ pr感觉就是，以文件为单元，谁最后一次修改了某个文件，谁就是该文件的老大，只要别人pr时没碰该文件，随你怎么pr
+
+## 2、push
+
+A、B同时负责a分支，谁的commit再前边，另外一个push必然提示冲突。
+ push感觉就是，以commit为单元，谁最后一次对项目commit，谁就是该项目的老大，别人不能随便push
