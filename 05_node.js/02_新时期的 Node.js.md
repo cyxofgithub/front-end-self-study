@@ -2779,3 +2779,408 @@ Express应用可使用如下几种中间件：
 
 Koa没有任何内置的中间件，连路由处理都没有包括在内，所有中间件都要通过第三方模块来实现，比起Express来，其实更像是Connect。
 
+### 5.4.2　next方法
+
+无论是 Express 还是 Koa，中间件的调用都是通过 next 方法来执行的，该方法最早在 Connect 中提出，并被 Express 和Koa 沿用。
+
+**当我们调用 app.use 方法时，在内部形成了一个中间件数组，在框架内部会将执行下一个中间件的操作放在 next 方法内部，当我们执行next方法时，就会执行下一个中间件。如果在一个中间件中没有调用next方法，那么中间件的调用会中断，后续的中间件都不会被执行。**
+
+对于整个应用来说，next方法实现的无非就是嵌套调用，也可以理解成一个递归操作，执行完next对应的中间件后，还会返回原来的方法内部，继续向下执行后面的方法。具体的实现会在Koa源码分析一节介绍。
+
+如图5-1所示，下面这张“洋葱图”很形象地解释了Koa中间件的工作原理，对于request对象，首先从最外围的中间件开始一层层向下，到达最底层的中间件后，再由内到外一层层返回给客户端。每个中间件都可能对request或者response对象进行修改。
+
+![image-20210504102101182](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504102101182.png)
+
+### 5.4.3　中间件的串行调用
+
+接下来讲述的是 Koa 设计的核心部分，在 Web 开发中，我们通常希望一些操作能够串行执行，例如等待写入日志完成后再进行数据库操作，最后再进行路由处理。在技术层面，上面的业务场景表现为串行调用某些异步中间件。
+
+比较容易想到的一种做法是把next方法放到回调里面，但如果异步操作一多，就又回到了第4章的问题。
+
+下面的代码定义了两个Express中间件，和之前不同之处在于第二个中间件中调用了process.nextTrick()，表示这是一个异步操作。
+
+**代码5.5　Express的异步中间件**
+
+![image-20210504102306865](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504102306865.png)
+
+按照上面的原理，next方法在执行完毕后返回上层的中间件，那么应该先执行middleware2，然后再执行middleware1；但由于第二个中间件内的process.nextTick是一个异步调用，因此马上返回到第一个中间件，继续输出I ammiddleware1，然后中间件二的回调函数执行，输出I am middleware2。
+
+我们前面也已经提到了，在有些情况下，**我们可能希望等待middleware2执行结束之后再输出结果。而在Koa中，借助async/await方法，事情变得简单了。**
+
+**代码5.6　Koa中使用async组织的异步中间件**
+
+![image-20210504102524873](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504102524873.png)
+
+使用await关键字后，直到next内部的异步方法完成之前，midddlware1都不会向下执行。
+
+下面我们来看一个具体例子的分析，这个例子反映了一种常见的需求，即**设置整个app的响应时间**。
+
+### 5.4.4　一个例子——如何实现超时响应
+
+#### 1．Express中的超时响应
+
+下面我们来介绍一个更贴近具体业务的例子。在Web开发中，我们希望能给长时间得不到响应的请求返回特定的错误信息。
+
+如果是在Express中，可以使用**connect-timeout**这一第三方中间件来处理响应超时，该中间件实现很简单，读者可以自行在GitHub上参阅其源码，下面是一段使用connect-timeout进行超时响应的示意代码。
+
+**代码5.7　Express中的超时响应**
+
+![image-20210504102740439](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504102740439.png)
+
+该中间件的实现很简单，timeout内部定义了一个定时器方法，如果超过定时器规定的时间限制，就会触发错误事件并返回一个503状态码，并且haltOnTimedout后面的中间件不再执行。
+
+如果在定时器触发前完成响应，就会取消定时器。
+
+这种做法虽然看起来能解决超时问题，但仔细想一想缺点也很明显，在timeout方法中只定义了一个简单的定时器，如果中间件中包含了一个异步操作，那么容易在调用回调方法时出现问题。
+
+假设timeout加载后又引入了一个名为queryDB的中间件，该中间件封装了一个异步的数据库操作，并且将查询的结果作为响应消息返回。
+
+queryDB在大多数状态下很快（1秒内）就能完成，但有时会因为某些原因（例如被其他操作阻塞）导致执行时间变成了10秒，这时timeout中间件已经将超时信息返回给了客户端，如果queryDB内部包含了一个res.send方法，就会出现Can't setheaders after they are sent的错误。
+
+要解决这个问题，比较妥当的方式是通过事件监听的方式，如果超时之后触发该事件，那么取消之后的全部操作，或者直接修改res.end方法，在其中设置一个flag用来判断是否已经调用过。
+
+**上面问题的根本原因是connect-time，或者是Express没办法对异步中间件的执行进行很好的控制。**
+
+#### 2．Koa中的超时响应(还不太懂)
+
+借助async方法中间件会按照顺序来执行，这时进行timeout管理就比较方便了，目前社区也有koa-timeout等一些中间件，读者可以自行去探索使用，也可以考虑自己实现，毕竟这样的中间件实现难度并不大。
+
+下面是笔者自己实现的一个例子，核心思想是使用promise.race方法来比较setTimeout和之后的中间件哪个会更快完成。
+
+**代码5.8　Koa的timeout中间件**
+
+![image-20210504103606886](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504103606886.png)
+
+如果我们想用上面的代码管理超时，queryDB需要返回一个Promise对象或者是async方法。
+
+## 5.5　常用服务的实现
+
+### 5.5.1　静态文件服务
+
+第2章已经介绍了使用原生http和fs模块实现的静态文件服务，在Web开发中通常不会使用自己封装的方法，这里选择 **koa-static** 作为处理静态文件的中间件。
+
+**代码5.9 koa-static**
+
+![image-20210504103756098](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504103756098.png)
+
+static模块的使用比较简单，规划好静态文件存放的路径，使用app.use挂载在应用上即可。上面的代码中，__dirname+ "/static/html"表示静态文件存放的路径，当接收到请求后，会在该路径下进行查找。
+
+Serve方法还可以接收一个对象作为第三个参数，表示将查找文件的范围限定在指定后缀名范围内。例如，我们在代码5.9中设置了**{extensions: ['html']}**，那么在访问文件时就可以**省略文件后缀名**。
+
+例如，我们要访问根目录下的login.html，就可以使用：
+
+![image-20210504103900563](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504103900563.png)
+
+### 5.5.2　路由服务
+
+Express的路由中间件是集成在框架内部的，因此可以直接使用如下的代码：
+
+![image-20210504103942872](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504103942872.png)
+
+Koa中的路由处理要借助第三方模块来实现，这里使用**Koa-router**，和Express中注册路由的写法相同，**router对象分别使用get和post方法来处理get和post请求**。
+
+下面是一个使用Koa-router的例子：
+
+![image-20210504104045081](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504104045081.png)
+
+上面的代码中，我们定义了两个路由，接收到get请求后向前端渲染一个form表单用于登录，当用户单击submit提交后，router接收到post请求后使用ctx.request.body对象来解析表单中的字段，该对象是router中间件提供的访问接口。
+
+因为router也是中间件，因此要使用app.use()来挂在app对象中。此外，**bodyPaser要在router之前加载才能生效**。Koa-router同样支持定义多种形式的路由，下面是一些例子。
+
+![image-20210504104343499](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504104343499.png)
+
+上面代码里:category和:title实际上起到了get参数的作用，这种REStful风格的地址传递相比使用？category=XX &title=XX的形式更加简洁，要获取这种形式的参数，可以使用ctx.params对象，例如：
+
+![image-20210504104452402](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504104452402.png)
+
+### 5.5.3　数据存储
+
+在网站的规划中，我们使用 id 这一唯一属性来定位一篇博客，而博客是以 HTML 文件形式存储在 static 文件夹下的，文件名是博客的标题。
+
+为了管理id和文件名以及文件分类之间的映射关系，我们引入了MongoDB来作为数据存储的介质，关于MongoDB相关的介绍可以参考附录。
+
+在介绍具体实现bloglist这一集合之前，我们先来看看MongoDB相关的内容。
+
+#### 1．使用Mongoose访问MongoDB
+
+**Hibernate** 是一种 ORM（Object Relational Mapper），它提供了Java 对象与关系型数据库表的映射关系，使得开发者能编写更高效率的代码而不是直接使用JDBC来连接数据库。
+
+在这一点上，Mongoose 和 Hibernate 相似，它同样为 Node 提供了访问 MongoDB 的接口，它将 MongoDB 中的collection 映射到了Node的代码中。
+
+**Mongoose 和 Hibernate 的不同之处在于** Mongoose 是一种 ODM（Object Document Mapper），提供的是对象和文档数据库（Document Database）之间的映射关系，有兴趣的读者可以自行探索二者的区别，这里不做介绍。
+
+#### 2．Mongoose的使用
+
+在项目目录下运行下面命令：
+
+![image-20210504104957875](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504104957875.png)
+
+安装成功后，准备连接数据库，确保 MongoDB 的本地实例已经开始运行后，就可以准备用代码连接 MongoDB 了。
+
+新建文件db.js，开头增加如下代码：
+
+![image-20210504105042667](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504105042667.png)
+
+连接到数据库后，需要检测连接状态，用来应付可能出现的错误或异常，在 db.js 中增加如下代码：
+
+**代码5.10　检测连接状态**
+
+![image-20210504105254893](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504105254893.png)
+
+上文提到，Mongoose 自身定义了一些数据结构来实现 Node 代码与 MongoDB 的映射要使用 Monggose，首先要明确schema、model 的概念：
+
+- schema：一种以文件形式存储的数据库模型骨架，不具备数据库的操作能力。
+- model：由 schema 发布生成的模型，具有抽象属性和行为的数据库操作对。
+
+如果使用关系型数据库来类比的话，schema 大致相当于关系型数据库中的一张表，每个 schema 中定义了若干字段。
+
+而 model 则可以看作是 SQL 语句的抽象，只能定义在一个schema上，MongoDB 的增删改查操作都是通过model来进行的。
+
+为了更好地理解，我们来实际操作一番，首先在数据库中定义一个名为 login 的 collection，它包含两个字段：username、password。
+
+然后在db.js中增加下面的代码，关于数据库相关的操作都会放在这个文件中。
+
+##### **代码5.11　定义一个schema**
+
+![image-20210504105837797](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504105837797.png)
+
+上面的代码里，我们首先声明了一个schema，schema内有username和password两个字段，schema相当于collection的骨架，schema中声明的字段必须包含在想要关联的collection中，如果collection中的字段非常多，也可以只关联部分字段，在数据更新的时候，未关联的字段的值默认为空。
+
+随后在第4行，在这个schema上调用Model的构造方法初始化了一个model，该构造方法的定义如图5-2所示。
+
+![image-20210504105953367](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504105953367.png)
+
+之所以在这里介绍这个方法的定义，原因是该方法的第三个参数才是MongoDB中对应collection的名字，如果漏掉了第三个参数，形如：
+
+![image-20210504110023222](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504110023222.png)
+
+Mongoose会自动创建一个名为logins的collection，相当于model名称的复数形式，那么之后在使用collection的时候就会发现一个预期之外的collection，Mongoose文档中也指出了这一点。
+
+![image-20210504110048896](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504110048896.png)
+
+关于Mongoose为什么这样做，其本意应该是希望开发者可以使用统一的Mongoose API作为访问接口来操作MongoDB，实践也证明了只要使用model接口就完全不需要直接调用底层的collection。
+
+定义好model之后，调用model的save方法将数据存储在对应的collection中。接下来如果想要查询已经存储的数据，代码如下：
+
+##### **代码5.12　使用Mongoose查询**
+
+![image-20210504110146433](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504110146433.png)
+
+doc 对象是一个包含所有结果集的数组，如果数据库中只有一条对应的记录，可以使用doc[0]来取出。
+
+此外，Mongoose是默认支持Promise规范的，这就代表我们可以用ES201X的一些新语法来编写数据库代码。
+
+#### 3．博客系统的数据库准备
+
+在编写代码之前，首先要明确有哪些数据需要存储。
+
+除了存储通常的登录信息外，我们需要维护一个关于博客信息的collection，该collection有如下字段：
+
+- title：文章标题。
+- kind：文章分类。
+- id：文章id。
+
+如读者所见，在本节定义的collection中，我们只维护了一张信息表，至于博客文章的内容本身，暂且将它们视为静态文件放在static/blogs文件夹下。
+
+#### 4．Schema的定义
+
+在目前的实现中，一共定义了两个schema，分别是 login 和 blogList，login 只负责登录，blogList 则被用作博客相关的操作。
+
+![image-20210504110544588](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504110544588.png)
+
+#### **5．数据查询的实现**
+
+数据查询分为两个阶段，第一阶段是数据库查询并返回结果，第二阶段是前端页面根据返回的json字符串渲染出对应的页面元素。
+
+当访问我们的博客网站时，首先会被默认导航至首页——博客列表。这里以文章的分类作为条件进行查询，如果用户没有选择任何分类，则返回全部文章。
+
+下面是查询部分的代码。
+
+**代码5.13　查询某个分类下的全部文章**
+
+![image-20210504110740155](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504110740155.png)
+
+该方法返回一个包含着若干对象的数组，可以直接用来被前端解析。
+
+### 5.5.4　文件上传
+
+处理文件的上传，大致分为下面的两步：
+
+- （1）路由收到前端的post请求，将文件存储在static目录下。
+- （2）将form中的文件名、类别信息写入数据库，并赋给这篇博客一个用于访问的id。
+
+文件的上传我们使用**formidable**来实现，formidable是一个著名的用来处理文件上传的第三方模块，被广泛地用在Node Web应用中（不过也因为历时过长导致开发者没什么热情继续维护了，我们会在接下来提到这一点）。
+
+负责处理文件上传的模块**upload.js**如下，dealUpload是被对应的路由调用的方法，如果读者愿意，也可以将其实现成一个中间件。
+
+**代码5.14　upload.js**
+
+![image-20210504111256513](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504111256513.png)
+
+下一步是将博客信息写入数据库，我们计划给每一篇博客增加id，这一属性是从1开始自增的，因此在插入新的数据前，要获取数据库中最大的id。
+
+**代码5.15　查找ID的最大值**
+
+![image-20210504111358921](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504111358921.png)
+
+在上面的代码中使用了两个async方法，queryMaxID方法使用了一条链式查询：
+
+![image-20210504111418021](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504111418021.png)
+
+在mongodb中没有其他数据库里的max或者min方法来取最大值和最小值，惯用的做法是先按照id进行排序，然后取第一条。
+
+#### 1．对文章的修改
+
+下面要实现的功能是文章的删除和修改，由于我们没有实现一个线上的文本编辑器，因此只能删除一篇文章或者修改文章的分类。
+
+对应的路由代码以及相关的数据库操作：
+
+![image-20210504111553781](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504111553781.png)
+
+**代码5.16　删除和修改blog的分类**
+
+![image-20210504111648544](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504111648544.png)
+
+#### 2．使用MongoDB存储文件内容
+
+在目前的系统中，我们将文章以静态文件的形式存放在目录下，在实践中通常是不安全的，通常需要将其存在数据库中，博客文章存储在数据库中通常还要经过加密，我们这里省略了这一步。
+
+本章的网站采取用户本地上传的做法，那么在用户上传成功后，就要将文件内容写入数据库中。
+
+**代码5.17　在文件上传成功后写入数据库**
+
+![image-20210504111929364](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504111929364.png)
+
+此外，还要修改upload.js。
+
+![image-20210504112107714](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504112107714.png)
+
+当成功上传一个文件后，在MongoDB中查询如图5-3所示。
+
+![image-20210504112131148](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504112131148.png)
+
+#### 3．文章内容的读取
+
+当用户单击页面元素试图打开文章时，我们需要用id作为参数在数据库中进行查询。
+
+![image-20210504112157789](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504112157789.png)
+
+我们已经看到文章的存储形式，整片文章都是使用字符串的形式来存储的，对于Koa而言，直接使用：
+
+![image-20210504112215693](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504112215693.png)
+
+就能在前端返回文章内容，目前我们的文章访问是交给静态文件来处理的，需要新增相应的路由。
+
+**代码5.18　打开博客内容的路由设计**
+
+![image-20210504112338199](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504112338199.png)
+
+### 5.5.5　页面渲染
+
+## 5.6　构建健壮的Web应用
+
+### 5.6.1　上传文件验证
+
+允许用户上传文件其实是很危险的操作，因为你无法期望所有用户都能上传有效合法的文件，因此有必要对上传文件进行验证。
+
+#### 1．限制文件类型
+
+对于我们的博客网站，文件类型通常只有js/html/css三种类型的后缀名，再加上一些图片后缀或者pdf，系统应当对上传文件的后缀名进行检查，如果不是上述类型的文件名后缀，应该拒绝服务并返回错误码。对文件类型的验证通常在客户端完成，读者可以根据自己的需求来设定。
+
+#### **2．限制文件大小**
+
+对于网站来说，通常在任何情况下都应该避免大文件的上传，如果服务器对上传的文件没有进行正确的处理，很容易就会出现内存不足的情况，过大的文件也会浪费服务器磁盘空间。
+
+验证文件的大小可以通过两个方面来进行：
+
+- 第一是在客户端上传之前就对文件大小进行判断。
+- 第二是在服务器端进行处理时进行验证。
+
+**代码5.20　前端验证文件类型和大小**
+
+![image-20210504113008415](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504113008415.png)
+
+上面的JavaScript代码很简单，在提交表单前先计算文件大小，符合要求再进行下一步操作。
+
+**下面是服务器针对文件大小的验证。**
+
+**代码5.21　服务器端验证上传文件大小**
+
+![image-20210504113119430](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504113119430.png)
+
+如果上传的字节超过一定大小就拒绝接收并返回错误码，乍一看和上面的前端处理有些重复，但恶意访问者有可能篡改前端代码，因此后端的验证也是必需的。
+
+Formidable模块可以做到这一点，该模块使用流来处理上传的文件，我们可以定义一个maxFileSize属性。在处理文件流的过程中可以获得已上传的文件大小，如果超过了预设的maxFileSize值就会触发error事件并停止接收文件，此时可以返回客户端一个错误消息。
+
+**笔者在写上面的代码时，formidable在npm上的最新版本是1.1.1，在这个版本中设置maxFileSize不会生效，即使检测到了文件大小超出限制也不能取消上传。**
+
+笔者注意到GitHub上master分支的代码要比1.1.1版本要新，于是直接使用了GitHub上的代码，发现设置可以生效（这就很尴尬了）。通过比较发现，应该是GitHub上的最新代码没有即使发布到npm上面。
+
+这是一个典型的缺少社区维护者的例子，因为即使是GitHub上的代码也已经是两个月之前提交的了。
+
+### 5.6.2　使用Cookie进行身份验证
+
+我们至今开发出来的站点是无状态的，在这一节会增加权限控制相关的内容。就笔者的观察，大型项目中的权限系统总是问题最多并且最难管理，即使是像本章这样的个人站点，想实现完善的权限控制也不是容易的事。
+
+#### 1．关于Cookie
+
+Cookie是在RFC2109（已废弃，被RFC2965取代）里初次被描述的，是为了辨别用户信息而存储在客户端的数据。
+
+每个客户端最多保持三百个Cookie，每个域名下最多20个Cookie（实际上一般浏览器都支持更多的数量，如Firefox是50个），而每个Cookie的大小为最多4KB，不过不同的浏览器都有各自的实现。对于Cookie的使用，最重要的就是要控制Cookie的大小，不要放入无用的信息或者过多信息。
+
+**无论使用何种服务端技术，只要发送的HTTP响应中包含如下形式的字段，则视为服务器要求客户端设置一个Cookie：**
+
+![image-20210504113518266](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504113518266.png)
+
+支持Cookie的浏览器都会对此做出反应，即创建Cookie文件并保存（也可能是放在内存中），用户以后在每次发出请求时，浏览器都要判断当前所有的Cookie中有没有处于有效期（根据expires属性判断）并且匹配了path属性的Cookie信息，如果有的话，会以下面的形式加入到请求头中发回服务端：
+
+![image-20210504113552196](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504113552196.png)
+
+#### 2．Node中的Cookie
+
+Node设置Cookie很简单，response对象提供了原生的Cookie方法，其声明如下：
+
+![image-20210504113632342](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504113632342.png)
+
+#### 3．Koa中的Cookie
+
+Koa 中对 Cookie 的操作本质上还是对 Node 原生方法的封装，在之前的小节里我们列出了 ctx 对象中包含的方法，里面已经包括了 Cookie 相关的操作。
+
+![image-20210504115335660](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504115335660.png)
+
+这表示我们不用再引入 Cookie 解析的中间件进行处理，在博客系统中，我们主要针对用户登录进行 Cookie 设置。
+
+##### **代码5.22　修改route.js的代码**
+
+![image-20210504115545363](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504115545363.png)
+
+在上面的代码中，我们设置了名为LoginStatus的Cookie，之后要做的就通过Cookie来验证登录状态。
+
+##### **代码5.23　验证登录状态**
+
+![image-20210504115614434](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504115614434.png)
+
+如果按照通常的思路，validateStatus 这一方法应该放在 route.js 中，在收到路由请求后调用，例如：
+
+![image-20210504115637034](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504115637034.png)
+
+但这样做的缺点很明显，那就是在每一个路由方法中都要调用该函数，这样会带来很多重复代码。更好的做法是将其用中间件的方式来加载，这样每个路由请求都会经过该中间件。
+
+##### **代码5.24　将登录验证作为中间件来实现**
+
+![image-20210504115921149](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504115921149.png)
+
+上面的这个中间件首先会尝试获取名为loginStatus的Cookie，如果没有设置，就将请求重定向到/login路径，注意在判断的时候需要加上ctx.url!="/login"的判断，否则当用户第一次访问/login的时候，由于没有还设置cookie，就会造成循环重定向，最后在浏览器中显示一个重定向次数过多的错误。
+
+然后在root.js中挂载该中间件，注意应该在路由中间件之前加载，这样每个路由请求在处理前都要进行登录验证。
+
+![image-20210504120100098](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504120100098.png)
+
+该中间件的最终运行效果如图5-5所示。当访问localhost:3000时，浏览器页面跳转到localhost:3000/login。
+
+![image-20210504120136208](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504120136208.png)
+
+在输入正确的用户名和密码后，页面跳转至localhost:3000/blogList，如图5-6所示。
+
+![image-20210504120147530](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504120147530.png)
+
