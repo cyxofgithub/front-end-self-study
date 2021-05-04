@@ -3184,3 +3184,776 @@ Koa 中对 Cookie 的操作本质上还是对 Node 原生方法的封装，在�
 
 ![image-20210504120147530](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504120147530.png)
 
+### 5.6.3　使用Session记录会话状态
+
+关于Session，不应混淆的是 Session 规范和 Session 的实现。
+
+Session 与其说是一种规范，不如说是一种概念，**表示用户从进入到离开网络应用的这段时间内产生的动作以及上下文**。
+
+Session 并不是 HTTP 的独创，而是广泛地体现在各种网络应用和数据库操作中，例如使用 FTP 协议传输文件，那么从登录到下载文件完成然后离开的这段时间就可以称为一个 Session 。更普遍的例子，从拿起电话到拨号然后打完电话离开也是一个Session，而且更接近其语义上的概念（会话）。
+
+#### **1．HTTP 中的 Session**
+
+还是以打电话为例，HTTP 服务器就像和多数的用户同时打电话那样，然而每次说完一句话，服务器就会忘记电话那端是谁，这样的话和多个用户的通话就会带来混乱。
+
+早期的 HTTP 应用是不可交互的，用户只能浏览静态页面，用户状态的问题还没有暴露出来，随着互联网的发展，出现了更复杂的交互式应用，最好的例子就是电商网站，这时 HTTP 协议已经获得广泛的应用，想推翻重来也是不现实的。因此，对于 HTTP 协议来说，折中的方法就是利用Cookie来实现Session。
+
+**既然 Cookie 每次都要随着 HTTP 请求发给服务器，那么只要给每个 Cookie 一个唯一的 id，就能知道请求来自哪一个用户了，就像前面打电话的例子，只要每个用户在最后说一下自己的名字，服务器就能知道电话那端是谁了。**
+
+#### 2．创建Session
+
+一般来说，创建一个Session可以分为以下几步：
+
+（1）生成一个Sessionid，这个标识符是唯一的。
+
+（2）将 Sessionid 存储在内存里，这是一句废话，调用代码生成 Sessionid 后，其自然是位于内存中的，不过如果服务器一旦断电或重启，Session 的信息就会丢失，因此通常使用一些其他的技术来进行持久化，例如 Redis 来持久化。
+
+（3）将带有Sessionid的Cookie发送给客户端。
+
+#### 3．在 Koa 中使用 Session
+
+在 Koa 中使用 Session 可以考虑使用 koa-session 这一中间件，其使用方式也很简单：
+
+![image-20210504154753180](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504154753180.png)
+
+其中app.keys代表加密用的密钥，我们可以不去设置它。
+
+下面看一个简单的例子。
+
+**代码5.25　koa-seesion 的例子**
+
+![image-20210504154901187](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504154901187.png)
+
+**使用 koa-session 有一些注意点**，由于 Cookie 的设置是跟在 HTTP 响应之后，也就是说，要设置一个用作 Session 的Cookie，生成 Cookie 的操作是在：
+
+![image-20210504155015622](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155015622.png)
+
+这一行代码中进行的，之后设置了 Ctx.body 的内容，Cookie 就会随着 HTTPresponse 发送到客户端了。
+
+打开控制台，**生成的 Cookie 如图5-7所示**。
+
+![image-20210504155157787](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155157787.png)
+
+可以看到value字段的值是一个看似随机的字符串，这就是我们之后要使用的sessionid，我们可以设置一个其他的路由，检测一下服务器端的Session是否在正常工作：
+
+![image-20210504155221817](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155221817.png)
+
+得到的输出如图5-8所示。
+
+![image-20210504155300100](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155300100.png)
+
+这证明设置的Session已经在正常工作了。
+
+要在我们的网站中使用该中间件，将root.js代码修改为如下：
+
+![image-20210504155319068](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155319068.png)
+
+## 5.7　使用Redis进行持久化
+
+Redis是一个知名的key-value数据库，它由C语言实现，和MongoDB以及其他数据库不同的是Redis是一个内存数据库，关于Redis的数据类型和常用命令请参考附录D，这里不再介绍。
+
+### 5.7.1　Node和Redis的交互
+
+npm上有很多用于连接到Redis的第三方模块，我们使用最为流行的node-redis模块，使用**npm install redis**来安装。
+
+安装完成之后，我们尝试使用node来连接Redis：
+
+![image-20210504155530729](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155530729.png)
+
+运行结果如图5-9所示。
+
+![image-20210504155747711](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155747711.png)
+
+在上面的代码里，我们连接Redis成功之后，设置了一个key为name，value为lear的键值对，我们可以在命令行中查询，如图5-10所示。
+
+![image-20210504155816247](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504155816247.png)
+
+### 5.7.2　CURD操作
+
+#### 1．get
+
+node-redis 模块提供的 API 都是对应 Redis 命令的映射，除了最后的回调函数，模块方法的参数就是对应命令的参数。
+
+此外，所有的API操作都是异步的，在上面的操作中redis.print就是一个回调函数，用于打印命令的执行结果。
+
+如果我们想在代码中获取刚才设置的值，可以使用get方法。
+
+![image-20210504160142936](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160142936.png)
+
+如果想要更新数据值，也只需要再做一次set操作，原有的值就会被覆盖。
+
+#### 2．SET
+
+SET命令完整的定义如下：
+
+![image-20210504160318373](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160318373.png)
+
+例如下面的这行代码只会对一个已经存在的key进行设置，并且设置了10s的过期时间，如果Redis中还没有对应的key，回调函数会返回null。
+
+![image-20210504160341640](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160341640.png)
+
+
+可以写一段代码来验证过期时间是否有效：
+
+**代码5.26　验证set方法的过期时间**
+
+![image-20210504160426355](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160426355.png)
+
+**输出如图5-11所示。**
+
+![image-20210504160443630](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160443630.png)
+
+从输出来看，经过11s后，我们设置的key已经过期了，它已经被Redis从列表中删除。
+
+#### 3．DEL
+
+删除数据可以使用del方法：
+
+![image-20210504160621073](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160621073.png)
+
+如果试图删除一条不存在的数据，会返回一个0值。
+
+#### 4．使用Promise实现同步调用
+
+和MongoDB相同，Node对Redis的操作也都是异步进行的，这在某些情境下会变得不方便，于是我们又回到了第4章的问题上。
+
+**对于node-redis模块来说，官方推荐的是使用bluebird来进行方法的Promise化，首先通过npm安装bluebird，然后使用bluebird.promisifyAll来将全部的方法转换为Promise，这个过程十分方便。**
+
+![image-20210504160713450](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160713450.png)
+
+例如set方法的Promise版本：
+
+![image-20210504160754221](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160754221.png)
+
+将所有方法转换成Promise之后，使用async方法就成了自然而然的选择。
+
+**代码5.27　使用async方法调用Redis API**
+
+![image-20210504160836975](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504160836975.png)
+
+### 5.7.3　使用Redis持久化session
+
+现在我们开始尝试将Redis用在我们的网站中，这个过程中，由于相关的文档缺乏，有时不得不通过阅读源码的方式来得到正确的用法。
+
+要使用Redis来存储Session，仍然可以使用koa-session模块来完成；但需要做一些额外的配置。
+
+我们需要给config增加一个store属性，这是一种类似于Java中接口的设计，只要config对象声明了该属性，就必须实现set、get和destory方法。
+
+我们首先将程序的框架搭建出来，下面是修改后的config对象：
+
+![image-20210504161022578](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161022578.png)
+
+三个方法的含义正如其字面意思。
+
+#### 1．get
+
+每次当服务器收到请求时，都会触发该方法。作为参数的key值就是客户端的sessionid，get方法的作用和下面这句：
+
+![image-20210504161101182](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161101182.png)
+
+的作用是相同的。
+
+#### 2．set
+
+set方法则会在设置session时触发。该方法有三个参数：key、sess以及maxage。以之前的代码为例，当执行：
+
+![image-20210504161138465](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161138465.png)
+
+会触发 set 方法，koa-session 模块会自动生成一个 key 值，sess 即是一个完整的 session 对象，maxage 是上面 config设置的过期时间。
+
+#### 3．destroy
+
+destroy方法则是在主动调用时才会触发，用于删除一条Session记录。
+
+我们可以修改一下代码来观察koa-session在Redis配置下是如何工作的：
+
+**代码5.28　koa-seesion和Redis**
+
+![image-20210504161333068](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161333068.png)
+
+我们首先在Chrome控制台中清除所有的Cookie，再使用浏览器访问localhost:3000。
+
+可以观察到程序首先调用set方法设置了一个Cookie，如图5-12所示，id的值为KBeXlWkSbPPlh9M6F9XBVYzwn7RELCfX，值的来源是http header的useragent属性，这个key-value键值对随后被写入到Redis。
+
+![image-20210504161503328](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161503328.png)
+
+继续刷新页面，如图5-13所示。
+
+![image-20210504161516425](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161516425.png)
+
+get方法被调用，打印出key值和value的值。
+
+此时我们注意到服务器又设置了一个新的sessionid值，经过试验，发现每一次的请求都会分配一个新的sessionid。
+
+这样做会产生一些问题，在set方法中，我们会不断将新的seesionid写入到Redis中，但每次请求都会产生新的id，显然会浪费Redis的空间，例如请求10次后Redis中存储的key值会变成下面这样，如图5-14所示。
+
+![image-20210504161721025](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161721025.png)
+
+这10个值里面只有一个是有用的，我们希望针对一个客户连接只需要存储一个有用的sessionid就行了。
+
+这个时候destroy方法的作用就显示出来了，那么可以在get方法后面调用destroy方法删除没用的id。
+
+![image-20210504161814192](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161814192.png)
+
+服务器控制台输出如图5-15所示。
+
+![image-20210504161845890](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161845890.png)
+
+再使用key *命令查看存储的key值，发现只剩了一个，如图5-16所示。
+
+![image-20210504161901242](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161901242.png)
+
+在Redis中对于一个连接始终保持一个seesionid，为了验证这一点，我们可以使用别的浏览器来访问服务器地址，例如safari，再次查看Redis中存储的id，会发现多了一个，如图5-17所示。
+
+![image-20210504161933475](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504161933475.png)
+
+### 5.7.4　Redis在Node中的应用
+
+#### 消息队列
+
+一般来说，消息队列有两种场景，一种是发布者/订阅者模式，一种是生产/消费者模式。利用Redis，这两种场景的消息队列都能够实现。
+
+**生产/消费者模式**：生产者生产消息放到队列里，消费者同时监听队列，如果队列里有了新的消息就将其取走，对于单条消息，只能由一个消费者消费。
+
+**发布者订阅者模式**：发布者向某个频道（channel）发布一条消息后，多个订阅者都会收到同一份消息，这和发微博或者朋友圈的效果类似，每个订阅者收到的消息应该都是一样的。
+
+下面是一个发布/订阅的例子，关于生产/消费模型我们会在第6章进行介绍。
+
+**代码5.29　发布、订阅者模式**
+
+![image-20210504162122793](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504162122793.png)
+
+下面是订阅者的代码：
+
+![image-20210504162150250](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504162150250.png)
+
+## 5.8　Koa源码剖析
+
+本节主要从源码的角度来讲述Koa，尤其是其中间件系统是如何实现的。
+
+跟Express相比，Koa的源码异常简洁，Express因为把路由相关的代码嵌入到了主要逻辑中，因此读Express的源码可能长时间不得要领，而直接读Koa的源码几乎没有什么障碍。
+
+Koa的主要代码位于根目录下的lib文件夹中，只有4个文件，去掉注释后的源码不到1000行，下面列出了这4个文件的主要功能。
+
+- Request.js：对http request对象的封装。
+- Response.js：对http response对象的封装。
+- Context.js：将上面两个文件的封装整合到context对象中。
+- Application.js：项目的启动及中间件的加载。
+
+### 5.8.1　Koa的启动过程
+
+首先回忆一下一个Koa应用的结构是什么样子的。
+
+![image-20210504162616888](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504162616888.png)
+
+Koa的启动过程大致分为以下三个步骤：
+
+- 引入Koa模块，调用构造方法新建一个app对象。
+- 加载中间件。
+- 调用listen方法监听端口。
+
+我们逐步来看上面三个步骤在源码中的实现。
+
+首先是类和构造函数的定义，这部分代码位于Application.js中。
+
+**代码5.30　Application.js类定义**
+
+![image-20210504162706924](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504162706924.png)
+
+首先我们注意到该类继承于Events模块，然后当我们调用Koa的构造函数时，会初始化一些属性和方法，例如以context/response/request为原型创建的新的对象，还有管理中间件的middleware数组等。
+
+### 5.8.2　中间件的加载
+
+上节我们也提到过，中间件的本质是一个函数。**在Koa中，该函数通常具有ctx和next两个参数，分别表示封装好的res/req对象以及下一个要执行的中间件**，当有多个中间件的时候，本质上是一种嵌套调用，就像前面的洋葱图一样。
+
+Koa和Express在调用上都是通过调用app.use()的方式来加载一个中间件，但内部的实现却大不相同，我们先来看Application.js中相关方法的定义。
+
+##### **代码5.31　use方法的定义**
+
+![image-20210504162911083](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504162911083.png)
+
+Koa在application.js中维持了一个middleware的数组，如果有新的中间件被加载，就push到这个数组中，除此之外没有任何多余的操作，相比之下，Express的use方法就麻烦得多，读者可以自行参阅其源码。
+
+此外，该方法中还增加了isGeneratorFunction判断，这是为了兼容Koa1.x的中间件而加上去的，在Koa1.x中，中间件都是Generator函数，Koa2使用的async函数是无法兼容之前的代码的，因此Koa2提供了convert函数来进行转换，关于这个函数我们不再介绍。
+
+##### **代码5.32　Application.js对中间件的调用**
+
+![image-20210504163017887](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163017887.png)
+
+可以看出关于中间件的核心逻辑应该位于compose方法中，该方法是一个名为Koa-compose的第三方模块https://github.com/Koajs/compose，我们可以看看其内部是如何实现的。
+
+**该模块只有一个方法compose，调用方式为compose([a, b, c, ...]) ，该方法接受一个中间件的数组作为参数，返回的仍然是一个中间件（函数），可以将这个函数看作是之前加载的全部中间件的功能集合。**
+
+##### 代码5.33　核心方法——compose
+
+![image-20210504163129928](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163129928.png)
+
+该方法的核心是一个递归调用的dispatch函数，为了更好地说明这个函数的工作原理，这里使用一个简单的自定义中间件作为例子来配合说明。
+
+![image-20210504163209956](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163209956.png)
+
+可以看出这个中间件除了打印一条消息，然后调用next方法之外，没有进行任何操作，我们以该中间件为例，在Koa的app.js中使用app.use方法加载该中间件两次。
+
+![image-20210504163250528](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163250528.png)
+
+上面我们也提到，**app真正实例化是在调用listen方法之后，那么中间件的加载同样位于listen方法之后。**
+
+那么compose方法的实际调用为compose[myMiddleware,myMiddleware]，在执行dispatch(0)时，该方法实际可以简化为：
+
+##### 代码5.34　简化后的compose方法
+
+![image-20210504163409215](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163409215.png)
+
+可以看出compose的本质仍是嵌套的中间件。
+
+### 5.8.3　listen()方法
+
+这是app启动过程中的最后一步，读者会疑惑：为什么这么一行也要算作单独的步骤，事实上，上面的两步都是为了app的启动做准备，**整个Koa应用的启动是通过listen方法来完成的**。下面是application.js中listen方法的定义。
+
+![image-20210504163506075](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163506075.png)
+
+上面的代码就是listen方法的内容，可以看出第3行才真正调用了http.createServer方法建立了http服务器，参数为上节callback方法返回的handleRequest方法，源码如下所示，该方法做了两件事：
+
+- 封装request和response对象。
+- 调用中间件对ctx对象进行处理。
+
+![image-20210504163738964](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163738964.png)
+
+### 5.8.4　next()与return next()
+
+在上节自定义的中间件validateCookie中，最后调用了return next方法来调用下一个中间件（router），如果将return去掉，再访问localhost:3000/login就会显示not found，同时控制台打印出提示：
+
+![image-20210504163846138](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504163846138.png)
+
+现在我们就接着这个话题来进行深入研究。
+
+我们前面也提到过，Koa对中间件调用的实现本质上是嵌套的promise.resolve方法，我们可以写一个简单的例子。
+
+**代码5.35　简单的中间件示例**
+
+![image-20210504164007615](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504164007615.png)
+
+代码5.35在第一行定义的变量ctx，我们可以将其看作Koa中的ctx对象，经过中间件的处理后，ctx的值会发生相应的变化。
+
+我们定义了md1和md2两个中间件，md1没有做任何操作，只调用了next方法，md2则是对ctx执行加一的操作，那么在最后的then方法中，我们期望ctx的值为2。
+
+**我们可以尝试运行上面的代码，最后的结果却是undefined，在md1的next方法前加上return关键字后，就能得到正常的结果了。**
+
+在Koa的源码application.js中，callback方法的最后一行：
+
+![image-20210504164135126](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504164135126.png)
+
+中的fn(ctx)相当于代码5.35中第8行声明的Promise对象p，被中间件方法修改后的ctx对象被then方法传给handleResponse方法返回给客户端。
+
+每个中间件方法都会返回一个Promise对象，里面包含的是对ctx的修改，通过调用next方法来调用下一个中间件。
+
+![image-20210504164359391](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504164359391.png)
+
+再通过return关键字将修改后的ctx对象作为resolve的参数返回。
+
+如果多个中间件同时操作了ctx对象，那么就有必要使用return关键字将操作的结果返回到上一级调用的中间件里。
+
+经过上面的介绍，现在再回到validateCookie方法，读者现在应该明白了为什么需要使用return next()而不是next()。事实上，如果读者去读Koa-router或者Koa-static的源码，也会发现它们都是使用return next方法。
+
+### 5.8.5　关于Can't set headers after they are sent.
+
+### 5.8.6　Context对象的实现
+
+**关于ctx对象是如何得到request/response对象中的属性和方法的**，可以阅读context.js的源码，其核心代码如下所示。此外，delegate模块还广泛运用在了Koa的各种中间件中，后面的内容里会介绍这一点。
+
+**代码5.36　ctx对象通过委托获得原生方法和属性**
+
+![image-20210504165516111](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504165516111.png)
+
+**delegate是一个Node第三方模块，作用是把一个对象中的属性和方法委托到另一个对象上。**
+
+读者可以访问该模块的项目地址https://github.com/tj/node-delegates ，然后就会发现该模块的主要贡献者还是TJ Holowaychuk。
+
+在上面的代码中，我们使用了如下三个方法：
+
+- method：用于委托方法到目标对象上。
+- access：综合getter和setter，可以对目标进行读写。
+- getter：为目标属性生成一个访问器，可以理解成复制了一个只读属性到目标对象上。
+
+getter和setter这两个方法是用来控制对象的读写属性的，**下面是method方法与access方法的实现**。
+
+![image-20210504165700414](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504165700414.png)
+
+method方法中使用apply方法将原目标的方法绑定到目标对象上。
+
+**下面是access方法的定义，综合了getter方法和setter方法。**
+
+![image-20210504165817940](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504165817940.png)
+
+最后是delegate的构造函数，该函数接收两个参数，分别是源对象和目标对象。
+
+**代码5.37　delegate的构造函数**
+
+![image-20210504165905870](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504165905870.png)
+
+可以看出deletgate对象在内部维持了一些数组，分别表示委托得到的目标对象和方法。
+
+**关于动态加载中间件**
+
+在某些应用场景中，开发者可能希望能够动态加载中间件，例如当路由接收到某个请求后再去加载对应的中间件，但在Koa中这是无法做到的。原因其实已经包含在前面的内容了，Koa应用唯一一次加载所有中间件是在调用listen方法的时候，即使后面再调用app.use方法，也不会生效了。
+
+### 5.8.7　Koa的优缺点
+
+**优点：**
+
+- 通过上面的内容，相信读者已经对Koa有了大概的认识，和Express相比，Koa的优势在于精简，它剥离了所有的中间件，并且对中间件的执行做了很大的优化。
+- 一个经验丰富的Express开发者想要转到Koa上并不需要很大的成本，唯一需要注意的就是中间件执行的策略会有差异，这可能会带来一段时间的不适应。
+
+**缺点：**
+
+- 现在我们来说说Koa的缺点，剥离中间件虽然是个优点，但也让不同中间件的组合变得麻烦起来，Express经过数年的沉淀，各种用途的中间件已经很成熟；而Koa不同，Koa2.0推出的时间还很短，适配的中间件也不完善，有时单独使用各种中间件还好，但一旦组合起来，可能出现不能正常工作的情况。
+- 举个例子，如果想同时使用router和views两个中间件，就要在render方法前加上return关键字（和return next()一个道理），对于刚接触Koa的开发者可能要花很长时间才能定位问题所在。再例如前面的koa-session和Koa-router，笔者初次接触这两个中间件时也着实花了一些功夫来将他们正确地组合在一块。虽然中间件概念的引入让Node开发变得像搭积木一样，但积木之间如果不能很顺利地拼接在一块的话，也会增加开发成本。
+
+## 5.9　网站部署
+
+目前博客系统运行在本地主机上，通过http://localhost:3000/来访问，如果局域网有其他机器，也可以通过本地ip:3000的URL来访问我们的网站，但仅限于局域网内部，位于其他局域网中的计算机无法访问到这个网站。
+
+目前有几种解决方式：
+
+- 一种是通过购买云主机和域名的方法来部署在公网上；
+- 另一种是将网站部署在本地，然后通过一些第三方工具来实现类似nat的功能；
+- 再有就是部署在GitHub上，但仅限于静态资源。
+
+### 5.9.1　本地部署
+
+将网站发布到公网上通常要走一些复杂的流程，使用国内的云服务商和域名提供商，还要提供身份信息和备案信息等，对于个人开发者来说，如果嫌这些步骤麻烦，那么建议选择本地部署的方式。
+
+#### 1．使用Localtunnel实现本地部署
+
+localtunnel是一个有名的npm第三方模块，它可以很容易地将你的本地服务器映射到公网上，而且不用修改DNS或者防火墙设置。
+
+#### 2．安装
+
+localtunnel需要全局安装。
+
+![image-20210504170610696](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504170610696.png)
+
+#### 3．使用
+
+首先我们要先把博客系统在本地运行起来，假设本地端口为3000，然后打开命令行，输入：
+
+![image-20210504170644720](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504170644720.png)
+
+该命令会生成一个随机的域名，开发者可以通过该域名来访问自己的网站，如图5-18所示。
+
+![image-20210504170705852](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504170705852.png)
+
+可以看出，localtunnel生成URL的格式为：随机字符串+localtunnel.me。
+
+如果开发者不想使用随机字符串作为二级域名，可以使用–subdomain参数，用来指定一个二级域名，如图5-19所示。
+
+![image-20210504170748901](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504170748901.png)
+
+现在就可以使用该域名来访问我们的网站了，不需要任何额外的操作，唯一的缺点可能就是访问比较慢。
+
+通过这种方式部署的网站基本上无法进行SEO优化，也没办法支撑高并发，这不仅由开发者的本地机器决定，更是由localtunnel这种模式本身的特点决定的。
+
+#### 4．localtunnel原理
+
+实际上，所有外网的访问，都要先经过localtunnel.me这个网站中转之后，才能到达我们的本地主机上，也就是说localhost.me起到了转发作用，可以将localtunnel看作是一个反向代理服务器。
+
+Localtunnel.me会在内部维护一张映射表，记录着每个二级域名和开发者本地主机的信息，当收到某个子域名下的请求时，会先在映射表中进行查找，然后将对应的请求或者响应信息转发出去。
+
+从本质上说，所有的内网到外网的“穿透”，都是借助已经部署在公网上的服务器进行中转的，例如一些VPN服务提供商，往往也是通过某台服务器的中转再到达目标网站的。
+
+如果localtunnel.me这个网站本身停止了服务，那么开发者本地的localtunnel模块也会变得不可用。
+
+这也是为什么这种部署方式很难优化的原因，因为流量不是直接来自用户，而是经过了localtunnel服务器的中转，最直观的感受就是网页打开速度非常慢，这让所有的本地优化都失去了意义。但如果是访问量比较小的个人网站，这是比较推荐的方式。
+
+### 5.9.2　部署在云服务主机上
+
+#### 1．前提条件
+
+需要一台Linux环境的网络主机或者VPS，这主要是因为我们用到了Redis，因此不能使用Windows；如果读者不适应纯命令行的Linux环境，使用一些带有图形界面的发行版，例如Ubuntu也是不错的选择。
+
+需要一个域名（不是必备）。
+
+首先，要将编写完毕的代码上传到云主机上，使用FTP是比较方便的选择，可以自行配置，如果想省事的话直接用网盘甚至邮箱传输也可以。但为了方便版本的管理，还是推荐自行搭建git server，笔者使用的是gitblit，读者可以自行安装和配置。
+
+假设云主机的ip地址为123.45.6.7，那么当我们的程序在云主机上开始运行时，本机通过localhost:3000来访问应用程序，对于外部请求，访问http://123.45.6.7:3000即可看到结果。
+
+事实上，上面已经完成了整个网站的部署，在任何有网络连接的地方，都可以通过上面的地址来访问我们的博客。如果不追求访问的便利性，网站的部署在这一步就可以结束了，但实际上，往往需要一个域名来便于记忆和传播。
+
+Node本身并没有提供域名相关的API，需要借助一些第三方技术来实现。
+
+#### 2．Nginx实现域名的绑定
+
+读者可能不熟悉Nginx，但没关系，笔者也不熟，因为只需要Nginx的部分功能，做好配置之后只需要开启Nginx服务就可以了。
+
+**Nginx是一个高性能的HTTP及反向代理服务器，主要使用它的反向代理功能。**
+
+假设我们的域名是example.com，并且已经在域名服务商哪里将解析ip指向了123.45.6.7这个ip。
+
+那么当有用户访问example.com时，域名提供商就会将请求转向123.45.6.7的80端口，而我们的系统运行在3000端口下，并且Linux下非roo用户无法监听1024以下的端口，这时就要Nginx登场了。
+
+下载好Nginx的Linux版本之后，打开conf文件夹下面的nginx.conf，在http域里面，第一个server域下面添加如下内容：
+
+![image-20210504171535753](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504171535753.png)
+
+**Nginx的大概思路就是将来自外部对80端口的请求转到3000端口，从而实现域名和Node应用的绑定。配置完成之后，启动Nginx进程，或者将其配置成守护进程。**
+
+之后在域名提供商那里将域名绑定到云主机的ip上，就能用域名来访问我们的网站了。
+
+### 5.9.3　通过GitHub pages来部署
+
+这项功能一经推出就受到了开发者的热烈欢迎，毕竟不是谁都需要一个带数据库操作，并且支持高并发的网站，大多数的个人项目还是以静态的资源展示为主。
+
+GitHub的这项功能可以将仓库中的静态文件映射到GitHub的一个二级域名下，我们实际操作一下试试看。
+
+首先需要建立一个新的GitHub仓库，名字为用户名+github.io，以笔者为例，仓库的名字为Yuki-Minakami.github.io，在初始化项目时，最好勾选readme选项。
+
+仓库建好之后，打开settings选项卡，到GitHub Pages这一栏，如图5-20所示。
+
+![image-20210504171806875](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504171806875.png)
+
+会发现GitHub已经帮我们建立了一个二级域名，试着打开这个链接，会发现页面上出现的是readme的内容，如图5-21所示。
+
+![image-20210504171844560](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504171844560.png)
+
+我们的二级域名默认会打开仓库根目录下的index.html，在通常意义上为项目的首页地址。
+
+对于一个要求不高的博客网站，部署在GitHub上算得上是最优解，我们完全可以使用Git来实现文件的上传和删改，想要更改分类的索引，也可以通过手动更改index.html的内容来实现，不过当文章数量增加的时候可能就不是那么方便了
+
+## 5.10　总结
+
+在这一章，我们使用Koa框架来初步搭建了一个博客系统，并且实现了文章的上传、浏览、分类等基础功能。
+
+除此之外，还对Koa本身的实现做了深入的探究，Koa充分使用了ES2015至今的新特性，无论是架构还是代码比起前身的Express都有了很大的改进。
+
+笔者认为，Koa会逐步地取代Express的市场，对于Koa本身推广的最大障碍不是其本身，而是大多数开发者还不够了解这一框架这个事实，笔者期望越来越多的开发者开始尝试Koa，充分享受ES6新特性带来的开发效率。
+
+## 5.11　引用资源
+
+- https://github.com/Koajs
+- https://cnodejs.org/topic/56936889c2289f51658f0926
+- https://cnodejs.org/topic/573076d5f0bc93db581a6c54
+- https://redis.io/commands
+- http://www.redis.cn/topics/data-types.html
+- https://github.com/koajs/session
+- http://mongoosejs.com/docs/guide.html
+- https://github.com/localtunnel/localtunnel
+- https://docs.mongodb.com/manual/reference/mongo-shell/
+
+# 第6章　爬虫系统的开发
+
+对于想要批量搜集互联网上某一领域的信息，爬虫是一种很便利的技术。在大数据时代，不少人脑门一拍就准备做大数据，然而没有数据怎么办呢？很多人的目光就投向了爬虫。
+
+据称互联网一半的流量都是爬虫带来的，最常见的爬虫属于搜索引擎，谷歌和百度的爬虫每时每刻都在采集互联网上的信息，网站如果想要提升自己在搜索结果中的排名，SEO也是一项不可缺少的技术。
+
+对于不想让爬虫获取的内容，可以在网站根目录下定义robot.txt来限制爬虫的访问。以GitHub为例，其robots.txt的部分内容如图6-1所示。
+
+![image-20210504172401716](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504172401716.png)
+
+robots.txt并没有任何技术上的限制，而是默认爬虫会遵循的一种道德协议，但网站开发者通常无法保证所有用户都是带着善意访问网站的，除了搜索引擎外，还有一些以其他目的访问站点的人在，例如商业竞争对手之间互相爬取对方的价格信息（例如电商网站和在线旅游服务总是爬虫泛滥的重灾区）。
+
+本章会实现一个相对简单的爬虫系统，但和搜索引擎爬虫有很大区别，页面元素解析和后续操作都不是重点，**本章更多的将重点放在异步流程的处理和消息队列上，完整的代码实现可以参考笔者的GitHub下名为PHelper的项目，它最初是为了爬取某个特定网站被开发出来的，但目前已经剥离了特定网站的逻辑，变成了一个比较通用的爬虫框架。**
+
+在吴军的《数学之美》一书中，曾经提到了开发爬虫系统的几个要点：
+
+（1）采用DFS还是BFS。
+
+（2）页面信息的提取，我们用cheerio实现。
+
+（3）将已经访问过的地址记录下来。
+
+针对这些要点，我们会在下面的章节中介绍。
+
+## 6.1　爬虫技术概述
+
+## 6.2　技术栈简介
+
+## 6.3　构建脚手架
+
+## 6.4　进行批量爬取
+
+## 6.5　爬虫架构的改进
+
+## 6.6　进程架构的改进
+
+## 6.7　反爬虫处理
+
+## 6.8　总结
+
+## 6.9　引用资源
+
+# 第7章　测试与调试
+
+## 7.0　概述
+
+### **1．为什么需要强调测试**
+
+有一点需要承认，那就是Node本身的容错性并不是很强。作为动态语言，无法在静态编译阶段提前发现错误。如果有代码抛出异常而没有相应的处理方法，那么整个Node进程都会崩溃。
+
+另一方面，即使在代码编写中没有问题，也难以发现回调中潜在的异常。Node的早期版本中，曾经提供Domain模块（现在也依然保留）来处理这个问题，但遗憾的是似乎并没有达到预想的目标，而且至今社区也没能给出一个更好的方案。
+
+上面之所以提到Node错误处理的不完善之处，就是要提醒读者意识到编写良好测试，尤其是单元测试对Node应用的重要性。
+
+### 2．常见的概念
+
+经过数十年的实践，业界目前流行的测试方法只有黑盒和白盒两种，至于测试手段则分为下面几种：
+
+- 单元测试
+- 基准测试
+- 集成测试
+- 压力测试
+
+这些测试方法都是基于不同的维度对代码进行考量。
+
+### 3．代码覆盖率
+
+代码覆盖率是单元测试的一个重要指标，我们通常从下面几个维度来考察代码覆盖率：
+
+- 行覆盖率：考察是否每一行代码都被执行。
+- 函数覆盖率：确保覆盖每个函数调用。
+- 分支覆盖率：确保覆盖每个条件分支代码都被覆盖。
+- 语句覆盖率：考察是否每个语句都被执行了。
+
+### 4．测试驱动开发（TDD）
+
+测试驱动开发（Test-driven development，缩写为TDD）是一种软件开发过程中的应用方法，由其倡导先写测试程序，然后编码实现其功能得名。测试驱动开发始于20世纪90年代。测试驱动开发的目的是取得快速反馈并使用“illustrate themain line”方法来构建程序。
+
+测试驱动开发的优点很明显，首先是开发阶段，编写了测试用例之后，能够确保之后编写的功能代码可用。
+
+其次是在重构阶段，很多时候重构过程会十分痛苦，原因就在于程序经常会在修改代码后变得不可用，如果一次性改了太多地方，一步步定位错误代码将是一场噩梦，如果有了测试用例的辅助，这个过程会轻松很多。
+
+本章会为我们前面实现的应用编写测试用例，主要是第5章的博客系统和第6章的爬虫系统。
+
+## 7.1　单元测试
+
+## 7.2　测试现有代码
+
+## 7.3　更高维度的测试
+
+## 7.4　调试Node应用
+
+## 7.5　总结
+
+## 7.6　引用资源
+
+# 第8章　Node中的错误处理
+
+## 8.0　概述
+
+为什么错误处理需要单独地拿出一整章的篇幅来叙述？
+
+因为在Node之前，大多数开发者可能还没有机会接触到异步过程中的错误处理。
+
+前端JavaScript开发者可能有过一些经验，随便打开一个网站，然后查看控制台的输出，都可能会发现一堆红色的error。但浏览器是“宽容”的，一方面它的代码只运行在客户端，另一方面就算JavaScript代码中出现了错误，整个应用程序也不会退出，甚至有时根本就不影响页面的访问，最多是某些页面元素失去了响应而已。
+
+而Node则是需要“严肃”错误处理的语言，Node服务器为成千上万的客户端提供服务，再加上它是单线程的，而且还是一门动态语言，这意味着任何微小的错误都可能会导致Node进程退出，这也是**Node长时间被人诟病的缺点之一**。
+
+此外，除了开发者自己写的代码之外，Node程序通常还会引入一些第三方模块，打开node_modules查看，里面可能有几千个文件、上万行代码，关于代码行数和bug数量有一个CMMI衡量标准。
+
+能达到CMM5的企业屈指可数，对于水平良莠不齐的开源社区来说，如果认为其处于CMM3和CMM4之间，粗略地估算一下，那些第三方模块中也至少存在着数10个bug。
+
+**为了应付潜在的错误，比较常用的做法是在全局的范围内监听error事件，使用类似下面代码的方式来防止进程退出，还会使用forever/pm2等可以重启进程的工具来加上双重保险。**
+
+**代码8.1　最简单的错误处理**
+
+![image-20210504174053921](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504174053921.png)
+
+但使用代码8.1的处理方式要慎重，很多人将其当成万能的处理方式而忽略了其他地方的错误处理。此外，假设是在Web服务中出现了错误，**使用uncaughtException（未捕获异常）捕获异常就会丢失错误发生时的上下文，不利于定位错误代码。**
+
+因此在实践中，监听uncaughtException事件是错误处理的最后防线而不是唯一的制胜法宝，社区也有提议将该事件从Node中直接移除。
+
+## 8.1　Error模块
+
+Error类定义了Node常见的错误类型，其同样属于固有类型，**不需要require引入**。
+
+**Class:Error**
+
+一个error对象包含一个堆栈轨迹来描述Error是在哪里产生的，并且有时会包含一些具体的描述信息，一般会定位到某一行代码中。
+
+Node程序产生的所有Error都是Error类的示例或继承自Error类，我们可以通过Error的构造方法来自定义一个Error对象，并使用throw关键字将其抛出，例如：
+
+![image-20210504174335788](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504174335788.png)
+
+下面是Node定义的几种错误类型：
+
+![image-20210504174520373](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504174520373.png)
+
+## 8.2　错误处理的几种方式
+
+**比较常见的错误处理方式有三种，分别是try/catch、callback和EventEmitter（下面仍简称event）。**
+
+try/catch的思想很简单，只适用于同步调用的情况，callback则是通过定义回调的参数来解决，如果参数err的值不为空就表示出现错误。
+
+event的情况比较特殊一些，还记得stream吗？我们在第2章花了一些篇幅来介绍它，其中createReadStream方法虽然是一个同步操作，但我们却没办法用try/catch来捕获异常，而且同步操作也没有callback可以用，这是因为该方法返回了event对象，只能用事件处理的方式来处理异常。下面我们分别来介绍这几种方式。
+
+### 1．try/catch
+
+在其他编程语言，例如Java、C#通常使用try/catch方法，再配合throw语句来抛出及捕获异常，在Node中也是如此，但**仅限于同步调用的情境下。**
+
+**代码8.2　使用try/catch捕获异常**
+
+![image-20210504174718109](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504174718109.png)
+
+**但是try/catch无法捕获异步回调函数中出现的异常，原因是异步调用返回时，代码的上下文已经切换，回调函数已经脱离了try/catch的范围。**
+
+![image-20210504174827467](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504174827467.png)
+
+同步过程中的回调则不受影响，例如：
+
+![image-20210504174843542](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504174843542.png)
+
+### 2．callback
+
+为了处理异步过程的错误，Node 回调函数通常接受两个参数：err 和 result，这两个值必然有一个非空。
+
+**代码8.3　在回调中处理错误**
+
+![image-20210504175036190](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504175036190.png)
+
+上面的代码中，如果foo.txt不存在，就会出现下面类似的错误，该错误作为回调函数的第一个参数返回。**这种风格被称为error-first callback，最早就是在Node中被应用的，然后随着Node的流行变成了一种约定的标准。**
+
+![image-20210504175137448](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504175137448.png)
+
+### 3．基于Event的错误处理
+
+Event的情况比较特殊一些，例如fs.createReadStream方法虽然是一个同步操作，但我们却没办法用try/catch来捕获异常，例如下面的例子，在foo.txt不存在的时候，try/catch依旧无法捕获到异常。
+
+![image-20210504175214062](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504175214062.png)
+
+对于stream来说，需要通过监听error事件的方式来处理错误
+
+![image-20210504175226401](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504175226401.png)
+
+## 8.3　被抛弃的Domain（跳过了）
+
+Domain和上节提到的几种方法不在一个层次，它试图在一个更高的维度将三种错误处理的方法合而为一，但以现在的目光来观察Domain，就会发现这种努力实际上失败了。
+
+## 8.4　ES6中的错误处理
+
+在ES6落地之后，错误处理确实变得比原来轻松一些了，一个重要原因就是异步处理的重心从回调转移到了Promise上。
+
+### 8.4.1　Promise
+
+ES6的一个重要趋势就是使用Promise来取代回调，Promise提供了catch方法来捕获异常，我们在之前的章节中也已经提到了，例如：
+
+![image-20210504175420491](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504175420491.png)
+
+如果Promise执行过程中出现了错误，就可以被catch方法捕获。
+
+### 8.4.2　Generator
+
+可以直接使用try/catch语句来捕获yield语句中的异常。
+
+![image-20210504175516232](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504175516232.png)
+
+上面的代码中，如果yield后面的异步操作出现错误，可以被try语句捕获。
+
+### 8.4.3　async函数
+
+async相当于加了执行器的Generator，同样可以使用try/catch进行处理，在async方法内部如果有await操作出错，那么后续的代码将不会被执行，比较妥当的做法是将所有的await操作都用try/catch包裹起来。
+
+![image-20210504175614503](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210504175614503.png)
+
+## 8.5　Web服务中的错误处理
+
+### 8.5.1　针对每个请求的错误处理
+
