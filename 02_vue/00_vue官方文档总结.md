@@ -4401,6 +4401,39 @@ const MyReusableModule = {
 }
 ```
 
+# 2.Vue Router
+
+## 进阶
+
+### 导航守卫
+
+“导航”表示路由正在发生改变。
+
+正如其名，`vue-router` 提供的导航守卫主要用来通过跳转或取消的方式守卫导航。有多种机会植入路由导航过程中：全局的, 单个路由独享的, 或者组件级的。
+
+记住**参数或查询的改变并不会触发进入/离开的导航守卫**。你可以通过[观察 `$route` 对象](https://router.vuejs.org/zh/guide/essentials/dynamic-matching.html#响应路由参数的变化)来应对这些变化，或使用 `beforeRouteUpdate` 的组件内守卫。
+
+#### 全局前置守卫
+
+你可以使用 `router.beforeEach` 注册一个全局前置守卫：
+
+```js
+const router = new VueRouter({ ... })
+
+router.beforeEach((to, from, next) => {
+  // ...
+})
+```
+
+当一个导航触发时，全局前置守卫按照创建顺序调用。守卫是异步解析执行，此时导航在所有守卫 resolve 完之前一直处于 **等待中**。
+
+每个守卫方法接收三个参数：
+
+- **`to: Route`**: 即将要进入的目标 [路由对象](https://router.vuejs.org/zh/api/#路由对象)
+
+- **`from: Route`**: 当前导航正要离开的路由
+- 
+
 # API
 
 # 选项/组合

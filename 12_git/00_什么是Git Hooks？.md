@@ -356,19 +356,25 @@ $ git reflog
 
 # git命令流程
 
-git add .
+git status 查看工作区是否干净（上面的是修改的文件，下面的是新增的文件）
+
+git add . // 添加到暂存区
 
 git commit -m 
 
-git pull origin 分支名（要拉取的分支名）
+git pull origin master:cyx  // 将远程主机 origin 的 master 分支拉取过来，与本地的 CYX 分支合并
 
-git chekout -b 分支名（建与远程对应的分支名）
+git chekout -b 分支名（建与远程对应的分支名） // 创建并切换
+
+git branch 查看当前项目的所有分支
 
 git push -u origin 分支名(要推送的分支)
 
 git reflog 查看所有分支记录
 
 git rest -- hard 版本号 （回到回来的版本）
+
+git merge 分支名     合并分支
 
 #  git push 和 pull request 的区别
 
