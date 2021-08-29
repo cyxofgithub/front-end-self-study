@@ -483,7 +483,6 @@ jQuery 使用的就是这种方法，将 jQuery 代码包裹在 (function(window
 			+	至少1次 {1,}
 			?   0次或1次 {0,1}
 			*   0次或多次 {0,}
-			
 
 		- 转义字符
 			\ 在正则表达式中使用\作为转义字符
@@ -508,6 +507,13 @@ jQuery 使用的就是这种方法，将 jQuery 代码包裹在 (function(window
 				- 除了单词边界
 		^ 表示开始
 		$ 表示结束
+贪婪与不贪婪规则：
+
+1. .* 匹配最长的
+2. .*？匹配最短的
+
+![image-20210529161611868](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210529161611868.png)
+
 # JS window
 
 ## JavaScript Cookies

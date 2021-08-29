@@ -57,3 +57,11 @@
 </body>
 </html>
 ```
+
+```
+for(var i = 0; i<5;i++){
+  setTimeout(()=>console.log(i),0) // 5 5 5 5 5
+}
+换成 let 就不会，var 定义的 i 每一次循环不会创建自己的块级作用域引用的都是同一个 i，tips：setTiemout 将 log 异步执行，因此是在所有的循环之后才执行 log
+```
+

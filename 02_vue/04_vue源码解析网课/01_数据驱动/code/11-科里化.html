@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    let tags = 'div,p,a,img,ul,li'.split(',');
+
+	/** 
+	 * 判断是否是 HTML 标签最基本的想法
+	 * tips： tag 存的是所有的 HTML 标签
+	 * 这个写法的缺点： indexOf 内部会执行循环，会有大量的性能消耗
+	 **/
+	// function isHTMLTag( tagName ) {
+  	// 	tagName = tagName.toLowerCase();
+  	// 	if ( tags.indexOf( tagName ) > -1 ) return true;
+  	// 	return false;
+	// }
+    
+	// 科里化: 一个函数原本有多个参数, 只传入**一个**参数, 生成一个新函数, 由新函数接收剩下的参数来运行得到结构.
+	// 用科里化函数替换多次循环，只需要循环一次去缓存一部分行为
+    function makeMap( keys ) {
+      	let set = {}; // 集合
+      	tags.forEach( key => set[ key ] = true );
+	
+      	return function ( tagName ) {
+      	  	return !!set[ tagName.toLowerCase() ]
+      	}
+    }
+
+    let isHTMLTag = makeMap( tags ); // 返回的函数
+
+    // 10 个标签需要判断, 那么还有没有循环存在???
+
+    
+  </script>
+</body>
+</html>

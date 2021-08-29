@@ -360,7 +360,7 @@ git status 查看工作区是否干净（上面的是修改的文件，下面的
 
 git add . // 添加到暂存区
 
-git commit -m 
+git commit -m // 将暂存区的所有代码提交到本地仓库
 
 git pull origin master:cyx  // 将远程主机 origin 的 master 分支拉取过来，与本地的 CYX 分支合并
 
@@ -375,6 +375,8 @@ git reflog 查看所有分支记录
 git rest -- hard 版本号 （回到回来的版本）
 
 git merge 分支名     合并分支
+
+![image-20210616204003760](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210616204003760.png)
 
 #  git push 和 pull request 的区别
 
