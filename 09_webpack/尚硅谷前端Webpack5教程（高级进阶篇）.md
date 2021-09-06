@@ -1,4 +1,4 @@
-## 一、补充知识
+## 一、webpack debgger 调试
 
 ![image-20210904103049980](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210904103049980.png)
 
@@ -247,6 +247,56 @@ module.exports = {
   }
 ```
 
+### 总结
+
+当你想要手撕一个 loader 并运行起来你最基本要做到以下几点：
+
+- 一个入口文件
+
+![image-20210906174822125](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210906174822125.png)
+
+- webpack.config.js 配置文件
+
+```
+const path = require('path');
+
+module.exports = {
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        loader: 'loader1'
+      }
+    ]
+  },
+  // 配置loader解析规则
+  resolveLoader: {
+    modules: [
+      // 先在 node_modules 下找 loader
+      'node_modules',
+      // 找不到再到 loaders 下面找
+      path.resolve(__dirname, 'loaders')
+    ]
+  }
+}
+```
+
+- 配置好 loader（暴露一个默认对象，和一个 pitch 方法）
+
+```
+// loader本质上是一个函数
+
+// 同步loader，content 是文件内容，map，meta 是可选参数
+module.exports = function (content, map, meta) {
+  console.log(111);
+  return content;
+}
+
+module.exports.pitch = function () {
+  console.log('pitch 111');
+}
+```
+
 ## 四、自定义plugin
 
 ### 4.1 预备知识-compiler钩子
@@ -451,5 +501,405 @@ class Plugin2 {
 }
 
 module.exports = Plugin2;
+```
+
+#### 自定义CopyWebpackPlugin (代码还有一些问题)
+
+**CopyWebpackPlugin的功能**：将public文件夹中的文件复制到dist文件夹下面（忽略index.html文件）
+
+- 创建schema.json校验文件
+
+```
+{
+  "type": "object",
+  "properties": {
+    "from": {
+      "type": "string"
+    },
+    "to": {
+      "type": "string"
+    },
+    "ignore": {
+      "type": "array"
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+- 创建CopyWebpackPlugin.js插件文件
+
+​	编码思路: 下载schema-utils和globby：npm install globby schema-utils -D 将from中的资源复制到to中，输出出去 
+
+1. 过滤掉ignore的文件 
+2. 读取paths中所有资源
+3.  生成webpack格式的资源 
+4. 添加compilation中，输出出去
+
+```
+const path = require('path');
+const fs = require('fs');
+const {promisify} = require('util')
+
+const { validate } = require('schema-utils');
+
+// 可以用来匹配文件列表
+const globby = require('globby');
+const webpack = require('webpack');
+
+const schema = require('./schema.json');
+const { Compilation } = require('webpack');
+
+const readFile = promisify(fs.readFile);
+const {RawSource} = webpack.sources
+
+class CopyWebpackPlugin {
+  constructor(options = {}) {
+    // 验证options是否符合规范
+    validate(schema, options, {
+      name: 'CopyWebpackPlugin'
+    })
+
+    this.options = options;
+  }
+
+  apply(compiler) {
+    // 初始化compilation
+    compiler.hooks.thisCompilation.tap('CopyWebpackPlugin', (compilation) => {
+      // 添加资源的hooks
+      compilation.hooks.additionalAssets.tapAsync('CopyWebpackPlugin', async (cb) => {
+        // 将from中的资源复制到to中，输出出去
+        const { from, ignore } = this.options;
+        const to = this.options.to ? this.options.to : '.';
+        
+        // context就是webpack配置
+        // 运行指令的目录
+        const context = compiler.options.context; // process.cwd()
+        
+        // 将输入路径变成绝对路径
+        const absoluteFrom = path.isAbsolute(from) ? from : path.resolve(context, from);
+        console.log(absoluteFrom);
+
+        // 1. 过滤掉ignore的文件
+        // globby(要处理的文件夹，options)
+        const paths = await globby(absoluteFrom, { ignore });
+        console.log(ignore);
+
+        console.log(paths); // 所有要加载的文件路径数组
+
+        // 2. 读取paths中所有资源
+        const files = await Promise.all(
+          paths.map(async (absolutePath) => {
+            // 读取文件
+            const data = await readFile(absolutePath);
+            // basename得到最后的文件名称
+            const relativePath = path.basename(absolutePath);
+            // 和to属性结合
+            // 没有to --> reset.css
+            // 有to --> css/reset.css
+            const filename = path.join(to, relativePath);
+
+            return {
+              // 文件数据
+              data,
+              // 文件名称
+              filename
+            }
+          })
+        )
+
+        // 3. 生成webpack格式的资源
+        const assets = files.map((file) => {
+          const source = new RawSource(file.data);
+          return {
+            source,
+            filename: file.filename
+          }
+        })
+        
+        // 4. 添加compilation中，输出出去
+        assets.forEach((asset) => {
+          compilation.emitAsset(asset.filename, asset.source);
+        })
+
+        cb();
+      })
+    })
+  }
+
+}
+
+module.exports = CopyWebpackPlugin;
+```
+
+- 在webpack.config.js中使用
+
+![image-20210905094506121](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210905094506121.png)
+
+## 五、自定义Webpack
+
+### 5.1 Webpack 执行流程
+
+1. 初始化 Compiler：webpack(config) 得到 Compiler 对象
+2. 开始编译：调用 Compiler 对象 run 方法开始执行编译
+3. 确定入口：根据配置中的 entry 找出所有的入口文件。
+4. 编译模块：从入口文件出发，调用所有配置的 Loader 对模块进行编译，再找出该模块依赖的模块，递归直到所有模块被加载进来
+5. 完成模块编译： 在经过第 4 步使用 Loader 编译完所有模块后，得到了每个模块被编译后的最终内容以及它们之间的依赖关系。
+6. 输出资源：根据入口和模块之间的依赖关系，组装成一个个包含多个模块的 Chunk，再把每个 Chunk 转换成一个单独的文件加入到输出列表。（注意：这步是可以修改输出内容的最后机会）
+7. 输出完成：在确定好输出内容后，根据配置确定输出的路径和文件名，把文件内容写入到文件系统
+
+### 5.2 准备工作
+
+1. 创建文件夹myWebpack
+2. 创建src-->(add.js / count.js / index.js)，写入对应的js代码
+3. 创建config-->webpack.config.js写入webpack基础配置（entry和output）
+4. 创建lib文件夹，里面写webpack的主要配置
+5. 创建script-->build.js（将lib文件夹下面的myWebpack核心代码和config文件下的webpack基础配置引入并调用run()函数开始打包）
+6. 为了方便启动，控制台通过输入命令 `npm init -y`拉取出package.json文件，修改文件中scripts部分为`"build": "node ./script/build.js"`表示通过在终端输入命令`npm run build`时会运行/script/build.js文件，在scripts中添加`"debug": "node --inspect-brk ./script/build.js"`表示通过在终端输入命令`npm run debug`时会调试/script/build.js文件中的代码，调试代码的步骤第四章已经介绍
+
+### 5.3 使用babel解析文件
+
+1. 创建文件lib-->myWebpack1-->index.js
+2. 下载三个babel包 [babel官网](https://link.juejin.cn/?target=https%3A%2F%2Fwww.babeljs.cn%2Fdocs%2Fbabel-core)
+
+- `npm install @babel/parser -D`用来将代码解析成ast抽象语法树 
+- `npm install @babel/traverse -D`用来遍历ast抽象语法树代码 
+- `npm install @babel/core-D`用来将代码中浏览器不能识别的语法进行编译 
+
+3. 编码思路
+   1. 读取入口文件内容 
+   2. 将其解析成ast抽象语法树 
+   3. 收集依赖 
+   4.  编译代码：将代码中浏览器不能识别的语法进行编译
+
+```
+const fs = require('fs');
+const path = require('path');
+
+const babelParser = require('@babel/parser');
+const traverse = require('@babel/traverse').default;
+const { transformFromAst } = require('@babel/core');
+
+const parser = {
+  // 将文件解析成ast
+  getAst(filePath) {
+    // 读取文件
+    const file = fs.readFileSync(filePath, 'utf-8');
+    // 将其解析成ast抽象语法树
+    const ast = babelParser.parse(file, {
+      sourceType: 'module' // 解析文件的模块化方案是 ES Module
+    })
+    return ast;
+  },
+  // 获取依赖
+  getDeps(ast, filePath) {
+    const dirname = path.dirname(filePath);
+
+    // 定义存储依赖的容器
+    const deps = {}
+
+    // 收集依赖
+    traverse(ast, {
+      // 内部会遍历ast中program.body，判断里面语句类型
+      // 如果 type：ImportDeclaration 就会触发当前函数
+      ImportDeclaration({node}) {
+        // 文件相对路径：'./add.js'
+        const relativePath = node.source.value;
+        // 生成基于入口文件的绝对路径
+        const absolutePath = path.resolve(dirname, relativePath);
+        // 添加依赖
+        deps[relativePath] = absolutePath;
+      }
+    })
+
+    return deps;
+  },
+  // 将ast解析成code
+  getCode(ast) {
+    const { code } = transformFromAst(ast, null, {
+      presets: ['@babel/preset-env']
+    })
+    return code;
+  }
+};
+
+module.exports = parser;
+```
+
+**index.js**
+
+### 5.4 将代码模块化
+
+我们开发代码过程中讲究的是模块化开发，不同功能的代码放在不同的文件中 创建myWebpack2-->parser.js（放入解析代码）/Compiler.js（放入编译代码）/index.js（主文件）
+
+### 5.5 收集所有的依赖
+
+所有代码位于myWebpack文件夹中 Compiler.js文件中build函数用于构建代码，run函数中modules通过递归遍历收集所有的依赖，depsGraph用于将依赖整理更好依赖关系图（具体的代码功能都在代码中进行了注释）
+
+### 5.6 生成打包之后的bundle
+
+代码位于myWebpack-->Compiler.js中的bundle部分 整个myWebpack-->Compiler.js代码
+
+```
+const path = require('path');
+const fs = require('fs');
+const { getAst, getDeps, getCode } = require('./parser')
+
+class Compiler {
+  	constructor(options = {}) {
+
+  	  	// webpack配置对象
+  	  	this.options = options;
+
+  	  	// 所有依赖的容器
+  	  	this.modules = [];
+  	}
+
+  	// 启动webpack打包
+  	run() {
+
+    	// 入口文件路径
+    	const filePath = this.options.entry;
+		
+    	// 第一次构建，得到入口文件的信息：文件路径、依赖及经过 @babel/preset-env 编译后的代码
+    	const fileInfo = this.build(filePath);
+
+    	this.modules.push(fileInfo);
+
+    	// 遍历所有的依赖
+    	this.modules.forEach((fileInfo) => {
+    	  /**
+    	   {
+    	      './add.js': '/Users/xiongjian/Desktop/atguigu/code/05.myWebpack/src/add.js',
+    	      './count.js': '/Users/xiongjian/Desktop/atguigu/code/05.myWebpack/src/count.js'
+    	    } 
+    	   */
+    	  // 取出当前文件的所有依赖
+    	  const deps = fileInfo.deps;
+
+    	  // 遍历
+    	  for (const relativePath in deps) {
+
+    	    // 依赖文件的绝对路径
+    	    const absolutePath = deps[relativePath];
+		
+    	    // 对依赖文件进行处理
+    	    const fileInfo = this.build(absolutePath);
+		
+    	    // 将处理后的结果添加modules中，后面 forEach 遍历就会遍历它了～
+    	    this.modules.push(fileInfo);
+    	  }
+	  
+    	})
+
+   		// console.log(this.modules);
+
+   		// 将依赖整理更好依赖关系图
+   		/*
+   		  {
+   		    'index.js': {
+   		      code: 'xxx',
+   		      deps: { 'add.js': "xxx" }
+   		    },
+   		    'add.js': {
+   		      code: 'xxx',
+   		      deps: {}
+   		    }
+   		  }
+   		*/
+
+   		// 关系依赖图（ 利用 map 方法的前一个值和当前值 ）
+   		const depsGraph = this.modules.reduce((graph, module) => {
+   		  	return {
+   		  	  	...graph,
+   		  	  	[module.filePath]: {
+   		  	  	  	code: module.code,
+   		  	  	  	deps: module.deps
+   		  	  	}
+   		  	}
+   		}, {})
+	   
+   		console.log(depsGraph);
+
+   		this.generate(depsGraph)
+  	}
+
+  	// 开始构建
+  	build(filePath) {
+
+    	// 1. 将文件解析成ast
+    	const ast = getAst(filePath);
+
+    	// 2. 获取ast中所有的依赖
+    	const deps = getDeps(ast, filePath);
+
+    	// 3. 将ast解析成code
+    	const code = getCode(ast);
+
+    	return {
+    	  // 文件路径
+    	  filePath,
+    	  // 当前文件的所有依赖
+    	  deps,
+    	  // 当前文件解析后的代码
+    	  code
+    	}
+  	}
+
+  	// 生成输出资源
+  	generate(depsGraph) {
+
+    	/* index.js打包后的代码
+    	  "use strict";\n' +
+    	  '\n' +
+    	  'var _add = _interopRequireDefault(require("./add.js"));\n' +
+    	  '\n' +
+    	  'var _count = _interopRequireDefault(require("./count.js"));\n' +
+    	  '\n' +
+    	  'function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }\n' +
+    	  '\n' +
+    	  'console.log((0, _add["default"])(1, 2));\n' +
+    	  'console.log((0, _count["default"])(3, 1));
+    	*/
+		
+    	const bundle = `
+    	  	(function (depsGraph) {
+			
+    	  	  // 这里的require函数目的：为了加载入口文件
+    	  	  function require(module) {
+			
+    	  	    // 定义当前模块内部的require函数：为了加载入口文件里引用的模块
+    	  	    function localRequire(relativePath) {
+				
+    	  	      	// 为了找到要引入模块的绝对路径，通过require加载
+    	  	      	return require(depsGraph[module].deps[relativePath]);
+    	  	    }
+			  
+    	  	    // 定义暴露对象（将来我们模块要暴露的内容）
+    	  	    var exports = {};
+			  
+    	  	    (function (require, exports, code) {
+    	  	      	eval(code);
+    	  	    })(localRequire, exports, depsGraph[module].code);
+			  
+    	  	    // 作为require函数的返回值返回出去
+    	  	    // 后面的require函数能得到暴露的内容
+    	  	    return exports;
+    	  	  }
+			
+    	  	  // 加载入口文件
+    	  	  require('${this.options.entry}');
+			
+    	  	})(${JSON.stringify(depsGraph)})
+    	`
+    	// 生成输出文件的绝对路径
+    	const filePath = path.resolve(this.options.output.path, this.options.output.filename)
+		  
+    	// 写入文件
+    	fs.writeFileSync(filePath, bundle, 'utf-8');
+  	}
+}
+
+module.exports = Compiler;
 ```
 
