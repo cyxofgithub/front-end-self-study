@@ -1,3 +1,5 @@
+原版笔记：https://juejin.cn/post/6909719159773331463/
+
 ## 一、webpack debgger 调试
 
 ![image-20210904103049980](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210904103049980.png)
@@ -636,9 +638,48 @@ module.exports = CopyWebpackPlugin;
 
 ![image-20210905094506121](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210905094506121.png)
 
+### 总结
+
+当你想要手撕一个简易的 plugin 并运行起来你最基本要做到以下几点：
+
+- 一个入口文件：
+
+![image-20210907164813201](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210907164813201.png)
+
+- 定义 plugin
+
+```
+class Plugin2 {
+
+// 一定要有 apply 方法，默认调用
+  apply(compiler) {
+  
+    // 初始化compilation钩子
+    compiler.hooks.thisCompilation.tap('Plugin2', (compilation) => {
+      // additionalAssets 这个钩子可以在输出资源上再添加资源
+      compilation.hooks.additionalAssets.tapAsync('Plugin2', async (cb) => {
+      
+        // 注意要调用 callback 标志这个钩子结束
+        cb();
+      })
+    })
+  }
+}
+
+module.exports = Plugin2;
+```
+
+
+
+- webpack.config.js 配置文件
+
+![image-20210907165025191](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210907165025191.png)
+
 ## 五、自定义Webpack
 
 ### 5.1 Webpack 执行流程
+
+npm run build 后发生以下操作：
 
 1. 初始化 Compiler：webpack(config) 得到 Compiler 对象
 2. 开始编译：调用 Compiler 对象 run 方法开始执行编译
