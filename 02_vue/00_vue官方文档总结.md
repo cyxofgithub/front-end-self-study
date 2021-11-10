@@ -4713,3 +4713,159 @@ export default {
   ```
 
   **当 `text` 发生改变时，`<span>` 总是会被替换而不是被修改，因此会触发过渡。**
+
+
+
+# Vue SSR
+
+- `vue-server-renderer` 和 `vue` 必须匹配版本。
+
+# 预渲染
+
+在构建时 (`build time`) 简单地生成针对特定路由的静态` HTML` 文件（ 即在npm run build 的时候将对应路由的文件的 HTML 保存下来 ）。当用户请求对应的路由时直接返回对应 HTML 文件，减少了浏览器解析 js 文件动态渲染 HTML 的时间
+
+
+
+## 在项目中加入预渲染（Prerender）
+
+- 用[prerender-spa-plugin](https://link.juejin.cn?target=https%3A%2F%2Fgithub.com%2Fchrisvfritz%2Fprerender-spa-plugin)可以给现有项目加入预渲染，我们就以`Vue`为实例进行预渲染优化。
+- 先用`Vue`官方提供的脚手架3.0搭建一个简单的`Vue`项目，步骤就不写了，具体实现可以参照[官方文档](https://link.juejin.cn?target=https%3A%2F%2Fcli.vuejs.org%2Fzh%2F)。
+
+### 1. 安装`prerender-spa-plugin`依赖
+
+**tips：**该插件的原理是先将项目渲染起来，然后访问对应的路由，将路由对应的 HTML 保存起来，所以你在配置了路由导航守卫之后你会发现一些坑
+
+```
+yarn add prerender-spa-plugin --dev
+复制代码
+```
+
+#### 1.1 坑点
+
+- 因为这个组件需要依赖[Puppeteer](https://link.juejin.cn?target=https%3A%2F%2Fgithub.com%2FGoogleChrome%2Fpuppeteer)，它是是 Google Chrome 团队官方的无界面（Headless）Chrome 工具，它是一个 `Node` 库，提供了一个高级的 API 来控制 [DevTools协议上的无头版](https://link.juejin.cn?target=https%3A%2F%2Fchromedevtools.github.io%2Fdevtools-protocol%2F) Chrome 。也可以配置为使用完整（非无头）的 Chrome。
+- 鉴于 `Puppeteer` 需要 `Chromium`，但是即便你的上网姿势足够科学，也同样会遇到安装失败的问题，尝试了很多解决方案，提供一个成功率较高的解决方案。
+- 在你的项目根目录创建一个`.npmrc`的文件，当然你也可以直接修改你本机的`.npmrc`配置。
+
+```j
+// .npmrc
+puppeteer_download_host = https://npm.taobao.org/mirrors
+复制代码
+```
+
+然后再尝试安装。
+
+### 2. 创建`vue.config.js`
+
+```js
+// vue.config.js
+const path = require('path')
+const PrerenderSPAPlugin = require('prerender-spa-plugin')
+const Renderer = PrerenderSPAPlugin.PuppeteerRenderer
+
+function resolve (dir) {
+  return path.join(__dirname, dir)
+}
+
+module.exports = {
+  publicPath: './',
+  configureWebpack: () => {
+    if (process.env.NODE_ENV === 'production') {
+      return {
+        plugins: [
+          new PrerenderSPAPlugin({
+            staticDir: resolve('dist'),
+            routes: ['/', '/about'], // 你需要预渲染的路由
+            renderer: new Renderer({
+              inject: {
+                _m: 'prerender'
+              },
+              // 渲染时显示浏览器窗口，调试时有用
+              headless: true,
+              // 等待触发目标时间后，开始预渲染
+              renderAfterDocumentEvent: 'render-event'
+            })
+          })
+        ]
+      }
+    }
+  }
+}
+复制代码
+```
+
+更多详细的配置可以查看`prerender-spa-plugin`[官方文档](https://link.juejin.cn?target=https%3A%2F%2Fgithub.com%2Fchrisvfritz%2Fprerender-spa-plugin)，根据需求添加。
+
+### 3. 在生命周期里调用自定义事件
+
+```js
+// main.js
+import Vue from 'vue'
+import App from './App.vue'
+import router from './router'
+
+Vue.config.productionTip = false
+
+new Vue({
+  router,
+  render: h => h(App),
+  mounted () {
+    // 触发renderAfterDocumentEvent
+    document.dispatchEvent(new Event('render-event'))
+  }
+}).$mount('#app')
+复制代码
+```
+
+### 4. 运行打包脚本
+
+```js
+yarn run build
+复制代码
+```
+
+没有使用预渲染打包得到的`dist`文件夹目录：
+
+![没有使用预渲染](https:////p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/36862a67e57c4cf683d3bc6c5fac3eeb~tplv-k3u1fbpfcp-watermark.awebp)
+
+使用预渲染后打包得到的`dist`文件夹目录：
+
+![使用预渲染](https:////p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e7e8a5a2c9e84d71bf455cb483b6c423~tplv-k3u1fbpfcp-watermark.awebp)
+
+可以看到多了一个`about`目录，里面有一个`html`文件。我们查看一下根目录的`html`文件，也就是首页的`html`文件。
+
+
+
+没有使用预渲染得到根目录`html文件`：
+
+![Xnip2019-08-23_15-26-53.jpg](https:////p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/e845d895c96a44f0a62fb62e52797576~tplv-k3u1fbpfcp-watermark.awebp)
+
+使用预渲染得到根目录`html文件`：
+
+![Xnip2019-08-23_15-27-44.jpg](https:////p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/4879548f0e6f4fc9a8308e7e5a646d60~tplv-k3u1fbpfcp-watermark.awebp)
+
+## 部署后预渲染和非预渲染的差别
+
+我把它们都部署到`gh-pages`上，我们来看一下差别。
+
+没有使用预渲染请求到的`Document`：
+
+![Xnip2019-08-23_15-06-21.jpg](https:////p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c40a41086da84e6a8199c423601da9a4~tplv-k3u1fbpfcp-watermark.awebp)
+
+使用预渲染请求到的`Document`：
+
+![Xnip2019-08-23_15-05-38.jpg](https:////p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b404d24cb4e34cf295513fa7680cd6b6~tplv-k3u1fbpfcp-watermark.awebp)
+
+可以看到使用预渲染时初始化的`HTML`文件已经有了`DOM`结构，这样爬虫就可以来抓取到`DOM`结构，`SEO`优化更好。
+
+
+
+## 总结
+
+个人理解，插件的实现原理是在打包完成之后， 利用了 `Puppeteer`的爬取页面的功能，模拟浏览器访问路由，然后把`JS`生成的`DOM`结构以`HTML`静态文件的形式再保存下来。
+
+# 服务器端渲染 vs 预渲染 (SSR vs Prerender)
+
+- 在对你的应用程序使用服务器端渲染 (`SSR`) 之前，你应该问的第一个问题是，是否真的需要它。这主要取决于内容到达时间 (`time-to-content`) 对应用程序的重要程度。如果并不太重要，这种情况下去使用服务器端渲染 (`SSR`) 将是一个小题大作之举。
+- 如果假设你需要更好`SEO`和内容到达时间 (`time-to-content`) ，如果你使用服务器端渲染 (`SSR`) 只是用来改善少数页面，那么这个时候你可能更需要预渲染，优点是设置预渲染更简单，你可以获得`SSR`的几乎所有优点，无需更改代码或添加服务器端就能轻松实现的解决方案。
+- **实际上两者本质都是直接返回 HTML，减少了浏览器在本地动态生成 HTML 的时间**
+

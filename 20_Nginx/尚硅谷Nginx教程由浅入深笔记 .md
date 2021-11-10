@@ -79,3 +79,52 @@ tips：这里有开启端口的操作说明
 ![image-20210902112845388](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210902112845388.png)
 
 ![image-20210902112852008](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210902112852008.png)
+
+## Nginx 开启gizp 压缩
+
+### 开启后
+
+![image-20211017114233384](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211017114233384.png)
+
+```js
+    server {
+        listen       9815;
+
+        gzip on;
+        gzip_buffers 32 4K;
+        gzip_comp_level 6; # 压缩级别
+        gzip_min_length 100; # 最小压缩大小
+        # 需要压缩类型
+        gzip_types application/javascript application/x-javascript text/css text/xml; 
+        gzip_disable "MSIE [1-6]\."; # 此处表示ie6及以下不启用gzip（因为ie低版本不支持）
+        gzip_vary on; # 是否传输gzip压缩标志
+        location / {
+            root   html/dove/dist;
+            index  index.html index.htm;	
+        }	
+        location /api {
+            proxy_pass  http://120.77.156.205:9803;
+            rewrite  ^.+api/?(.*)$ /$1 break;
+            include  uwsgi_params;
+        }
+   }
+```
+
+## Nginx 配置 HTTP 缓存
+
+```js
+        location / {
+            root   html/dove/dist;
+            index  index.html index.htm;
+
+            if ($request_uri ~* .*[.](js|css|map|jpg|png|svg|ico)$) {
+              add_header Cache-Control "public, max-age=1000";#非html缓存1000s
+            }
+            
+            if ($request_filename ~* ^.*[.](html|htm)$) {
+              add_header Cache-Control "public, no-cache";
+              #html文件协商缓存，也就是每次都询问服务器，浏览器本地是是否是最新的，是最新的就直接用，非最新的服务器就会返回最新
+            }	
+        }	
+```
+

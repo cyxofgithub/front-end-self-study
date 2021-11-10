@@ -385,3 +385,180 @@ Content-Type，内容类型，一般是指网页中存在的Content-Type，用�
 | .sis                                | application/vnd.symbian.install         | .sisx      | application/vnd.symbian.install     |
 | .x_t                                | application/x-x_t                       | .ipa       | application/vnd.iphone              |
 | .apk                                | application/vnd.android.package-archive | .xap       | application/x-silverlight-app       |
+
+# 深入理解HTTP缓存机制及原理
+
+tips：注意开发者工具启动时不走缓存的坑
+
+## 一、缓存规则及解析
+
+   假设览器存在一个缓存数据库，用于存储缓存信息。在客户端第一次请求数据时，此时缓存数据库中没有对应的缓存数据，需要请求服务器，服务器返回后，将数据存储至缓存数据库中。如下流程图所示：
+
+![img](HTTP.assets/169a1125a6943e17tplv-t2oaga2asx-watermark.awebp)
+
+​    根据是否需要重新向服务器发起请求来分类，将HTTP缓存规则分为两大类(**强制缓存**，**对比缓存**)
+
+（1）已存在缓存数据时（**强制缓存情况**)，请求数据的流程如下所示：
+
+![img](HTTP.assets/169a1131a01649cetplv-t2oaga2asx-watermark.awebp)
+
+（2）已存在缓存数据时（**对比缓存情况**），请求数据的流程如下所示：
+
+![img](HTTP.assets/169a113789f814d2tplv-t2oaga2asx-watermark.awebp)
+
+​    我们可以看到两类缓存规则的不同，**强制缓存**如果生效，不需要再和服务器发生交互，而**对比缓存**不管是否生效，都需要与服务端发生交互。
+
+​    两类缓存规则可以同时存在，**强制缓存**优先级高于**对比缓存**，也就是说，当执行**强制缓存**的规则时，如果缓存生效，直接使用缓存，不再执行**对比缓存**规则。
+
+## 二、缓存常用字段
+
+### 1、http1.0时期的缓存方案
+
+![img](HTTP.assets/169a119737ecdeb2tplv-t2oaga2asx-watermark.awebp)
+
+注意： 
+
+（1）如果使用了`Pragma: 'no-cache'`的话，再设置`Expires`或者`Cache-Control`，就没有用了，说明`Pragma`的权值比后两者高。
+
+ （2）如果设置了`Expires`之后，客户端在需要请求数据的时候，首先会对比当前系统时间和这个`Expires`时间，如果没有超过`Expires`时间，则直接读取本地磁盘中的缓存数据，不发送请求。
+
+### 2、http1.1 时期的缓存方案
+
+#### **2.1、Cache-Control 字段** 
+
+**2.1.1、Cache-Control 作为请求头字段**
+
+![img](HTTP.assets/169a11b7c6a465batplv-t2oaga2asx-watermark.awebp)
+
+**（1）Cache-Control: no-cache** 
+
+使用`no-cache`指令的目的是为了防止从缓存中返回过期的资源。 客户端发送的请求中如果包含 `no-cache` 指令，则表示客户端将不会接收缓存的资源。每次请求都是从服务器获取资源，返回304。 
+
+**（2）Cache-Control: no-store** 
+
+使用`no-store` 指令表示请求的资源不会被缓存，下次任何其它请求获取该资源，还是会从服务器获取，返回 200，即资源本身。
+
+**2.1.2、Cache-Control 作为响应头字段**
+
+![img](HTTP.assets/169a11c6b7651b77tplv-t2oaga2asx-watermark.awebp)
+
+**Cache-Control: public** 
+
+当指定使用 `public `指令时，则明确表明其他用户也可利用缓存。
+
+ **Cache-Control: private**
+
+当指定 `private` 指令后，响应只以特定的用户作为对象，这与 `public` 指令的行为相反。 缓存服务器会对该特定用户提供资源缓存的服务，对于其他用户发送 过来的请求，代理服务器则不会返回缓存。
+
+ **Cache-Control: no-cache** 
+
+如果服务器返回的响应中包含` no-cache `指令，每次客户端请求，必需先向服务器确认其有效性，如果资源没有更改，则返回304. 
+
+**Cache-Control: no-store** 
+
+不对响应的资源进行缓存，即用户下次请求还是返回 200，返回资源本身。 
+
+**Cache-Control: max-age=604800（单位：秒）** 
+
+资源缓存在本地浏览器的时间，如果超过该时间，则重新向服务器获取。
+
+#### **2.2、请求头部字段 & 响应头部字段**
+
+**2.2.1、请求头部字段**
+
+![img](HTTP.assets/169a11dbaa0f8a2atplv-t2oaga2asx-watermark.awebp)
+
+**2.2.2、响应头部字段**
+
+![img](HTTP.assets/169a11e177c975f2tplv-t2oaga2asx-watermark.awebp)
+
+注意：
+
+ （1）`If-None-Match`的优先级比`If-Modified-Since`高，所以两者同时存在时，遵从前者。
+
+## 三、实验验证
+
+### **1、实验1 — 请求的资源没修改，验证2种缓存出现的情形**
+
+**1.1、请求头部 / 响应头部 设置**
+
+（1）服务端响应头部设置：
+
+```
+   res.setHeader('Cache-Control', 'public, max-age=10');
+```
+
+（2）客户端请求头部使用默认设置
+
+**1.2、实验步骤**
+
+（1）请求 3 次，第一次请求请求资源；第二次在10秒内再次请求该资源，第三次在 10 秒后再次请求该资源（实验过程中，服务端的资源没有进行改变）
+
+**1.3、实验结果**
+
+![img](HTTP.assets/169a11ff1e022d96tplv-t2oaga2asx-watermark.awebp)
+
+第一次请求该资源是从服务器获取；第二次（10 秒内）请求该资源是直接从浏览器缓存中获取该资源（没有向服务器确认）；**第三次（10 秒后）请求该资源时，因为资源缓存时间（10 秒）过期，所以向服务器获取资源，服务器判断该资源与本地缓存的资源没有做更改，所以返回 304，让客户端直接从浏览器缓存中获取该资源；**
+
+- 第一次
+
+![img](HTTP.assets/169a12072e2e0cb6tplv-t2oaga2asx-watermark.awebp)
+
+- **第二次（强制缓存机制）**
+
+![img](HTTP.assets/169a120bbf711005tplv-t2oaga2asx-watermark.awebp)
+
+- **第三次（协商缓存机制）**
+
+![img](HTTP.assets/169a1211c38c875btplv-t2oaga2asx-watermark.awebp)
+
+tips：304 说明缓存时间虽然过期了，但是服务器资源并没有修改，所以还是走缓存
+
+### **2、实验2 — 请求的资源进行修改，验证2种缓存出现的情形**
+
+**2.1、请求头部 / 响应头部 设置**
+
+（1）服务端响应头部设置：
+
+```
+   res.setHeader('Cache-Control', 'public, max-age=20');
+```
+
+（2）客户端请求头部使用默认设置
+
+**2.2、实验步骤**
+
+（1）请求 3 次，第一次请求资源；然后在服务器对请求的资源进行修改，第二次在 20 秒内再次请求该资源，第三次在 20 秒后再次请求该资源
+
+**2.3、实验结果**
+
+-  第一次请求该资源是从服务器获取；
+- 第二次（20 秒内）请求该资源是直接从浏览器缓存中获取该资源（没有向服务器确认）； 
+- 第三次（20 秒后）请求该资源时，因为资源缓存时间（20 秒）过期，所以向服务器获取资源，服务器判断该资源与本地缓存的资源不同，所以重新返回该资源；以下，根据 HTTP 头部信息详细介绍三个操作的交互过程。
+
+![img](HTTP.assets/169a121606944373tplv-t2oaga2asx-watermark.awebp)
+
+- 第一次
+
+
+![img](HTTP.assets/169a1219166741f1tplv-t2oaga2asx-watermark.awebp)
+
+- 第二次（强制缓存）
+
+![img](HTTP.assets/169a121db9c73552tplv-t2oaga2asx-watermark-163481875969118.awebp)
+
+- 第三次（协商缓存）
+
+![img](HTTP.assets/169a1221529a99dbtplv-t2oaga2asx-watermark.awebp)
+
+## 四、总结
+
+1、**对于强制缓存，服务器通知浏览器一个缓存时间，在缓存时间内，下次请求，直接用缓存，不在时间内，执行比较缓存策略。**
+
+2、对于比较缓存，将缓存信息中的Etag和Last-Modified通过请求发送给服务器，由服务器校验，返回304状态码时，浏览器直接使用缓存。
+
+总结流程图如下所示：
+
+![img](HTTP.assets/169a12255df4532atplv-t2oaga2asx-watermark.awebp)
+
+
