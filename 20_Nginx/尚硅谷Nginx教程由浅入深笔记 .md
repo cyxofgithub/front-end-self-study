@@ -80,6 +80,52 @@ tips：这里有开启端口的操作说明
 
 ![image-20210902112852008](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210902112852008.png)
 
+## Nginx配置集群分布
+
+![image-20211130163733807](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211130163733807.png)
+
+![image-20211130163754092](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211130163754092.png)
+
+![image-20211130163808853](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211130163808853.png)
+
+![image-20211130163823777](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211130163823777.png)
+
+keepalived 原理：master服务器会和 backup 服务器保持通信，若backup收不到master的消息，虚拟ip地址就会漂移到backup服务器上，这时访问虚拟ip服务器地址就变成访问主服务器
+
+## Nginx 原理分析
+
+1. master 和 worker
+
+   ![image-20211120100957894](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211120100957894.png)
+
+   tips: nginx 启动后最少会有两个进程，master 和 worker
+
+2. worker 如何进行工作的
+
+   ![image-20211120101041678](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211120101041678.png)
+
+   tips：master 负责接收 client 的请求分配，在 master 收到客户端的请求后，worker 后争抢请求进行处理
+
+3. 一个 master 和 多个 worker 好处
+
+   ![image-20211120101317579](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211120101317579.png)
+
+   tips：比如说你键入了 reload 这个命令，四个 worker 里有一个 worker 正在处理请求，它的资源不会更新，其他三个会更新，等下个请求来时，没有更新的 worker 不会处理请求，会等到它把上个请求处理完，更新完才会处理下个请求
+
+4. 设置多少个 worker 合适
+
+   ![image-20211120102009052](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211120102009052.png)
+
+   四核的 cpu 就用 四个 worker，8 个用 8 个
+
+5. 连接数 worker_connerction
+
+   ![image-20211120102133063](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211120102133063.png)
+
+   ![image-20211120102627690](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211120102627690.png)
+
+   tips：静态访问两个连接：请求连接，响应连接；反向代理四个连接：请求连接，反向代理连接，反向服务器响应连接，响应连接
+
 ## Nginx 开启gizp 压缩
 
 ### 开启后

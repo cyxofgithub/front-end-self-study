@@ -1869,3 +1869,117 @@ main();
 </html>
 ```
 
+# 利用 promise 实现异步循环顺序执行
+
+```js
+        let arr = [1,2,3,8,6,5,7]
+        let resolveArr = [];
+        ( async function( arr ) {
+            for ( let i = 0; i < arr.length; i++ ) {
+                let promise = new Promise( (resolve, reject) => {
+                    setTimeout( function() {
+                        let res = arr[i] * arr[i]
+
+                        resolveArr[i] =  {
+                                            resolve,
+                                            res
+                                         }
+
+                        if ( resolveArr.length === arr.length ) {
+
+                            // 数组是否有 undefined 标记
+                            let mark = false
+                            for ( item of resolveArr ) {
+                                if ( !item ) {
+                                    mark = true
+                                    break
+                                }
+                            }
+
+                            // 如果没有遍历执行 resolve
+                            if ( !mark ) {
+                                for( item of resolveArr ) {
+                                    item.resolve( item.res )
+                                }
+                            }
+                        } 
+                    }, Math.random() * 1000 )
+                } )
+                promise.then( res => {
+                    console.log(res);
+                } )
+            }
+        } )( arr )
+```
+
+# 并发处理 n 个请求，其余挂起
+
+```js
+        let sendArr = [];
+        let ans = []; // 用于存放有响应的
+        let n = 2 // 发送请求数
+
+        function f1() {
+            return new Promise( ( resolve, reject ) => {
+                setTimeout( function() {
+                    resolve( 111 )
+                }, 1000)
+            } )
+        }
+        function f2() {
+            return new Promise( ( resolve, reject ) => {
+                setTimeout( function() {
+                    resolve( 222 )
+                }, 2000)
+            } )
+        }
+        function f3() {
+            return new Promise( ( resolve, reject ) => {
+                setTimeout( function() {
+                    resolve( 333 )
+                }, 1000)
+            } )
+        }
+        function f4() {
+            return new Promise( ( resolve, reject ) => {
+                setTimeout( function() {
+                    resolve( 444 )
+                }, 500)
+            } )
+        }
+
+        sendArr.push( f1 )
+        sendArr.push( f2 )
+        sendArr.push( f3 )
+        sendArr.push( f4 )
+
+        // n 为发送的数量
+        function sendRequest( n ) {
+
+            // 每次发 n 个请求
+            let curRequest = sendArr.splice( 0, n )
+            
+            for ( let i = 0; i < n; i++ ) {
+                
+                // 执行 send 方法
+                curRequest[i]().then( res => {
+                    console.log(res);
+                    ans.push( res )
+
+                    // 当响应的结果为 n 个时，说明 n 个请求发送完了，继续发送 n 个请求
+                    if ( ans.length === n ) {
+
+                        // 清空响应结果
+                        ans = []
+
+                        // 如果请求已经发送完毕就不用再继续发请求了
+                        if( !sendArr.length ) return;
+                        sendRequest( n )
+                    }
+                } )
+            }
+        }
+        
+        sendRequest(n)
+```
+

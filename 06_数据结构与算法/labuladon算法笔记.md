@@ -30,6 +30,10 @@
 
 ![image-20210124093321322](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093321322.png)
 
+## 递归的时间复杂度计算
+
+![image-20211121105738875](labuladon算法笔记.assets/image-20211121105738875.png)
+
 # 	第零章、必读系列 
 
 ## 学习算法和刷题的框架思维
@@ -3110,3 +3114,150 @@ for (int i = 0; i < n; i++)
 ```
 
 如果是，那么就可以使用二分搜索优化搜索空间：如果要求最小值就是搜索左侧边界的二分，如果要求最大值就用搜索右侧边界的二分。
+
+
+
+
+
+# 回溯算法
+
+## 核心框架
+
+![image-20211119111040343](labuladon算法笔记.assets/image-20211119111040343.png)
+
+如果是 for ( let i = 0; i < nums.length; i++ ) 这种形式的，都不用终止条件，因为 i < nums.length 它就终止了
+
+代表题型：全排列，N 皇后
+
+# 动态规划
+
+## 特点和套路
+
+![image-20211121105007473](labuladon算法笔记.assets/image-20211121105007473.png)
+
+## 解法框架
+
+![image-20211121105325837](labuladon算法笔记.assets/image-20211121105325837.png)
+
+## 例题
+
+### 斐波那契数列
+
+**自底向上解法**
+
+![image-20211121110645149](labuladon算法笔记.assets/image-20211121110645149.png)
+
+空间复杂度优化
+
+![image-20211121110441104](labuladon算法笔记.assets/image-20211121110441104.png)
+
+**自顶向下解法**
+
+![image-20211121110509853](labuladon算法笔记.assets/image-20211121110509853.png)
+
+优化带备忘录
+
+![image-20211121110548328](labuladon算法笔记.assets/image-20211121110548328.png)
+
+### 零钱兑换
+
+**自顶向下解法**
+
+![image-20211121111046307](labuladon算法笔记.assets/image-20211121111046307.png)
+
+tips：要求 11 元需要多少枚硬币（可选择的有 1,2,5）就相当于求 10、9、6 元需要的硬币数 + 1即可
+
+![image-20211121111350266](labuladon算法笔记.assets/image-20211121111350266.png)
+
+tips：使用备忘录优化
+
+### 自底向上解法
+
+![image-20211121111854791](labuladon算法笔记.assets/image-20211121111854791.png)
+
+## 本质
+
+![image-20211121113001409](labuladon算法笔记.assets/image-20211121113001409.png)
+
+# 树的深度的几种遍历方法
+
+## DFS（深度优先遍历）
+
+```js
+var maxDepth = function(root) {
+    if ( !root ) return 0;
+
+    // 这里有点像动态规划的思想，根节点的高度其实就是子节点中最高的 + 1
+    // 自顶向下，再自底向上
+    return 1 + Math.max( maxDepth( root.left), maxDepth( root.right ) )
+}
+```
+
+## BFS（广度优先遍历）
+
+```js
+var maxDepth = function(root) {
+
+    let Que = []
+
+    function BFS( root ) {
+        if ( !root ) return 0;
+        Que.push( root )
+        
+        let ans = 0
+        while( Que.length ) {
+            const curLength = Que.length
+
+            // 遍历当前层次的节点
+            for ( let i = 0; i < curLength; i++ ) {
+                if ( Que[i].left ) {
+                    Que.push( Que[i].left )
+                }
+                if ( Que[i].right ) {
+                    Que.push( Que[i].right )
+                }
+            }
+            // 清空前面遍历过的节点
+            Que.splice( 0, curLength )
+            // 每层遍历完就加 1
+            ans++
+        } 
+
+        return ans
+    }
+
+    return BFS(root)
+}
+```
+
+## 回溯解法
+
+```js
+var maxDepth = function(root) {
+    
+    let path = []
+    let maxLength = 0
+
+    function backTrack( root ) {
+        if ( !root ) {
+            return
+        }
+        path.push( root )
+        if ( root.left ) {
+            backTrack( root.left )
+        }
+
+        if ( root.right ) {
+            backTrack( root.right )
+        }
+
+        // 左右节点都为空说明是叶子节点
+        maxLength = Math.max( maxLength, path.length ) // 保留最长深度
+        path.pop() // 尽头回退 
+    }
+    backTrack( root )
+
+    return maxLength
+};
+```
+
