@@ -1,5 +1,7 @@
 # 常用的小结
 
+启动一个 nginx 镜像和挂载数据卷：docker run -d  -p 5012:80 --name nginx3 --restart=always -v  /linux_class/nginx3/html:/usr/share/nginx/html -v /linux_class/nginx3/nginx.conf:/etc/nginx/nginx.conf nginx
+
 ```shell
 # 最后的 . 告诉 docker 在当前目录下寻找 Dockerfile 文件
 docker build -t 指定镜像名 .
