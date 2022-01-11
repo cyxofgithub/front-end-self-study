@@ -65,27 +65,27 @@ services:
 
 ##  Docker 历史
 
-![image-20211109190424415](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211109190424415.png)
+![image-20211109190424415](Docker.assets/image-20211109190424415.png)
 
 ## Docker 官网
 
-![image-20211109190649357](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211109190649357.png)
+![image-20211109190649357](Docker.assets/image-20211109190649357.png)
 
 ## Docker 能干嘛
 
 ### 之前的虚拟机技术
 
-![image-20211109192033208](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211109192033208.png)
+![image-20211109192033208](Docker.assets/image-20211109192033208.png)
 
 ![image-20211109191225300](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211109191225300.png)
 
 ### 容器化技术
 
-![image-20211109191357821](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211109191357821.png)
+![image-20211109191357821](Docker.assets/image-20211109191357821.png)
 
-![image-20211109192045834](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211109192045834.png)
+![image-20211109192045834](Docker.assets/image-20211109192045834.png)
 
-![image-20211109192551629](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211109192551629.png)
+![image-20211109192551629](Docker.assets/image-20211109192551629.png)
 
 # Docker 安装
 
