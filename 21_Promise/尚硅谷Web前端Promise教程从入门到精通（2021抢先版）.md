@@ -1517,7 +1517,7 @@ Promise.prototype.then = function(onResolved, onRejected){
 
 ### 17-class版本封装
 
-- 构造器的里的属性是在实例对象身上的， static 的方法在原型上
+- 构造器的里的属性是在实例对象身上的， static 的方法在构造函数自身上
 - static 定义方法本质就是 函数名.方法 的形式
 - 而没有 static 的本质是 函数名.protatye.方法的形式
 - 其实构造器就是构造方法的一个语法糖，当 new 这个类时，会调用 constructor 方法 

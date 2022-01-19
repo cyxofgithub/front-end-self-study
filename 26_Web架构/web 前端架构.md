@@ -343,3 +343,201 @@ tips：这一步windows和android 是无效的，为什么要做这一步？root
 
 ## 4-8 通用 npm API 模块封装
 
+## 4-9 npm 全局更新提示功能
+
+![image-20220117164757568](web 前端架构.assets/image-20220117164757568.png)
+
+```js
+// 关键步骤，获取线上的包信息，后面的步骤无非就是根据包信息的版本去比较本地包版本
+function getNpmInfo(npmName, registry) {
+    if (!npmName) {
+        return null;
+    }
+    const registryUrl = registry || getDefaultRegistry()
+    const npmInfoUrl = urlJoin(registryUrl, npmName)
+    return axios.get(npmInfoUrl).then(response => {
+        if (response.status === 200) {
+            return response.data
+        }
+        return null;
+    }).catch(err => {
+        return Promise.reject(err)
+    })
+}
+
+function getDefaultRegistry(isOriginal = false) {
+    return isOriginal ? 'http://registry.npm.org' : 'http://registry.npm.taobao.org/'
+}
+
+async function getNpmVersions(npmName, registry) {
+    const data = await getNpmInfo(npmName, registry);
+
+    if (data) {
+        return Object.keys(data.versions)
+    } else {
+        return []
+    }
+}
+
+function getSemverVersions(baseVersion, versions) {
+    versions = versions.filter( version => {
+        semver.satisfies(version, `^${baseVersion}`)
+    } ).sort( (a, b) => semver.gt(b, a))
+    
+    return versions; 
+}
+
+async function getNpmSemverVersions(baseVersion, npmName, registry) {
+    const versions = await getNpmVersions(npmName, registry)
+    const newVersions = getSemverVersions(baseVersion, versions)
+    if ( newVersions && newVersions.length > 0) {
+        return newVersions[0]
+    }
+    return null
+} 
+```
+
+## 5-1 快速实现一个 commander 脚手架
+
+![image-20220117170452838](web 前端架构.assets/image-20220117170452838.png)
+
+## 5-2 commander 脚手架全局配置
+
+##  5-3 commander 脚手架命令注册的两种方法
+
+```js
+#!/usr/bin/env node
+
+const commander = require('commander')
+const pkg = require('../package.json')
+
+// 获取 commander 单例
+// const { program } = commander.program;
+
+// 实例化一个 Command 示例
+const program = new commander.Command()
+
+program
+    .name(Object.keys(pkg.bin)[0])
+    .usage('<command> [options]')
+    .version(pkg.version)
+    .option('-d, --debug', '是否开启调试模式', false)
+    .option('-e, --envName <envNmae>', '获取环境变量名称')
+
+// comman 注册命令
+const clone = program.command('clone')
+
+clone
+    .action(() => {
+        console.log('do clone');
+    });
+
+// addCommand 注册命令
+const service = new commander.Command('service')
+service
+    .command('start [port]')
+    .description('start service at some port')
+    .action((port) => {
+        console.log('do service star    t', port);
+    })
+
+program.addCommand(service)
+
+program.parse(process.argv)
+```
+
+## 5-4 commander 注册命令的两种高级用法
+
+## 5-5 再讲3条 commander 的高级用法
+
+## 6-1 通过 webpack 完成 ES Module 资源构建
+
+tips：配置好入口，执行webpack即可
+
+## 6-2 通过 webpack target 属性支持 node 内置库
+
+![image-20220118182414981](web 前端架构.assets/image-20220118182414981.png)
+
+tips：默认环境是 web 肯定不支持node内置库，修改target为node即可
+
+## 6-3 配置 babel-loder 支持低版本 node
+
+# 第四周
+
+## 3-3 脚手架命令动态加载功能架构设计
+
+## 4-1 脚手架命令本地调式功能支持
+
+## 4-2 动态执行库 exec 模块创建	
+
+![image-20220119133813560](web 前端架构.assets/image-20220119133813560.png)
+
+## 4-3 创建 npm 模块通用类 package
+
+![image-20220119134409933](web 前端架构.assets/image-20220119134409933.png)
+
+## 4-4 Pakcage 类的属性、方法定义及构造函数逻辑开发
+
+## 4-5 Package 类获取入口文件路径功能开发（pkg-dir应用 + 解决不同操作系统路径兼容问题）
+
+```js
+// 获取入口文件的路径
+  getRootFilePath() {
+    function _getRootFile(targetPath) {
+      // 1. 获取package.json所在目录
+      // 这个库(pkg-dir)可以帮助查询 package.json 的绝对路径
+      const dir = pkgDir(targetPath); 
+      if (dir) {
+        // 2. 读取package.json
+        const pkgFile = require(path.resolve(dir, 'package.json'));
+        // 3. 寻找main/lib
+        if (pkgFile && pkgFile.main) {
+          // 4. 路径的兼容(macOS/windows)
+          return formatPath(path.resolve(dir, pkgFile.main));
+        }
+      }
+      return null;
+    }
+    if (this.storeDir) {
+      return _getRootFile(this.cacheFilePath);
+    } else {
+      return _getRootFile(this.targetPath);
+    }
+  }
+```
+
+## 4-6 利用 npminstall 库安装 npm 模块 
+
+```js
+  async install() {
+    await this.prepare();
+    return npminstall({
+      root: this.targetPath, // 要执行 npm install的根路径
+      storeDir: this.storeDir, // 安装在哪里
+      registry: getDefaultRegistry(), // 使用那个仓库淘宝？
+      pkgs: [{
+        name: this.packageName, // 要安装的包名，版本
+        version: this.packageVersion,
+      }],
+    });
+  }
+```
+
+tips：npminstall 这是一个库，可以帮助我们通过函数执行 npm install 包名/版本
+
+## 4-7 Pakcage 类判断模块是否存在方法开发（跳）
+
+## 4-8 Pakcage 类获取缓存模块入口文件功能改造（跳）
+
+## 4-9 Package 类获取缓存模块入口功能改造
+
+## 5-1 进程的基本概念 
+
+tips：讲解在操作系统中如何查看进程的嵌套关系
+
+### 什么是进程
+
+![image-20220119150628017](web 前端架构.assets/image-20220119150628017.png)
+
+![image-20220119150643328](web 前端架构.assets/image-20220119150643328.png)
+
