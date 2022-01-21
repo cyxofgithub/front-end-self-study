@@ -541,3 +541,77 @@ tips：讲解在操作系统中如何查看进程的嵌套关系
 
 ![image-20220119150643328](web 前端架构.assets/image-20220119150643328.png)
 
+## 5-3 child_process spawn 用法以及与 exec 与 execFile 的区别
+
+与 exec 与 execFile 相比 spawn 可以做到实时打印，而他们需要等到执行完一次性将结果反馈过来
+
+## 5-4 child_process fork 用法及父子进程通信机制讲解
+
+tips：fork会创建两个node进程，而上面的api不会，你可以通过 process.pid 观察到这两个的进程不一样，注意它是异步执行的
+
+![image-20220120104853765](web 前端架构.assets/image-20220120104853765.png)
+
+这会在子进程执行 child.js
+
+![image-20220120105336493](web 前端架构.assets/image-20220120105336493.png)
+
+使用场景：通过 node.js 去实现的耗时操作
+
+## 5-5 child_process 同步方法使用教程
+
+- execSync
+
+- execFileSync
+- spwanSync
+
+![image-20220120110440773](web 前端架构.assets/image-20220120110440773.png)
+
+## 6-1 通过脚手架命令 Command 类封装
+
+## 6-2 脚手架初始化方法开发
+
+## 6-3 利用Node多进程动态执行命令（stdio的inherit属性讲解）
+
+## 6-4 生成Node多进程动态执行代码
+
+![image-20220120140453962](web 前端架构.assets/image-20220120140453962.png)
+
+tips：序列化
+
+## 6-5 windows操作系统spawn执行命令兼容
+
+![image-20220120140908651](web 前端架构.assets/image-20220120140908651.png)
+
+## 7-1 Node多进程child_process库exec方法源码执行流程分析
+
+![image-20220120141607316](web 前端架构.assets/image-20220120141607316.png)
+
+tips：exec、execFile 本质都是调用了 spawn，而 spawn 创建进程会调用 new ChildProcess 其底层是 c++实现的
+
+![image-20220120141955437](web 前端架构.assets/image-20220120141955437.png)
+
+## 7-2 高能 child_process库exec源码精读
+
+# 第五周
+
+## 2-2 项目创建前准备阶段结构设计
+
+# 第七周 B端项目需求分析和架构设计
+
+## 1-1 本周简介
+
+![image-20220120164041434](web 前端架构.assets/image-20220120164041434.png)
+
+![image-20220120164128998](web 前端架构.assets/image-20220120164128998.png)
+
+![image-20220120164237005](web 前端架构.assets/image-20220120164237005.png)
+
+## 2-1 引子：突破瓶颈，前端破局之路
+
+![image-20220120165146371](web 前端架构.assets/image-20220120165146371.png)
+
+## 2-2 需求分析 
+
+## 2-3 项目难点分析
+
+##  3-1 组件库难点解决方案
