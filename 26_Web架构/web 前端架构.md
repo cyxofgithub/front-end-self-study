@@ -596,6 +596,240 @@ tips：exec、execFile 本质都是调用了 spawn，而 spawn 创建进程会�
 
 ## 2-2 项目创建前准备阶段结构设计
 
+![](web 前端架构.assets/image-20220124115008077.png)
+
+## 2-3 下载项目模板阶段架构设计
+
+![image-20220124115029385](web 前端架构.assets/image-20220124115029385.png)
+
+## 3-1 项目创建准备阶段--判断当前目录是否为空功能开发
+
+imooc-cli-dev/commands/init/lib/index.js
+
+```js
+  async prepare() {
+    // 0. 判断项目模板是否存在
+    const template = await getProjectTemplate();
+    if (!template || template.length === 0) {
+      throw new Error('项目模板不存在');
+    }
+    this.template = template;
+    // 1. 判断当前目录是否为空
+    const localPath = process.cwd();
+    if (!this.isDirEmpty(localPath)) {
+      let ifContinue = false;
+      if (!this.force) {
+        // 询问是否继续创建
+        ifContinue = (await inquirer.prompt({
+          type: 'confirm',
+          name: 'ifContinue',
+          default: false,
+          message: '当前文件夹不为空，是否继续创建项目？',
+        })).ifContinue;
+        if (!ifContinue) {
+          return;
+        }
+      }
+      // 2. 是否启动强制更新
+      if (ifContinue || this.force) {
+        // 给用户做二次确认
+        const { confirmDelete } = await inquirer.prompt({
+          type: 'confirm',
+          name: 'confirmDelete',
+          default: false,
+          message: '是否确认清空当前目录下的文件？',
+        });
+        if (confirmDelete) {
+          // 清空当前目录
+          fse.emptyDirSync(localPath);
+        }
+      }
+    }
+    return this.getProjectInfo();
+  }
+```
+
+```js
+  isDirEmpty(localPath) {
+    let fileList = fs.readdirSync(localPath);
+    // 文件过滤的逻辑
+    fileList = fileList.filter(file => (
+      !file.startsWith('.') && ['node_modules'].indexOf(file) < 0
+    ));
+    return !fileList || fileList.length <= 0;
+  }
+```
+
+## 3-2 inquirer 基本用法和常用属性入门
+
+[inquirer - npm (npmjs.com)](https://www.npmjs.com/package/inquirer)
+
+## 3-3 inquirer 其他交互形式
+
+[inquirer - npm (npmjs.com)](https://www.npmjs.com/package/inquirer)
+
+## 3-4 强制清除当前目录
+
+利用 fs-extra 的 emptyDirSync
+
+## 3-5 获取项目基本信息功能开发
+
+## 3-6 项目名称和版本号合法性校验
+
+版本号检验合法性包含在获取基本信息功能开发里
+
+```js
+  async getProjectInfo() {
+    function isValidName(v) {
+      return /^[a-zA-Z]+([-][a-zA-Z][a-zA-Z0-9]*|[_][a-zA-Z][a-zA-Z0-9]*|[a-zA-Z0-9])*$/.test(v);
+    }
+
+    let projectInfo = {};
+    let isProjectNameValid = false;
+    if (isValidName(this.projectName)) {
+      isProjectNameValid = true;
+      projectInfo.projectName = this.projectName;
+    }
+    // 1. 选择创建项目或组件
+    const { type } = await inquirer.prompt({
+      type: 'list',
+      name: 'type',
+      message: '请选择初始化类型',
+      default: TYPE_PROJECT,
+      choices: [{
+        name: '项目',
+        value: TYPE_PROJECT,
+      }, {
+        name: '组件',
+        value: TYPE_COMPONENT,
+      }],
+    });
+    log.verbose('type', type);
+    this.template = this.template.filter(template =>
+      template.tag.includes(type));
+    const title = type === TYPE_PROJECT ? '项目' : '组件';
+    const projectNamePrompt = {
+      type: 'input',
+      name: 'projectName',
+      message: `请输入${title}名称`,
+      default: '',
+        
+      // 版本号检验
+      validate: function(v) {
+        const done = this.async();
+        setTimeout(function() {
+          // 1.首字符必须为英文字符
+          // 2.尾字符必须为英文或数字，不能为字符
+          // 3.字符仅允许"-_"
+          if (!isValidName(v)) {
+            done(`请输入合法的${title}名称`);
+            return;
+          }
+          done(null, true);
+        }, 0);
+      },
+      filter: function(v) {
+        return v;
+      },
+    };
+    const projectPrompt = [];
+    if (!isProjectNameValid) {
+      projectPrompt.push(projectNamePrompt);
+    }
+    projectPrompt.push({
+        type: 'input',
+        name: 'projectVersion',
+        message: `请输入${title}版本号`,
+        default: '1.0.0',
+        validate: function(v) {
+          const done = this.async();
+          setTimeout(function() {
+            if (!(!!semver.valid(v))) {
+              done('请输入合法的版本号');
+              return;
+            }
+            done(null, true);
+          }, 0);
+        },
+        filter: function(v) {
+          if (!!semver.valid(v)) {
+            return semver.valid(v);
+          } else {
+            return v;
+          }
+        },
+      },
+      {
+        type: 'list',
+        name: 'projectTemplate',
+        message: `请选择${title}模板`,
+        choices: this.createTemplateChoice(),
+      });
+    if (type === TYPE_PROJECT) {
+      // 2. 获取项目的基本信息
+      const project = await inquirer.prompt(projectPrompt);
+      projectInfo = {
+        ...projectInfo,
+        type,
+        ...project,
+      };
+    } else if (type === TYPE_COMPONENT) {
+      const descriptionPrompt = {
+        type: 'input',
+        name: 'componentDescription',
+        message: '请输入组件描述信息',
+        default: '',
+        validate: function(v) {
+          const done = this.async();
+          setTimeout(function() {
+            if (!v) {
+              done('请输入组件描述信息');
+              return;
+            }
+            done(null, true);
+          }, 0);
+        },
+      };
+      projectPrompt.push(descriptionPrompt);
+      // 2. 获取组件的基本信息
+      const component = await inquirer.prompt(projectPrompt);
+      projectInfo = {
+        ...projectInfo,
+        type,
+        ...component,
+      };
+    }
+    // 生成classname
+    if (projectInfo.projectName) {
+      projectInfo.name = projectInfo.projectName;
+      projectInfo.className = require('kebab-case')(projectInfo.projectName).replace(/^-/, '');
+    }
+    if (projectInfo.projectVersion) {
+      projectInfo.version = projectInfo.projectVersion;
+    }
+    if (projectInfo.componentDescription) {
+      projectInfo.description = projectInfo.componentDescription;
+    }
+    return projectInfo;
+  }
+```
+
+## 4-1 下载项目模板功能实现流程分析+egg.js 简介
+
+![image-20220124153633406](web 前端架构.assets/image-20220124153633406.png)
+
+## 4-2 imooc-cli 后端项目创建
+
+npm init egg的本质其实就是执行 create-egg
+
+npm init imooc-cli 就是 create-imooc-cli
+
+## 4-3 通过 egg.js 框架添加新的 API
+
+参考imooc-cli-server/app/controller/Project
+
+tips：在 controller 类里，每个方法就对应一个 api
+
 # 第七周 B端项目需求分析和架构设计
 
 ## 1-1 本周简介
@@ -614,4 +848,855 @@ tips：exec、execFile 本质都是调用了 spawn，而 spawn 创建进程会�
 
 ## 2-3 项目难点分析
 
+
+
+## 2-3 下载项目模板架构设计
+
+## 2-3 项目难点分析
+
 ##  3-1 组件库难点解决方案
+
+## 3-2 编辑器难点解析一
+
+## 3-3 编辑器难点解析二
+
+## 3-4 技术选型
+
+![image-20220124165739416](web 前端架构.assets/image-20220124165739416.png)
+
+## 3-5 技术选项 vue 和 react
+
+![image-20220124170612648](web 前端架构.assets/image-20220124170612648.png)
+
+![image-20220124170606481](web 前端架构.assets/image-20220124170606481.png)
+
+## 4-1 整体架构
+
+![image-20220124171207483](web 前端架构.assets/image-20220124171207483.png)
+
+# 第八周 前端基础技术回顾和巡礼
+
+  
+
+## 1-1 本周导学
+
+![image-20220124171823090](web 前端架构.assets/image-20220124171823090.png)
+
+![image-20220124171951600](web 前端架构.assets/image-20220124171951600.png)
+
+## 2-1 Typescript 基础知识
+
+在 ts 中 null 和 undeifnd 是所有类型的子类型
+
+```ts
+// tuple 元组类型
+let user: [string, number] = ['viking', 20]
+user = ['viking', 30]  // 前一项改为numbr后面为string也会报错，多一项也会报错
+                       // 除非使用 push 方法，不过 push 进的应该满足 s 或 n
+```
+
+ ![image-20220124172949039](web 前端架构.assets/image-20220124172949039.png)
+
+tips：可选参数
+
+## 2-2 接口：interface
+
+![image-20220124173833529](web 前端架构.assets/image-20220124173833529.png)
+
+定义只读属性
+
+```ts  
+interface FunctionWithProps {
+  (x: number): number;
+  name: string;
+}
+const a: FunctionWithProps = (x: number) => {
+  return x
+}
+a.name = 'abc'
+```
+
+tips：定义一个具有属性的函数 
+
+## 2-3 类和接口
+
+```ts
+
+// 类的基本定义
+// public private protected
+class Animal {
+  protected name: string;
+  constructor(name: string) {
+    this.name = name
+  }
+  run() {
+    return `${this.name} is running`
+  }
+}
+const snake = new Animal('lily')
+snake.run()
+// 继承
+class Dog extends Animal {
+  bark() {
+    return `${this.name} is barking`
+  }
+}
+
+const xiaobao = new Dog('xiaobao')
+xiaobao.run()
+// 多态
+class Cat extends Animal {
+  constructor(name) {
+    super(name)
+    console.log(this.name)
+  }
+  run() {
+    return 'Meow, ' + super.run()
+  }
+}
+const maomao = new Cat('maomao')
+```
+
+```ts
+interface ClockInterface {
+  currentTime: number;
+  alert(): void;
+}
+
+// 约束静态属性
+interface ClockStatic {
+  new (h: number, m: number): void;
+  time: number;
+}
+interface GameInterface {
+  play(): void;
+}
+
+// implements 无法约束静态属性，所以需要两个 interface 进行双重约束
+const Clock:ClockStatic = class Clock implements ClockInterface {
+  constructor(h:number, m: number) {
+
+  }
+  static time = 12;
+  currentTime: number = 123;
+  alert() {
+
+  }
+}
+class Cellphone implements ClockInterface, GameInterface {
+  currentTime: number = 123;
+  alert() {
+
+  }
+  play() {
+
+  }
+}
+
+```
+
+## 2-4 泛型基础知识
+
+```ts
+function echo<T>(arg: T): T {
+  return arg
+}
+
+function swap<T, U>(tuple: [T, U]): [U, T] {
+  return [tuple[1], tuple[0]]
+}
+const result = swap(['string', 123])
+let test = 123
+
+interface GithubResp {
+  name: string;
+  count: number;
+}
+interface CountryResp {
+  name: string;
+  area: number;
+  population: number;
+}
+
+function withAPI<T>(url: string): Promise<T> {
+  return fetch(url).then(resp => resp.json())
+}
+withAPI<CountryResp>('country.resp').then(resp => {
+  
+})
+```
+
+## 2-5 解析源码：泛型和接口
+
+## 2-6 源码解析：深入泛型
+
+```ts
+// 类型别名
+let sum: (x: number, y: number) => number
+const result = sum(1,2)
+type PlusType = (x: number, y: number) => number
+let sum2: PlusType
+sum2(1, 2)
+
+
+// 交叉类型
+interface IName  {
+  name: string
+}
+type IPerson = IName & { age: number }
+let person: IPerson = { name: 'hello', age: 12 }
+
+// 联合类型
+let numberOrString: number | string 
+
+// 类型断言
+function getLength(input: number | string) {
+  const str = input as string
+  if (str.length) {
+    return str.length
+  } else {
+    const number = input as number
+    return number.toString().length
+  }
+}
+
+interface Person {
+  name: string
+  age: number
+}
+
+// Partial 可以将参数转化为可选参数
+type PersonOptional = Partial<IPerson>
+let viking2: PersonOptional = {name: '12'}
+```
+
+## 2-7 源码解析：高级特性
+
+```ts
+// keyof
+type Keys = keyof CountryResp
+// lookup types
+type NameType = CountryResp['name']
+// mapped types
+type Test = {
+  [key in Keys]: any
+}
+// 可以说是上面 Partial 的源码
+type CountryOpt = {
+  [p in Keys]?: CountryResp[p]
+}
+```
+
+## 2-8 源码解析 extends 的妙用
+
+## 2-9 定义文件 基础知识
+
+- 使用 declare 声明
+
+```ts
+type HTTPMethod = 'GET' | 'POST' | 'PATCH' | 'DELETE'
+declare function myFetch<T = any>(url: string, method: HTTPMethod, data?: any) : Promise<T>
+
+declare namespace myFetch {
+  const get: <T = any>(url: string) => Promise<T>;
+  const post: <T = any>(url: string, data: any) => Promise<T>;
+}
+```
+
+- 或者直接安装库的同时安装它的声明文件即可
+
+## 3-1 新特性的 简介
+
+![image-20220208214325319](web 前端架构.assets/image-20220208214325319.png)
+
+## 3-2 为什么有 composition API？
+
+在 vue2 中一个功能的东西分的非常散，可能分割成 data、computed、method，这样非常的松散，当代码量较多时，不方便阅读！
+
+## 3-3 composition API 基础知识
+
+- defineComoponet:定义一个组件
+- ref:定义一个常规响应式数据
+- reactive:定义一个对象类型的响应式数据
+- toRefs;将对象里的每个值都转换为响应式数据
+
+```vue
+<template>
+  <div v-if="todo.loading">Loading TODO!</div>
+  <div v-else>{{todo.result && todo.result.title}}</div>
+  <div v-if="post.loading">Loading POST!</div>
+  <div v-else>{{post.result && post.result.body}}</div>
+  <hello :msg="msg" v-if="toggle"></hello>
+  <button @click="toggle = !toggle">Hide</button>
+  <h1>{{count}}</h1>
+  <h1>{{double}}</h1>
+  <button @click="addCount"><h1>Add!</h1></button>
+  <h1>Name: {{name}}</h1>
+  <h1>Age: {{age}}</h1>
+  <button @click="change"><h1>Change name!</h1></button>
+</template>
+
+<script lang="ts">
+import { defineComponent, ref, reactive, computed, toRefs, onMounted, onUpdated } from 'vue'
+import Hello from './components/Hello.vue'
+import useURLLoader from './useURLLoader'
+interface PostProps {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
+interface TodoProps {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean; 
+}
+
+export default defineComponent({
+  name: 'App',
+  components: {
+    Hello
+  },
+  setup () {
+    const count = ref(0)
+    const msg = ref('hello')
+    const addCount = () => {
+      count.value++
+      msg.value += 'hello'
+    }
+    const todo = useURLLoader<TodoProps>('https://jsonplaceholder.typicode.com/todos/1')
+    const post = useURLLoader<PostProps>('https://jsonplaceholder.typicode.com/posts/1')
+    const double = computed(() => count.value * 2)
+    const toggle = ref(true)
+    const person = reactive({
+      name: 'viking',
+      age: 20,
+      change() {
+        person.name = 'maomao'
+        person.age = 30
+      }
+    })
+    const person2 = toRefs(person)
+    return {
+      count,
+      addCount,
+      double,
+      msg,
+      toggle,
+      ...person2,
+      todo,
+      post
+    }
+  }
+});
+</script>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+</style>
+```
+
+## 3-4 深入响应式对象 - 追踪变化
+
+![image-20220209101731131](web 前端架构.assets/image-20220209101731131.png)
+
+## 3-5 深入响应式对象 - 存储和触发 effect
+
+```js
+let product = { price: 5, quantity: 2 }
+let total = 0
+let dep = new Set()
+function track() {
+  dep.add(effect) // Store the current effect
+}
+function trigger() { 
+  dep.forEach(effect => effect()) 
+}
+const reactive = (obj) => {
+  const handler = {
+    get() {
+      let result = Reflect.get(...arguments)
+      track()
+      return result
+    },
+    set() {
+      let result = Reflect.set(...arguments)
+      trigger()
+      return result
+    }
+  }
+  return new Proxy(obj, handler)
+}
+
+const productProxy = reactive(product)
+let effect =  () => { 
+  total = productProxy.price * productProxy.quantity
+}
+effect()
+productProxy.price = 10
+console.log(total)
+```
+
+## 3-6 Vue 副作用处理机制
+
+![image-20220209102711784](web 前端架构.assets/image-20220209102711784.png)
+
+## 3-7 watchEffect
+
+![image-20220209103507930](web 前端架构.assets/image-20220209103507930.png)
+
+![image-20220209104054980](web 前端架构.assets/image-20220209104054980.png)
+
+tips：可以改变 flush 的值为 pre 去获取视图更新前的结果，默认就是 pre
+
+## 3-8 Vue 使用 watch 精确控制副作用
+
+![image-20220209104654674](web 前端架构.assets/image-20220209104654674.png)
+
+```vue
+<template>
+  <h1 ref="node">{{msg}}</h1>
+  <h1>{{count}}</h1>
+  <button @click="count++">change</button>
+</template>
+
+<script lang="ts">
+import { defineComponent, watch, ref, toRefs } from 'vue'
+export default defineComponent({
+  name: 'Hello',
+  props: {
+    msg: {
+      type: String,
+      required: true
+    }
+  },
+  setup (props) {
+    const count = ref(1)
+    const node = ref<null | HTMLElement>(null)
+    const { msg } = toRefs(props)
+    // watch 可以传入一个 getter 或者是一个响应数据，不能是一个普通的值，传入多个值需要用数组的形式传入
+    watch([() => props.msg, count], (newValue, oldValue) => {
+      console.log('old', oldValue)
+      console.log('new', newValue)
+      console.log(count.value)
+    })
+    return {
+      count,
+      node
+    }
+  }
+})
+</script>
+
+<style>
+
+</style>
+```
+
+## 3-9 第一个自定义 hooks 函数
+
+```ts
+import axios from 'axios'
+import { reactive } from 'vue'
+interface DataProps<T> {
+  result: T | null;
+  loading: boolean;
+  loaded: boolean;
+  error: any;
+}
+function useURLLoader<T>(url: string) {
+  const data = reactive<DataProps<T>>({
+    result: null,
+    loading: true,
+    loaded: false,
+    error: null
+  })
+  axios.get(url).then((rawData) => {
+    data.loading = false
+    data.loaded = true
+    data.result = rawData.data
+  }).catch(e => {
+    data.error = e
+  }).finally(() => {
+    data.loading = false
+  })
+  return data
+}
+
+export default useURLLoader
+
+```
+
+tips：自定义 hooks 最大的作用就是将一部分代码从 vue 文件里脱离出来，很大程度上改变了vue的编程方式
+
+```vue
+<template>
+  <div v-if="todo.loading">Loading TODO!</div>
+  <div v-else>{{todo.result && todo.result.title}}</div>
+  <div v-if="post.loading">Loading POST!</div>
+  <div v-else>{{post.result && post.result.body}}</div>
+  <hello :msg="msg" v-if="toggle"></hello>
+  <button @click="toggle = !toggle">Hide</button>
+  <h1>{{count}}</h1>
+  <h1>{{double}}</h1>
+  <button @click="addCount"><h1>Add!</h1></button>
+  <h1>Name: {{name}}</h1>
+  <h1>Age: {{age}}</h1>
+  <button @click="change"><h1>Change name!</h1></button>
+</template>
+
+<script lang="ts">
+import { defineComponent, ref, reactive, computed, toRefs, onMounted, onUpdated } from 'vue'
+import Hello from './components/Hello.vue'
+import useURLLoader from './useURLLoader'
+interface PostProps {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
+interface TodoProps {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean; 
+}
+
+export default defineComponent({
+  name: 'App',
+  components: {
+    Hello
+  },
+  setup () {
+    const count = ref(0)
+    const msg = ref('hello')
+    const addCount = () => {
+      count.value++
+      msg.value += 'hello'
+    }
+    const todo = useURLLoader<TodoProps>('https://jsonplaceholder.typicode.com/todos/1')
+    const post = useURLLoader<PostProps>('https://jsonplaceholder.typicode.com/posts/1')
+    const double = computed(() => count.value * 2)
+    const toggle = ref(true)
+    const person = reactive({
+      name: 'viking',
+      age: 20,
+      change() {
+        person.name = 'maomao'
+        person.age = 30
+      }
+    })
+    const person2 = toRefs(person)
+    return {
+      count,
+      addCount,
+      double,
+      msg,
+      toggle,
+      ...person2,
+      todo,
+      post
+    }
+  }
+});
+</script>
+
+<style>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+</style>
+
+```
+
+## 3-10 使用泛型改造自定义函数
+
+```ts
+import axios from 'axios'
+import { reactive } from 'vue'
+interface DataProps<T> {
+  result: T | null;
+  loading: boolean;
+  loaded: boolean;
+  error: any;
+}
+function useURLLoader<T>(url: string) {
+  const data = reactive<DataProps<T>>({
+    result: null,
+    loading: true,
+    loaded: false,
+    error: null
+  })
+  axios.get(url).then((rawData) => {
+    data.loading = false
+    data.loaded = true
+    data.result = rawData.data
+  }).catch(e => {
+    data.error = e
+  }).finally(() => {
+    data.loading = false
+  })
+  return data
+}
+
+export default useURLLoader
+
+```
+
+```ts
+interface PostProps {
+  userId: number;
+  id: number;
+  title: string;
+  body: string;
+}
+interface TodoProps {
+  userId: number;
+  id: number;
+  title: string;
+  completed: boolean; 
+}
+
+const todo = useURLLoader<TodoProps>('https://jsonplaceholder.typicode.com/todos/1')
+    const post = useURLLoader<PostProps>('https://jsonplaceholder.typicode.com/posts/1')
+```
+
+## 3-11 知识小结
+
+![image-20220209144405380](web 前端架构.assets/image-20220209144405380.png)
+
+![image-20220209144549444](web 前端架构.assets/image-20220209144549444.png)
+
+![image-20220209144702424](web 前端架构.assets/image-20220209144702424.png)
+
+![image-20220209144745577](web 前端架构.assets/image-20220209144745577.png)
+
+# 第九周 项目整体搭建
+
+## 2-3 Vue CLI 对战 Vite
+
+![image-20220209150218459](web 前端架构.assets/image-20220209150218459.png)
+
+![image-20220209150517486](web 前端架构.assets/image-20220209150517486.png)
+
+tips：vite 不去考虑浏览器对 es 的兼容问题，它利用了浏览器本身对 ESM 的处理能力
+
+![image-20220209150613301](web 前端架构.assets/image-20220209150613301.png)
+
+![image-20220209150721204](web 前端架构.assets/image-20220209150721204.png)
+
+## 3-1 使用 ESLint 添加代码
+
+tips：可以在 vscode 下载插件，也可以直接嵌入项目
+
+## 3-2 深入 ESLint 配置文件
+
+## 3-3 使用 prettier 自动格式化代码
+
+![image-20220209151943059](web 前端架构.assets/image-20220209151943059.png)
+
+使用
+
+![image-20220209152018450](web 前端架构.assets/image-20220209152018450.png)
+
+或者在 vscode 安装 prettier 插件，使用快捷键
+
+## 3-4 项目结构规范
+
+## 3-5 了解 Git Flow 标准
+
+## 4-1 安装 ant-design-vue 组件
+
+看文档
+
+## 4-2 使用 ant-design-vue 搭建页面框架
+
+## 4-3 SPA 路由的基本原理
+
+tips：本质是 js 对页面dom的动态修改
+
+## 5-3 Vuex 结合整个应用
+
+![image-20220209155012660](web 前端架构.assets/image-20220209155012660.png)
+
+## 6-1 本周总结
+
+![image-20220209154433539](web 前端架构.assets/image-20220209154433539.png)
+
+![image-20220209154506831](web 前端架构.assets/image-20220209154506831.png)
+
+# 第十周 编辑器基本布局，及业务组件库初步开发
+
+## 1-1 本周导学
+
+![image-20220209162222689](web 前端架构.assets/image-20220209162222689.png)
+
+ ![image-20220209162730634](web 前端架构.assets/image-20220209162730634.png)
+
+## 2-1 将编辑器数据结构添加至 vuex store
+
+## 2-2 LText 组件初步实现
+
+## 2-3 LText 添加通用属性
+
+## 2-4 LText 使用 hooks 重用逻辑
+
+useComponentCommon.ts
+
+## 2-5 完成点击模板列表添加到画布的行为
+
+## 2-6 为业务组件属性添加类型的利弊
+
+tips：我们尽可能为所有变量都添加类型，避免出现any情况
+
+## 3-1 获取正在编辑的元素属性
+
+tips：点击对应元素的时候发射一个事件，去更新store的状态，并获取对应的组件
+
+**画布区域**
+
+![image-20220211105555066](web 前端架构.assets/image-20220211105555066.png)
+
+![image-20220211105616178](web 前端架构.assets/image-20220211105616178.png)
+
+**元素外壳**
+
+![image-20220211105736130](web 前端架构.assets/image-20220211105736130.png)
+
+**store**
+
+![image-20220211105816861](web 前端架构.assets/image-20220211105816861.png)
+
+## 3-2 添加属性和表单的基础对应关系并展示
+
+tips：根据组件属性去为它匹配不同的表单
+
+![image-20220211112129022](web 前端架构.assets/image-20220211112129022.png)
+
+## 3-3 添加更多简单对应关系并展示
+
+tips：控制组件的一些样式直接bind额外的属性就可以了
+
+![image-20220211113205028](web 前端架构.assets/image-20220211113205028.png)
+
+## 3-4 添加更多复杂对应关系并展示
+
+tips：组件里面嵌套一个组件的处理方式
+
+![image-20220211113318438](web 前端架构.assets/image-20220211113318438.png)
+
+![image-20220211114023766](web 前端架构.assets/image-20220211114023766.png)
+
+![image-20220211114321356](web 前端架构.assets/image-20220211114321356.png)
+
+tips：对初始值或修改后的值做一个转换，因为数据结构里的数据可能和组件里要求的数据类型不一致
+
+## 3-5 分析展示和编辑属性的“金科玉律”
+
+## 3-6 添加编辑表单并更新页面
+
+# 第十五周 服务端 CI/CD
+
+## 1-1 本周介绍
+
+![image-20220209172759053](web 前端架构.assets/image-20220209172759053.png)
+
+![image-20220209172859488](web 前端架构.assets/image-20220209172859488.png)
+
+## 2-1 本章介绍~1
+
+![image-20220209173831925](web 前端架构.assets/image-20220209173831925.png)
+
+## 2-2 认识 Github actions~1 
+
+tips：CI/CD 的一个工具
+
+![image-20220210165207717](web 前端架构.assets/image-20220210165207717.png)
+
+![image-20220210165234820](web 前端架构.assets/image-20220210165234820.png)
+
+![image-20220210165515871](web 前端架构.assets/image-20220210165515871.png)
+
+![image-20220210165528027](web 前端架构.assets/image-20220210165528027.png)
+
+## 2-4 Github actions 做自动化测试
+
+## 2-5 Github actions 章总结
+
+![image-20220210170748239](web 前端架构.assets/image-20220210170748239.png)
+
+## 3-5 介绍 Dockerfile 语法
+
+tips：建议先拉取 node 镜像再去构建，这样速度更快
+
+![image-20220210171009680](web 前端架构.assets/image-20220210171009680.png)
+
+run 和 cmd 都可以执行命令，我们一般把耗时命令放在 run，因为容器构建完后就可以重复利用，我们就第一次构建容器时比较耗时，后面启动容器不耗时
+
+![image-20220210171650570](web 前端架构.assets/image-20220210171650570.png)
+
+![image-20220210171657845](web 前端架构.assets/image-20220210171657845.png)
+
+![image-20220210172008298](web 前端架构.assets/image-20220210172008298.png)
+
+使该程序可以阻塞控制台，即控制台无法输入
+
+![image-20220210172032226](web 前端架构.assets/image-20220210172032226.png)
+
+## 3-6 使用 DockerFile 构建镜像
+
+![image-20220210172534045](web 前端架构.assets/image-20220210172534045.png)
+
+![image-20220210172806408](web 前端架构.assets/image-20220210172806408.png)
+
+## 3-7 Docker 章总结
+
+## 4-1 Docker-compose 章开始~1
+
+![image-20220210173513768](web 前端架构.assets/image-20220210173513768.png)
+
+## 5-1 自动发布测试 - 章开始~1
+
+![image-20220210174010659](web 前端架构.assets/image-20220210174010659.png)
+
+## 5-2 配置测试机~1
+
+![image-20220210174627437](web 前端架构.assets/image-20220210174627437.png)
+
+![image-20220210174655342](web 前端架构.assets/image-20220210174655342.png)
+
+![image-20220210175016137](web 前端架构.assets/image-20220210175016137.png)
+
+![image-20220210175034681](web 前端架构.assets/image-20220210175034681.png)
+
+## 5-3 自动发布到测试机-讲解配置~1
+
+![image-20220210175923651](web 前端架构.assets/image-20220210175923651.png)
+
+![image-20220210180307660](web 前端架构.assets/image-20220210180307660.png)
+
+![image-20220210180321627](web 前端架构.assets/image-20220210180321627.png)
+
+## 5-4 自动发布到测试机~功能演示
+
+## 5-5 自动发布测试总结
+
+## 6-1 周总结
+
+![image-20220210182049945](web 前端架构.assets/image-20220210182049945.png)
+
+![image-20220210182225222](web 前端架构.assets/image-20220210182225222.png)
+
