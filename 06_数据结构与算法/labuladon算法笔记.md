@@ -3308,3 +3308,26 @@ function Bubble( array ) {
 ```
 
 ## 二路归并排序
+
+# 二分查找
+
+```js
+function BinarySearch(nums, target) {
+    let left = 0,
+       right = nums.length - 1
+
+    while (left <= right) {
+        const mid = Math.floor((left + right)/2)
+
+        if (nums[mid] === target) {
+            return mid // 猜到了
+        } else if (nums[mid] < target) {
+            left = mid + 1 // 猜小了
+        } else {
+            right = mid - 1 // 猜大了
+        }
+    }
+}
+```
+
+tips：二分查找的前提是nums是个有序数组
