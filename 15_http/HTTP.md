@@ -1,4 +1,4 @@
-# HTTP 简介
+# lHTTP 简介
 
 ## HTTP 简介
 
@@ -468,6 +468,8 @@ tips：注意开发者工具启动时不走缓存的坑
 
 ![img](HTTP.assets/169a11dbaa0f8a2atplv-t2oaga2asx-watermark.awebp)
 
+翻译：假如不配、从何时修改
+
 **2.2.2、响应头部字段**
 
 ![img](HTTP.assets/169a11e177c975f2tplv-t2oaga2asx-watermark.awebp)
@@ -555,10 +557,9 @@ tips：304 说明缓存时间虽然过期了，但是服务器资源并没有修
 
 1、**对于强制缓存，服务器通知浏览器一个缓存时间，在缓存时间内，下次请求，直接用缓存，不在时间内，执行比较缓存策略。**
 
-2、对于比较缓存，将缓存信息中的Etag和Last-Modified通过请求发送给服务器，由服务器校验，返回304状态码时，浏览器直接使用缓存。
+2、对于比较缓存，将缓存信息中的Etag和Last-Modified通过请求发送给服务器，由服务器校验，返回304状态码时，浏览器。
 
 总结流程图如下所示：
 
 ![img](HTTP.assets/169a12255df4532atplv-t2oaga2asx-watermark.awebp)
-
 

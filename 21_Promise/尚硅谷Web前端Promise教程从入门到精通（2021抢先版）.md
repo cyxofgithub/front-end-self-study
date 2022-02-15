@@ -8,6 +8,15 @@
   - Promise 是一门新的技术(ES6 规范) 
   - Promise 是 JS 中进行异步编程的新解决方案 
     - 备注：旧方案是单纯使用回调函数
+    
+      ```
+      setimeOut(function() {
+      	...
+      	setimeout(function() {
+      	
+      	}, 1000)
+      }, 1000)
+      ```
 - 具体表达: 
   - 从语法上来说: Promise 是一个构造函数
   - 从功能上来说: promise 对象用来封装一个异步操作并可以获取其成功/ 失败的结果值
@@ -637,7 +646,7 @@ function Promise(executor){
 
     }
 
-    //同步调用『执行器函数』
+    //同步调用『执行器函数』，new 的时候我们从外部传入的函数会执行就是在这一步，然后我们需要封装 resolve，rejetct 两个函数给	   外部调用
     executor(resolve, reject);
 }
 
