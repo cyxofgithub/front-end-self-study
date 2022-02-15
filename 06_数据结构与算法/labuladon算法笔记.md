@@ -3261,3 +3261,73 @@ var maxDepth = function(root) {
 };
 ```
 
+# 排序算法
+
+## 冒泡排序
+
+```js
+ /**
+   * 如何理解冒泡？
+   * 每次循环都会确定一个最大值或最小值
+   * 这也是为什么每次循环最后一位就不用再去比较它了
+   * 时间复杂度是 n ²
+ */
+function Bubble( array ) {
+ 	for ( let i = 0; i < array.length - 1; i++ ) {
+ 	    for( let j = 0; j < array.length - i - 1; j++ ) {
+ 	        if ( array[j] > array[j+1] ) {
+ 	            const temp = array[j]
+ 	            array[j] = array[j+1]
+ 	            array[j+1] = temp
+ 	        }
+ 	    }
+ 	}
+}
+```
+
+## 快速排序
+
+```js
+        /**
+         * 快速排序: 取一个基准值，然后数组里比它小的放左边，大的放右边，递归
+         * 这个过程即可
+         */
+        function QuickSort( array ) {
+            if ( array.length <= 1 ) return array;
+            let pivotPlace = Math.floor( array.length/2 )
+            let pivot = array.splice( pivotPlace, 1 )[0]
+            let left = []
+            let right = []
+            for ( let i = 0; i < array.length; i++ ) {
+                if ( array[i] > pivot ) right.push( array[i] )
+                else left.push(array[i])
+            }
+            return QuickSort(left).concat( [pivot], QuickSort(right) )
+        }
+        console.log(QuickSort( array ));
+```
+
+## 二路归并排序
+
+# 二分查找
+
+```js
+function BinarySearch(nums, target) {
+    let left = 0,
+       right = nums.length - 1
+
+    while (left <= right) {
+        const mid = Math.floor((left + right)/2)
+
+        if (nums[mid] === target) {
+            return mid // 猜到了
+        } else if (nums[mid] < target) {
+            left = mid + 1 // 猜小了
+        } else {
+            right = mid - 1 // 猜大了
+        }
+    }
+}
+```
+
+tips：二分查找的前提是nums是个有序数组
