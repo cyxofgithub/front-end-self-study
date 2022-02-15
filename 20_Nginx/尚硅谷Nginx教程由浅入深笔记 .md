@@ -80,7 +80,7 @@ tips：这里有开启端口的操作说明
 
 ![image-20210902112852008](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210902112852008.png)
 
-## Nginx配置集群分布
+## Nginx配置高可用集群
 
 ![image-20211130163733807](尚硅谷Nginx教程由浅入深笔记 .assets/image-20211130163733807.png)
 

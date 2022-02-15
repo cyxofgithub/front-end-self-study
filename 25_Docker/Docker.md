@@ -1,5 +1,10 @@
 # 常用的小结
 
+查看容器：
+
+- 正在运行：docker ps
+- 所有：docker ps -all
+
 ```shell
 # 最后的 . 告诉 docker 在当前目录下寻找 Dockerfile 文件
 docker build -t 指定镜像名 .
@@ -668,7 +673,7 @@ Successfully tagged mycentos:0.1
 
 ![image-20211205182722347](Docker.assets/image-20211205182722347.png)
 
-结论：tomcat01 和 tomcat02 是公用的一个路由器，docker0
+结论：tomcat01 和 tomcat02 有公用的一个路由器，docker0
 
 所有的容器不指定网络的情况下，都是 docker0 路由的，docker 会给我们的容器分配一个默认的可用 ip 255.255.0.1/16
 
