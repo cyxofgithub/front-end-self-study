@@ -1,5 +1,9 @@
 # 常用的小结
 
+查看容器：
+
+- 正在运行：docker ps
+- 所有：docker ps -all
 启动一个 nginx 镜像和挂载数据卷：docker run -d  -p 5012:80 --name nginx3 --restart=always -v  /linux_class/nginx3/html:/usr/share/nginx/html -v /linux_class/nginx3/nginx.conf:/etc/nginx/nginx.conf nginx
 
 ```shell
@@ -670,7 +674,7 @@ Successfully tagged mycentos:0.1
 
 ![image-20211205182722347](Docker.assets/image-20211205182722347.png)
 
-结论：tomcat01 和 tomcat02 是公用的一个路由器，docker0
+结论：tomcat01 和 tomcat02 有公用的一个路由器，docker0
 
 所有的容器不指定网络的情况下，都是 docker0 路由的，docker 会给我们的容器分配一个默认的可用 ip 255.255.0.1/16
 
