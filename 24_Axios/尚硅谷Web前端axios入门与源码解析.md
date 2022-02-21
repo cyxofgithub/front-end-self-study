@@ -1,20 +1,20 @@
 # 第 1 章：axios 的理解和使用
 
-![image-20211026193007679](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211026193007679.png)
+![image-20211026193007679](尚硅谷Web前端axios入门与源码解析.assets/image-20211026193007679.png)
 
-![image-20211026193140331](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211026193140331.png)
+![image-20211026193140331](尚硅谷Web前端axios入门与源码解析.assets/image-20211026193140331.png)
 
-![image-20211026193238166](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211026193238166.png)
+![image-20211026193238166](尚硅谷Web前端axios入门与源码解析.assets/image-20211026193238166.png)
 
-![image-20211026193303404](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211026193303404.png)
+![image-20211026193303404](尚硅谷Web前端axios入门与源码解析.assets/image-20211026193303404.png)
 
-![image-20211026193425539](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211026193425539.png)
+![image-20211026193425539](尚硅谷Web前端axios入门与源码解析.assets/image-20211026193425539.png)
 
 #  第 2 章：axios 源码分析
 
 ## 2.1. 源码目录结构
 
-![image-20211026193519461](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20211026193519461.png)
+![image-20211026193519461](尚硅谷Web前端axios入门与源码解析.assets/image-20211026193519461.png)
 
 ## 2.2 axios 对象创建过程模拟实现
 
@@ -383,7 +383,7 @@
         function CancelToken(executor){
             //声明一个变量
             var resolvePromise;
-            //为实例对象添加属性
+            //关键步骤：为实例对象添加属性
             this.promise = new Promise((resolve) => {
                 //将 resolve 赋值给 resolvePromise
                 resolvePromise = resolve
