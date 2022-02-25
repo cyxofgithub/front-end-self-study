@@ -3331,3 +3331,26 @@ function BinarySearch(nums, target) {
 ```
 
 tips：二分查找的前提是nums是个有序数组
+
+![image-20220224175604297](labuladon算法笔记.assets/image-20220224175604297.png)
+
+```js
+function missingNumber(nums: number[]): number {
+    let left = 0;
+    let right = nums.length - 1
+    while(left <=right) {
+        const middle = Math.floor((left+right)/2)
+
+        // 说明数字在右边
+        if (nums[middle] === middle) {
+            left = middle + 1
+        }
+        else {
+        // 否则就是找左边边界，因为我们要找最左对补上的那个
+            right = middle - 1
+        } 
+    }
+    return left
+};
+```
+
