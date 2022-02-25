@@ -104,7 +104,7 @@ patch(container, myVnode3);
 
 ![image-20220222215853489](08_尚硅谷Vue源码解析.assets/image-20220222215853489.png)
 
-### 手写 h 函数
+## 04_手写 h 函数
 
 **vnode.js**
 
@@ -154,7 +154,7 @@ export default function (sel, data, c) {
 };
 ```
 
-### 感受 diff 算法
+## 05_感受 diff 算法
 
 ![image-20220222223913479](08_尚硅谷Vue源码解析.assets/image-20220222223913479.png)
 
@@ -185,6 +185,92 @@ const vnode2 = h('ul', {}, [
 // 点击按钮时，将vnode1变为vnode2
 btn.onclick = function () {
     patch(vnode1, vnode2); // 因为 key 相同内容也没有变化，diff 算法后节点只是移动位置
+};
+```
+
+## 06 diff处理新旧节点不是同一个节点时
+
+### patch 函数执行流程
+
+![image-20220223212947760](08_尚硅谷Vue源码解析.assets/image-20220223212947760.png)
+
+![image-20220223211803510](08_尚硅谷Vue源码解析.assets/image-20220223211803510.png)
+
+### 如何定义同一个节点
+
+![image-20220223213254114](08_尚硅谷Vue源码解析.assets/image-20220223213254114.png)
+
+### 创建节点时，所有子节点需要递归创建
+
+![image-20220223213639253](08_尚硅谷Vue源码解析.assets/image-20220223213639253.png)
+
+## 07_手写第一次上树时
+
+createElement.js
+
+![image-20220223215432260](08_尚硅谷Vue源码解析.assets/image-20220223215432260.png)
+
+## 08_手写递归创建子节点
+
+createElement.js
+
+```js
+export default function createElement(vnode) {
+    // console.log('目的是把虚拟节点', vnode, '真正变为DOM');
+    // 创建一个DOM节点，这个节点现在还是孤儿节点
+    let domNode = document.createElement(vnode.sel);
+    // 有子节点还是有文本？？
+    if (vnode.text != '' && (vnode.children == undefined || vnode.children.length == 0))     {
+        // 它内部是文字
+        domNode.innerText = vnode.text;
+    } else if (Array.isArray(vnode.children) && vnode.children.length > 0) {
+        // 它内部是子节点，就要递归创建节点
+        for (let i = 0; i < vnode.children.length; i++) {
+            // 得到当前这个children
+            let ch = vnode.children[i];
+            // 创建出它的DOM，一旦调用createElement意味着：创建出DOM了，并且它的elm属性指向了创建出的DOM，但是还没有上树，是一个孤儿节点。
+            let chDOM = createElement(ch);
+            // 上树
+            domNode.appendChild(chDOM);
+        }
+    }
+    // 补充elm属性
+    vnode.elm = domNode;
+   
+    // 返回elm，elm属性是一个纯DOM对象
+    return vnode.elm;
+};
+```
+
+patch.js
+
+```js
+import vnode from './vnode.js';
+import createElement from './createElement.js';
+import patchVnode from './patchVnode.js'
+
+export default function patch(oldVnode, newVnode) {
+    // 判断传入的第一个参数，是DOM节点还是虚拟节点？
+    if (oldVnode.sel == '' || oldVnode.sel == undefined) {
+        // 传入的第一个参数是DOM节点，此时要包装为虚拟节点
+        oldVnode = vnode(oldVnode.tagName.toLowerCase(), {}, [], undefined, oldVnode);
+    }
+
+    // 判断oldVnode和newVnode是不是同一个节点
+    if (oldVnode.key == newVnode.key && oldVnode.sel == newVnode.sel) {
+        console.log('是同一个节点');
+        patchVnode(oldVnode, newVnode);
+    } else {
+        console.log('不是同一个节点，暴力插入新的，删除旧的');
+        let newVnodeElm = createElement(newVnode);
+        
+        // 插入到老节点之前
+        if (oldVnode.elm.parentNode && newVnodeElm) {
+            oldVnode.elm.parentNode.insertBefore(newVnodeElm, oldVnode.elm);
+        }
+        // 删除老节点
+        oldVnode.elm.parentNode.removeChild(oldVnode.elm);
+    }
 };
 ```
 
