@@ -3309,6 +3309,97 @@ function Bubble( array ) {
 
 ## 二路归并排序
 
+```js
+/**
+ * 
+ 归并排序
+归并排序（MERGE-SORT）是利用归并的思想实现的排序方法，
+该算法采用经典的分治（divide-and-conquer）策略
+（分治法将问题分(divide)成一些小的问题然后递归求解，
+而治(conquer)的阶段则将分的阶段得到的各答案"修补"在一起，即分而治之)。
+
+ * 
+ */
+
+let arr = [8, 4, 5, 7, 1, 3, 6, 2, 0, 77];
+let temp = new Array(arr.length);//归并排序需要一个额外空间
+mergeSort(arr, 0, arr.length - 1, temp);
+console.log(arr);
+
+//分+合方法
+function mergeSort(arr, left, right, temp) {
+    if (left < right) {//中间索引
+        let mid = Math.floor((left + right) / 2);
+        //向左递归进行分解
+        mergeSort(arr, left, mid, temp);
+        //向右递归进行分解
+        mergeSort(arr, mid + 1, right, temp);
+        //到合并
+        merge(arr, left, mid, right, temp);
+    }
+
+}
+
+//合并的方法
+/**
+ * 
+ * @param {排序的原始数组} arr 
+ * @param {左边有序序列的初始索引} left 
+ * @param {中间索引} mid 
+ * @param {右边索引} right 
+ * @param {做中转的数组} temp 
+ */
+function merge(arr, left, mid, right, temp) {
+    let i = left;//初始化i，左边有序序列的初始索引
+    let j = mid + 1;//初始化j，右边有序序列的初始索引
+    let t = 0;//指向temp数组的当前索引
+
+    //1、先把左右两边（有序）的数据按照规则填充到temp数组
+    //直到左右两边有序序列，有一边处理完毕为止
+    while (i <= mid && j <= right) {
+        //如果左边的有序序列的当前元素，小于等于右边有序序列的当前元素
+        //即将左边的当前元素，拷贝到temp数组
+        //然后t++,i++
+        if (arr[i] <= arr[j]) {
+            temp[t] = arr[i];
+            t++;
+            i++;
+        } else {
+            //反之，将右边的有序序列的当前元素，填充到temp数组
+            temp[t] = arr[j];
+            t++;
+            j++;
+        }
+    }
+    //2、把有剩余数据的一边一次全部填充到temp
+    while (i <= mid) {
+        //左边的有序序列还有剩余的元素，就全部填充到temp
+        temp[t] = arr[i];
+        t++;
+        i++;
+    }
+    while (j <= right) {
+        //右边的有序序列还有剩余的元素，就全部填充到temp
+        temp[t] = arr[j];
+        t++;
+        j++;
+    }
+    //3.将temp数组的元素拷贝到arr
+    t = 0;
+    let tempLeft = left;//
+    while (tempLeft <= right) {
+        //第一次合并tempLeft = 0,right=1
+        //第二次合并 templeft = 2,rigth=3
+        //最后一次合并 templeft = 0,right=7
+        arr[tempLeft] = temp[t];
+        t++;
+        tempLeft++;
+    }
+}
+```
+
+
+
 # 二分查找
 
 ```js
