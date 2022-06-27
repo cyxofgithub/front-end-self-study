@@ -308,6 +308,45 @@
 
 ## 2.5 axios请求取消模拟实现
 
+**关键步骤**
+
+CancelToken 的本质其实就是拿到一个 promise 的是 resolve 方法，然后在请求的时候为这个 promise 挂在 then 的成功回调，当我们执行 cancel 的时候就会触发 then，而 then 会调用 xhr.abort
+
+```js
+ //关于取消请求的处理
+ if(config.cancelToken){
+     //对 cancelToken 对象身上的 promise 对象指定成功的回调
+     config.cancelToken.promise.then(value => {
+         xhr.abort();
+         //将整体结果设置为失败
+         reject(new Error('请求已经被取消'))
+     });
+ }
+
+//CancelToken 构造函数
+        function CancelToken(executor){
+            //声明一个变量
+            var resolvePromise;
+            //关键步骤：为实例对象添加属性
+            this.promise = new Promise((resolve) => {
+                //将 resolve 赋值给 resolvePromise
+                resolvePromise = resolve
+            });
+            //调用 executor 函数，将函数暴露到全局（相当于把 promise resolve 方法暴露到全局）
+            executor(function(){
+                //执行 resolvePromise 函数
+                resolvePromise();
+            });
+        }
+
+//创建 cancelToken 的值，外部定义了一个全局变量 cancel 去获取暴露出来的 resolve 方法
+            let cancelToken = new CancelToken(function(c){
+                cancel = c;
+            });
+```
+
+
+
 ```html
 <!DOCTYPE html>
 <html lang="en">

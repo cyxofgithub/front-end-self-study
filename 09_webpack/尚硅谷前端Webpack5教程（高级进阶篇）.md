@@ -711,9 +711,9 @@ npm run build 后发生以下操作：
    1. 读取入口文件内容 
    2. 将其解析成ast抽象语法树 
    3. 收集依赖 
-   4.  编译代码：将代码中浏览器不能识别的语法进行编译
+   4.  编译代码：将代码中浏览器不能识别的语法（ast）进行编译
 
-```
+```js
 const fs = require('fs');
 const path = require('path');
 
@@ -781,7 +781,7 @@ module.exports = parser;
 
 代码位于myWebpack-->Compiler.js中的bundle部分 整个myWebpack-->Compiler.js代码
 
-```
+```js
 const path = require('path');
 const fs = require('fs');
 const { getAst, getDeps, getCode } = require('./parser')
@@ -942,5 +942,70 @@ class Compiler {
 }
 
 module.exports = Compiler;
+```
+
+### 总结
+
+读入口文件 -> 转换成抽象语法树 -> 利用抽象语法树收集依赖 -> 将 ast 解析成代码 ->  改写 require 递归调用，生成输出文件
+
+```js
+// 读取文件
+const file = fs.readFileSync(filePath, 'utf-8');
+// 将其解析成ast抽象语法树
+const ast = babelParser.parse(file, {
+  sourceType: 'module' // 解析文件的模块化方案是 ES Module
+})
+
+const traverse = require('@babel/traverse').default;
+// 定义存储依赖的容器
+const deps = {}
+// 收集依赖
+traverse(ast, {
+  // 内部会遍历ast中program.body，判断里面语句类型
+  // 如果 type：ImportDeclaration 就会触发当前函数
+  ImportDeclaration({node}) {
+    // 文件相对路径：'./add.js'
+    const relativePath = node.source.value;
+    // 生成基于入口文件的绝对路径
+    const absolutePath = path.resolve(dirname, relativePath);
+    // 添加依赖
+    deps[relativePath] = absolutePath;
+  }
+
+const { transformFromAst } = require('@babel/core');
+// 生成代码
+const { code } = transformFromAst(ast, null, {
+  presets: ['@babel/preset-env']
+})
+    
+ // 生成输出资源
+ generate(depsGraph) {	
+  	const bundle = `
+  	  	(function (depsGraph) {		
+  	  	  // 这里的require函数目的：为了加载入口文件
+  	  	  function require(module) {		
+  	  	    // 定义当前模块内部的require函数：为了加载入口文件里引用的模块
+  	  	    function localRequire(relativePath) {			
+  	  	      	// 为了找到要引入模块的绝对路径，通过require加载
+  	  	      	return require(depsGraph[module].deps[relativePath]);
+  	  	    }		  
+  	  	    // 定义暴露对象（将来我们模块要暴露的内容）
+  	  	    var exports = {};		  
+  	  	    (function (require, exports, code) {
+  	  	      	eval(code);
+  	  	    })(localRequire, exports, depsGraph[module].code);		  
+  	  	    // 作为require函数的返回值返回出去
+  	  	    // 后面的require函数能得到暴露的内容
+  	  	    return exports;
+  	  	  }		
+  	  	  // 加载入口文件
+  	  	  require('${this.options.entry}');		
+  	  	})(${JSON.stringify(depsGraph)})
+  	`
+  	// 生成输出文件的绝对路径
+  	const filePath = path.resolve(this.options.output.path, this.options.output.filename)	  
+  	// 写入文件
+  	fs.writeFileSync(filePath, bundle, 'utf-8');
+ }
 ```
 
