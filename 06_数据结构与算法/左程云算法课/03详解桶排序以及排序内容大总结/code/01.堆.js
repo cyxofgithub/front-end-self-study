@@ -56,15 +56,13 @@ class Heap {
 
     // 给数组排序
     heapSort(arr) {
-        let p = 0;
-
         for (let i = 0; i < arr.length; i++) {
             this.heapInsert(arr[i]);
         }
 
         let heapSize = this.arr.length;
-        while(heapSize > 0) {
-            swap(this.arr, 0, --heapSize)
+        while (heapSize > 0) {
+            swap(this.arr, 0, --heapSize);
             this.heapify(0, heapSize);
         }
 
@@ -72,8 +70,25 @@ class Heap {
     }
 
     // 给数组排序，移动距离不超过 k
-    sortArrDistanceLessTwo(arr, k) {
+    sortArrDistanceLessK(arr, k) {
+        for (let i = 0; i < Math.min(arr.length, k + 1); i++) {
+            this.heapInsert(arr[i]);
+        }
 
+        const ans = [];
+        let j = k + 1;
+        for (; j < arr.length; j++) {
+            ans.unshift(this.arr.shift());
+            this.heapify(0, k);
+            this.heapInsert(arr[j]);
+        }
+
+        while (this.arr.length) {
+            ans.unshift(this.arr.shift());
+            this.heapify(0, --k);
+        }
+
+        return ans;
     }
 }
 
@@ -93,4 +108,10 @@ console.log(heap1.arr);
 // 测试 heapSort
 const heap2 = new Heap();
 
-console.log(heap2.heapSort([23, 123,22,9,5,4,1,2,7,3, 0]))
+console.log(heap2.heapSort([23, 123, 22, 9, 5, 4, 1, 2, 7, 3, 0]));
+
+// 测试数组排序不超过k
+const heap3 = new Heap();
+console.log(
+    heap3.sortArrDistanceLessK([23, 123, 22, 9, 5, 4, 1, 2, 7, 3, 0], 3)
+);
