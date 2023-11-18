@@ -36,3 +36,7 @@
 
 ## 两个单链表相交的一系列问题
 ![Alt text](./img/image-9.png)
+
+几种情况：
+
+![Alt text](./img/image-10.png)
