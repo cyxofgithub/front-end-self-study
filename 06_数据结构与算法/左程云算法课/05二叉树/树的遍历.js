@@ -78,4 +78,27 @@ const inOrder1 = (root) => {
         }
     }
 };
-inOrder1(node1); // 4\2\5\1\6\3\7
+// inOrder1(node1); // 4\2\5\1\6\3\7
+
+const postOrder1 = (root) => {
+    const stack1 = [root];
+    const stack2 = [];
+
+    while (stack1.length) {
+        const curNode = stack1.pop();
+        stack1.push(curNode);
+
+        if (curNode.left) {
+            stack1.push(curNode.left);
+        }
+
+        if (curNode.right) {
+            stack1.push(curNode.right);
+        }
+    }
+
+    while (stack2.length) {
+        console.log(stack2.pop().val);
+    }
+};
+postOrder(node1); // 4\5\2\6\7\3\1
