@@ -21,7 +21,7 @@ const preOrder = (root) => {
     preOrder(root.left);
     preOrder(root.right);
 };
-preOrder(node1); // 1\2\4\5\3\6\7
+// preOrder(node1); // 1\2\4\5\3\6\7
 
 const inOrder = (root) => {
     if (!root) return;
@@ -59,3 +59,23 @@ const preOrder1 = (root) => {
     }
 };
 // preOrder1(node1); // 1\2\4\5\3\6\7
+
+const inOrder1 = (root) => {
+    if (!root) return;
+    let header = root;
+
+    const stack = [];
+
+    while (header || stack.length) {
+        // 可以把整颗树看成只有左树，不断以头左的方式入栈
+        if (header) {
+            stack.push(header);
+            header = header.left;
+        } else {
+            header = stack.pop();
+            console.log(header.val);
+            header = header.right;
+        }
+    }
+};
+inOrder1(node1); // 4\2\5\1\6\3\7
