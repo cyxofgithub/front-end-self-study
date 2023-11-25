@@ -10,6 +10,8 @@ header1.next = new Node(3);
 header1.next.next = new Node(3);
 header1.next.next.next = new Node(1);
 
+// abcdef
+// abcffa
 /**
  * 思路1:
  * 1、遍历链表入栈，然后出栈，和原链表比较
