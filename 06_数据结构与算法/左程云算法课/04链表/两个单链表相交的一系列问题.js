@@ -154,11 +154,25 @@ function getFirstCommmonPoint(list1, list2) {
     const entry1 = getCircleEntry2(list1);
     const entry2 = getCircleEntry2(list2);
 
+    // 处理了两个无环不相交：两个都为 null
+    // 入口相同相交
     if (entry1 === entry2) {
         return getCommonPoint(entry1, entry2);
-    }
+    } else {
+        // 环入口不同不相交
+        // 环入口相同相交
+        let p = entry1.next;
 
-    // todo ....
+        while (p !== entry2) {
+            if (p === entry1) {
+                return null;
+            }
+
+            p = p.next;
+        }
+
+        return entry1;
+    }
 }
 
 console.log(getCircleEntry2(header2));
