@@ -23,4 +23,9 @@ class Edges {
     }
 }
 
+module.exports = {
+    Grap,
+    Node,
+    Edges,
+};
 // todo，将二维矩阵表达的图转换为上面的样子
