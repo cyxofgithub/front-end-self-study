@@ -59,6 +59,15 @@ console.log(MinPath.exec(matrix));
 思路：
 1、先确定第一行的最小路径，再确认第二行，第三行...直到最后一行就可以确认结果
 
+解析：
+1、我们创建一个一维数组 dp 来保存中间结果，初始值都为 0。
+
+2、接下来，我们初始化起点位置 (0, 0) 的路径长度为 matrix[0][0]。
+
+3、然后，我们从左到右依次计算第一行的最短路径长度，即 dp[i] = dp[i-1] + matrix[0][i]。
+
+4、接着，我们从第二行开始，逐行计算每个位置的最短路径长度。对于每个位置 (i, j)，它可以从上方位置 (i-1, j) 或左方位置 (i, j-1) 到达，所以到达当前位置的最短路径长度等于上方位置和左方位置的最短路径长度中的较小值加上当前位置的路径长度，即 dp[j] = Math.min(dp[j-1], dp[j]) + matrix[i][j]。
+
 ```javascript
 class MinPath {
     static exec(matrix) {
@@ -76,7 +85,12 @@ class MinPath {
         for (let i = 1; i < col; i++) {
             dep[0] = dep[0] + matrix[i][0];
             for (let j = 1; j < row; j++) {
-                dep[j] = matrix[i][j] + Math.min(dep[j], dep[j - 1]);
+                dep[j] =
+                    matrix[i][j] +
+                    Math.min(
+                        dep[j] /** 这里代表上一个位置的最短路径 */,
+                        dep[j - 1]
+                    );
             }
         }
 
