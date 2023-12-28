@@ -1,26 +1,24 @@
 class WayNum {
     static exec(N, M, K, P) {
-        const row = K + 1;
-        const col = N + 1;
-        const dep = Array.from({ length: row }, () => new Array(col).fill(0));
-        dep[0][P] = 1; // 此时的位置在 p 剩余步数为 0，则只有一种方法到达 P，那就是原地不动
+        let dp = new Array(N + 1).fill(0);
+        dp[M] = 1;
 
-        // dep[rest][cur] 表示当前剩余rest步在cur位置，有多少种方法可以到达 P
-        // 两个都从 1 开始方便状态转换，下面有 cur -1 和 rest - 1 的操作
         for (let rest = 1; rest <= K; rest++) {
+            let leftUp = dp[1]; // 记录左上角的值
             for (let cur = 1; cur <= N; cur++) {
+                const temp = dp[cur];
                 if (cur === 1) {
-                    dep[rest][cur] = dep[rest - 1][cur + 1];
+                    dp[cur] = dp[cur + 1];
                 } else if (cur === N) {
-                    dep[rest][cur] = dep[rest - 1][cur - 1];
+                    dp[cur] = leftUp;
                 } else {
-                    dep[rest][cur] =
-                        dep[rest - 1][cur - 1] + dep[rest - 1][cur + 1];
+                    dp[cur] = leftUp + dp[cur + 1];
                 }
+                leftUp = temp;
             }
         }
 
-        return dep[K][M];
+        return dp[P];
     }
 }
 

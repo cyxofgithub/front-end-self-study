@@ -78,3 +78,70 @@ class WayNum {
 
 console.log(WayNum.exec(5, 2, 3, 3));
 ```
+
+## 优化解法
+
+压缩空间至 o(N)
+
+观察上一个解法的过程其实可以知道下一行的值取决于下一行的值
+
+```javascript
+class WayNum {
+    static exec(N, M, K, P) {
+        let dp = new Array(N + 1).fill(0);
+        dp[M] = 1;
+
+        for (let rest = 1; rest <= K; rest++) {
+            // 如果创建这个临时空间，每次替换的时候前一个值会被覆盖掉
+            // 也有优化解法，在下面
+            const temp = new Array(N + 1).fill(0);
+            for (let cur = 1; cur <= N; cur++) {
+                if (cur === 1) {
+                    temp[cur] = dp[cur + 1];
+                } else if (cur === N) {
+                    temp[cur] = dp[cur - 1];
+                } else {
+                    temp[cur] = dp[cur - 1] + dp[cur + 1];
+                }
+            }
+
+            dp = temp;
+        }
+
+        console.log(dp);
+        return dp[P];
+    }
+}
+
+console.log(WayNum.exec(5, 2, 3, 3));
+```
+
+## 最终优化
+
+```javascript
+class WayNum {
+    static exec(N, M, K, P) {
+        let dp = new Array(N + 1).fill(0);
+        dp[M] = 1;
+
+        for (let rest = 1; rest <= K; rest++) {
+            let leftUp = dp[1]; // 记录左上角的值
+            for (let cur = 1; cur <= N; cur++) {
+                const temp = dp[cur];
+                if (cur === 1) {
+                    dp[cur] = dp[cur + 1];
+                } else if (cur === N) {
+                    dp[cur] = leftUp;
+                } else {
+                    dp[cur] = leftUp + dp[cur + 1];
+                }
+                leftUp = temp;
+            }
+        }
+
+        return dp[P];
+    }
+}
+
+console.log(WayNum.exec(5, 2, 3, 3));
+```
