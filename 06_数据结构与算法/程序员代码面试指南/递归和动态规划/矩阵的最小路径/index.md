@@ -10,6 +10,49 @@
 
 ![Alt text](image.png)
 
+## 暴力解法
+
+```javascript
+class minPath {
+    static exec(matrix) {
+        const col = matrix.length;
+        const row = matrix[0].length;
+        return this.process(matrix, col, row, 0, 0);
+    }
+
+    static process(matrix, col, row, i, j) {
+        if (i === col - 1 && j === row - 1) {
+            return matrix[i][j];
+        }
+
+        if (i === col - 1) {
+            return matrix[i][j] + this.process(matrix, col, row, i, j + 1);
+        }
+
+        if (j === row - 1) {
+            return matrix[i][j] + this.process(matrix, col, row, i + 1, j);
+        }
+
+        return (
+            matrix[i][j] +
+            Math.min(
+                this.process(matrix, col, row, i + 1, j),
+                this.process(matrix, col, row, i, j + 1)
+            )
+        );
+    }
+}
+
+const matrix = [
+    [1, 3, 5, 9],
+    [8, 1, 3, 4],
+    [5, 0, 6, 1],
+    [8, 8, 4, 0],
+];
+
+console.log(minPath.exec(matrix));
+```
+
 ## 简单解法
 
 时间复杂度：O（M×N） 空间复杂度：O（MxN）
