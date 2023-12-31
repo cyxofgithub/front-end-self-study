@@ -10,7 +10,7 @@
 
 ![Alt text](image.png)
 
-## 暴力解法
+## 暴力解法 1
 
 ```javascript
 class minPath {
@@ -51,6 +51,46 @@ const matrix = [
 ];
 
 console.log(minPath.exec(matrix));
+```
+
+## 暴力解法 2
+
+```javascript
+class MinPath {
+    static res = Number.MAX_VALUE;
+
+    static exec(matrix) {
+        this.process(matrix, 0, 0, 0);
+        return this.res;
+    }
+
+    static process(matrix, i, j, sum) {
+        sum += matrix[i][j];
+
+        if (i === matrix.length - 1 && j === matrix[0].length - 1) {
+            this.res = Math.min(this.res, sum);
+            return;
+        }
+
+        if (i === matrix.length - 1) {
+            this.process(matrix, i, j + 1, sum);
+        } else if (j === matrix[0].length - 1) {
+            this.process(matrix, i + 1, j, sum);
+        } else {
+            this.process(matrix, i + 1, j, sum);
+            this.process(matrix, i, j + 1, sum);
+        }
+    }
+}
+
+const matrix = [
+    [1, 3, 5, 9],
+    [8, 1, 3, 4],
+    [5, 0, 6, 1],
+    [8, 8, 4, 0],
+];
+
+console.log(MinPath.exec(matrix));
 ```
 
 ## 简单解法
