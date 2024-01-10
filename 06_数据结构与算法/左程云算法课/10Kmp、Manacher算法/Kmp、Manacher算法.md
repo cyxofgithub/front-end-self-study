@@ -14,6 +14,17 @@
 ![Alt text](image-1.png)
 
 next 数组求法：
+![Alt text](image-2.png)
+
+next 数组说明：
+
+```javascript
+// str1 = 'abcabcd';
+// next: [0,0,0,0,1,2,3]
+// next[i] 代表 0 到 i-1 位置的最长相同前后缀
+// 如 next[3] 代表 abc 的最长相同前后缀为 0
+// 如 next[6] 代表 abcabc 的最长相同前后缀为 abc 和 abc 为 3
+```
 
 ## 时间复杂度的推理
 

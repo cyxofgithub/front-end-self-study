@@ -1,5 +1,6 @@
 class KMP {
-    exec(str1, str2) {
+    // 还需要调整，现在还是错的
+    static exec(str1, str2) {
         const next = this.getNext(str2);
 
         let i = 0;
@@ -10,8 +11,7 @@ class KMP {
                 i++;
                 j++;
             } else if (str1[i] !== str2[j]) {
-                i++;
-                j = j - next[j];
+                j = next[j];
             } else if (j === str2.length - 1) {
                 return i - str2.length - 1;
             }
@@ -19,52 +19,36 @@ class KMP {
         return -1;
     }
 
-    getNext(str, i, res) {
-        let res = [];
+    static getNext(pattern) {
+        const next = [0, 0];
+        let i = 2,
+            j = next[i - 1];
+        while (i < pattern.length) {
+            // 如 abcdabcd 求 7 位置的值
+            // 如果 pattern[7 - 1] === pattern[next[7-1]](前缀子串的下一位)
+            // 那么 next[7] = next[6] + 1;
+            if (pattern[i - 1] === pattern[j]) {
+                next[i] = j + 1;
+                i++; // 继续计算 next 的下一位
+                j++;
+            } else if (j > 0) {
+                // 没匹配上用上一个子串来尝试匹配
+                j = next[j];
+            } else {
+                // 无子串可配了只能是0
+                next[i] = 0;
 
-        if (i <= 1) {
-            res[i] = 0;
-        } else if (i > 1) {
-            let left = 0;
-            let right = i;
-            let length = 0;
-            while (left < right) {
-                if (str[left] === str[right]) {
-                    length++;
-                    left++;
-                    right++;
-                } else {
-                    break;
-                }
+                // 继续计算 next 的下一位
+                i++;
             }
-
-            res[i] = length;
         }
 
-        return res;
+        return next;
     }
 }
 
-const str1 = 'abcdefga';
+const str1 = 'abcabcd';
+
 const str2 = 'efg';
 
-function getNext(pattern) {
-    const next = [0];
-    let i = 0,
-        j = 1; // 可以把i看成前缀的开始位置，j看成后缀的开始位置，从大的子字符串比对到小的
-
-    while (j < pattern.length) {
-        if (pattern[i] === pattern[j]) {
-            next[j] = i + 1;
-            i++;
-            j++;
-        } else if (i > 0) {
-            i = next[i - 1];
-        } else {
-            next[j] = 0;
-            j++;
-        }
-    }
-
-    return next;
-}
+console.log(KMP.getNext(str1));
