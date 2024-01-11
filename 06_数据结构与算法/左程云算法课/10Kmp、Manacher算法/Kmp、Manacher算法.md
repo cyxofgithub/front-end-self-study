@@ -29,3 +29,63 @@ next 数组说明：
 ## 时间复杂度的推理
 
 ## KMP 算法的全部细节和实现讲解
+
+```javascript
+class KMP {
+    // 还需要调整，现在还是错的
+    static exec(str1, str2) {
+        const next = this.getNext(str2);
+
+        let i = 0;
+        let j = 0;
+
+        while (i < str1.length && j < str2.length) {
+            // 相等两边继续往前走去比对
+            if (str1[i] === str2[j]) {
+                i++;
+                j++;
+            } else if (next[j] === -1) {
+                // j 不能再回退了，让 i 走
+                i++;
+            } else {
+                // 不相等让 j 回退到前缀的后一位，可以避免重复比对
+                j = next[j];
+            }
+        }
+        return j === str2.length ? i - j : -1;
+    }
+
+    static getNext(str) {
+        const next = [-1, 0];
+        let i = 2,
+            j = next[i - 1];
+        while (i < str.length) {
+            // 如 abcdabcd 求 7 位置的值
+            // 如果 str[7 - 1] === str[next[7-1]](前缀子串的下一位)
+            // 那么 next[7] = next[6] + 1;
+            if (str[i - 1] === str[j]) {
+                next[i] = j + 1;
+                i++; // 继续计算 next 的下一位
+                j++; // 因为 j 的含义是 next[i - 1] ，所以 i++ j也要++
+            } else if (j > 0) {
+                // 没匹配上用上一个子串来尝试匹配
+                j = next[j];
+            } else {
+                // 无子串可配了只能是0
+                next[i] = 0;
+
+                // 继续计算 next 的下一位
+                i++;
+            }
+        }
+
+        return next;
+    }
+}
+
+const str1 = 'abefcabefgd';
+
+const str2 = 'cabef';
+
+console.log(KMP.exec(str1, str2));
+```

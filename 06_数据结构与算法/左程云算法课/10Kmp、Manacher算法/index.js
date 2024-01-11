@@ -1,8 +1,9 @@
 class KMP {
-    // 还需要调整，现在还是错的
     static exec(str1, str2) {
-        const next = this.getNext(str2);
+        if (str1.length < str2.lengt) return -1;
 
+        const next = this.getNext(str2);
+        console.log('🚀 ~ KMP ~ exec ~ next:', next);
         let i = 0;
         let j = 0;
 
@@ -10,35 +11,30 @@ class KMP {
             if (str1[i] === str2[j]) {
                 i++;
                 j++;
-            } else if (str1[i] !== str2[j]) {
+            } else if (next[j] === -1) {
+                i++;
+            } else {
                 j = next[j];
-            } else if (j === str2.length - 1) {
-                return i - str2.length - 1;
             }
         }
-        return -1;
+
+        return j === str2.length ? i - j : -1;
     }
 
-    static getNext(pattern) {
-        const next = [0, 0];
-        let i = 2,
-            j = next[i - 1];
-        while (i < pattern.length) {
-            // 如 abcdabcd 求 7 位置的值
-            // 如果 pattern[7 - 1] === pattern[next[7-1]](前缀子串的下一位)
-            // 那么 next[7] = next[6] + 1;
-            if (pattern[i - 1] === pattern[j]) {
+    static getNext(str) {
+        const next = [-1, 0];
+        let i = 2;
+        let j = next[i - 1];
+
+        while (i < str2.length) {
+            if (str[j] === str[i - 1]) {
                 next[i] = j + 1;
-                i++; // 继续计算 next 的下一位
+                i++;
                 j++;
             } else if (j > 0) {
-                // 没匹配上用上一个子串来尝试匹配
                 j = next[j];
             } else {
-                // 无子串可配了只能是0
                 next[i] = 0;
-
-                // 继续计算 next 的下一位
                 i++;
             }
         }
@@ -47,8 +43,7 @@ class KMP {
     }
 }
 
-const str1 = 'abcabcd';
+const str1 = 'abncscacafcacasd';
+const str2 = 'cacasd';
 
-const str2 = 'efg';
-
-console.log(KMP.getNext(str1));
+console.log(KMP.exec(str1, str2));
