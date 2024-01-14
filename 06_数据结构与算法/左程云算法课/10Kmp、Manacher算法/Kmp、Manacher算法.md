@@ -147,3 +147,13 @@ console.log(KMP.exec(str1, str2));
 时间复杂度：O(N)
 
 推理：每次循环两种情况，R 不往外扩，R 往外扩，R 变化幅度最多也就是 str.length，而循环的次数是固定的
+
+### 示例解法
+
+![Alt text](image-11.png)
+
+为什么最后是 max - 1？
+
+![Alt text](image-10.png)
+
+真实的字符串长度就是回文半径 - 1
