@@ -152,7 +152,10 @@ console.log(KMP.exec(str1, str2));
 
 ![Alt text](image-11.png)
 
-为什么最后是 max - 1？
+1、2 \* C - i 就是 i' 的位置，每次取回文最小的可能性
+2、尝试外扩，回文半径能不能继续增大？
+3、更新右边界和中心点
+4、为什么最后是 max - 1？
 
 ![Alt text](image-10.png)
 
