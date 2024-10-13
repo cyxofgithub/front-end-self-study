@@ -15,7 +15,7 @@ node1.right.left = new Node(6);
 node1.right.right = new Node(7);
 
 // 递归遍历
-const preOrder = (root) => {
+const preOrder = root => {
     if (!root) return;
     console.log(root.val);
     preOrder(root.left);
@@ -23,7 +23,7 @@ const preOrder = (root) => {
 };
 // preOrder(node1); // 1\2\4\5\3\6\7
 
-const inOrder = (root) => {
+const inOrder = root => {
     if (!root) return;
     inOrder(root.left);
     console.log(root.val);
@@ -31,7 +31,7 @@ const inOrder = (root) => {
 };
 // inOrder(node1); // 4\2\5\1\6\3\7
 
-const postOrder = (root) => {
+const postOrder = root => {
     if (!root) return;
     postOrder(root.left);
     postOrder(root.right);
@@ -40,7 +40,7 @@ const postOrder = (root) => {
 // postOrder(node1); // 4\5\2\6\7\3\1
 
 // 非递归遍历
-const preOrder1 = (root) => {
+const preOrder1 = root => {
     if (!root) return;
     const stack = [root];
 
@@ -60,7 +60,7 @@ const preOrder1 = (root) => {
 };
 // preOrder1(node1); // 1\2\4\5\3\6\7
 
-const inOrder1 = (root) => {
+const inOrder1 = root => {
     if (!root) return;
     let header = root;
 
@@ -80,13 +80,13 @@ const inOrder1 = (root) => {
 };
 // inOrder1(node1); // 4\2\5\1\6\3\7
 
-const postOrder1 = (root) => {
+const postOrder1 = root => {
     const stack1 = [root];
     const stack2 = [];
 
     while (stack1.length) {
         const curNode = stack1.pop();
-        stack1.push(curNode);
+        stack2.push(curNode);
 
         if (curNode.left) {
             stack1.push(curNode.left);
@@ -101,4 +101,4 @@ const postOrder1 = (root) => {
         console.log(stack2.pop().val);
     }
 };
-postOrder(node1); // 4\5\2\6\7\3\1
+postOrder1(node1); // 4\5\2\6\7\3\1
