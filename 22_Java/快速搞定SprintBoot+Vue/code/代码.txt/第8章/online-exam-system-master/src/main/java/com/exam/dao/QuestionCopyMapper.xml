@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.exam.dao.QuestionCopyMapper">
+
+    <!-- 结果集映射 -->
+    <resultMap type="com.exam.domain.Question" id="question">
+
+        <id column="id" property="id"/>
+        <result column="stem" property="stem"/>
+        <result column="answer" property="answer"/>
+        <result column="create_time" property="createTime"/>
+        <result column="url" property="url" />
+        <result column="type" property="type" />
+        <result column="knowledge_point_id" property="knowledgePointId" />
+        <result column="teacher_id" property="teacherId" />
+
+    </resultMap>
+
+    <!-- 增加题目副本 -->
+    <insert id="insertQuestionCopy" parameterType="com.exam.domain.Question" useGeneratedKeys="true" keyProperty="id">
+        insert into question_copy (stem, answer, create_time, url, type, knowledge_point_id, teacher_id)
+            value (#{stem}, #{answer}, #{createTime}, #{url}, #{type}, #{knowledgePointId}, #{teacherId})
+    </insert>
+
+    <!-- 选择题目 -->
+    <select id="selectQuestionCopyById" resultMap="question">
+        SELECT * FROM question_copy where id = #{id}
+    </select>
+
+</mapper>
+
