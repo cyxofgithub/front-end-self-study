@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.chapter3.mapper.OrderMapper">
+
+    <resultMap id="OrderWithUserMap" type="Order">
+        <id property="id" column="id" />
+        <result property="orderDate" column="order_date" />
+        <result property="amount" column="amount" />
+        <association property="user" javaType="User">
+            <id property="id" column="user_id" />
+            <result property="username" column="username" />
+            <result property="email" column="email" />
+            <result property="registeredDate" column="registered_date" />
+        </association>
+    </resultMap>
+
+    <select id="findOrderWithUser" resultMap="OrderWithUserMap">
+        SELECT o.*, u.id AS user_id, u.username, u.email, u.registered_date
+        FROM orders o
+        INNER JOIN users u ON o.user_id = u.id
+        WHERE o.id = #{orderId}
+    </select>
+
+</mapper>

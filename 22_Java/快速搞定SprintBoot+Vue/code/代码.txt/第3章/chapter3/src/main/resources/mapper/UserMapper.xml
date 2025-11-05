@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.chapter3.mapper.UserMapper">
+
+    <!-- SELECT: 查询操作 -->
+    <select id="getUserById" resultType="User">
+        SELECT * FROM users WHERE id = #{id}
+    </select>
+
+    <!-- INSERT: 插入操作 -->
+    <insert id="insertUser" parameterType="com.example.chapter3.model.User">
+        INSERT INTO users(username, email, registered_date)
+        VALUES(#{username}, #{email}, #{registeredDate})
+    </insert>
+
+    <!-- UPDATE: 更新操作 -->
+    <update id="updateUser" parameterType="User">
+        UPDATE users
+        SET username=#{username}, email=#{email}, registered_date=#{registeredDate}
+        WHERE id=#{id}
+    </update>
+
+    <!-- DELETE: 删除操作 -->
+    <delete id="deleteUser">
+        DELETE FROM users WHERE id = #{id}
+    </delete>
+
+
+    <resultMap id="UserWithOrdersMap" type="User">
+        <id property="id" column="id" />
+        <result property="username" column="username" />
+        <result property="email" column="email" />
+        <result property="registeredDate" column="registered_date" />
+        <collection property="orders" ofType="Order">
+            <id property="id" column="order_id" />
+            <result property="orderDate" column="order_date" />
+            <result property="amount" column="amount" />
+        </collection>
+    </resultMap>
+
+    <select id="findUserWithOrders" resultMap="UserWithOrdersMap">
+        SELECT u.*, o.id AS order_id, o.order_date, o.amount
+        FROM users u
+        LEFT JOIN orders o ON u.id = o.user_id
+        WHERE u.id = #{userId}
+    </select>
+
+</mapper>
