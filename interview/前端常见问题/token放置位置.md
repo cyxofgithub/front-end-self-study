@@ -1,0 +1,3 @@
+-   追求持久化 + 跨标签共享：选 localStorage（需自行处理安全和过期）；
+-   追求临时会话 + 标签隔离：选 sessionStorage（适合短期操作）；
+-   追求高安全性 + 自动携带：选 Cookie（必设 HttpOnly、Secure、SameSite）。
