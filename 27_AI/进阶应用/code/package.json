@@ -1,0 +1,14 @@
+{
+    "name": "ai-workflow-demo",
+    "version": "1.0.0",
+    "description": "多步骤 AI 工作流示例",
+    "type": "module",
+    "main": "构建多步骤 AI 工作流.js",
+    "scripts": {
+        "start": "node 构建多步骤\\ AI\\ 工作流.js"
+    },
+    "dependencies": {
+        "dotenv": "^17.2.3",
+        "groq-sdk": "^0.8.0"
+    }
+}
