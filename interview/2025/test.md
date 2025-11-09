@@ -292,3 +292,18 @@ node：同步代码(本质第一个宏任务)->清楚所有 process.nextTrick->�
 | 多根节点         | 不支持                     | Fragment 支持             |
 | 新特性           | 无                         | Teleport、Suspense 等     |
 | 体积             | 相对偏大                   | 可 tree-shaking，更小     |
+
+### 箭头函数与普通函数的区别
+
+参考[箭头函数与普通函数的区别](../js/箭头函数与普通函数区别.md)
+
+-   没有 argument（可以用剩余参数来获取参数...args）、protatype（所以也不能作为构造器）
+-   语言简洁，this 根据外部作用域
+
+### vue2 中如何实现对数组的操作
+
+参考 [vue2 中如何实现对数组的操作](../vue/vue2%20中如何实现对数组的操作.md)
+
+-   修改数组内容推荐用 push/pop/shift/unshift/splice/sort/reverse 等方法，vue 重写了这几个方法发生变化会触发响应
+-   如果希望通过**索引赋值**让视图响应，必须用 `Vue.set` 或 `this.$set`
+-   不建议直接写 `arr[i] = val` 或 `arr.length = n`，这些 Vue2 检测不到
