@@ -274,36 +274,3 @@ async function main() {
 
 // 执行主函数
 main().catch(console.error);
-
-// ============ 使用说明 ============
-/**
- * 1. 无需安装额外依赖（使用原生 fetch）
- * 2. Dify API Key 已配置: app-S7E4vloKVZB1UkBKkQ9safKi
- * 3. 运行: node 构建多步骤\ AI\ 工作流.js
- *
- * 核心概念总结：
- * ✅ Chains（链式调用）：4个步骤依次执行，后一步依赖前一步结果
- * ✅ Prompts（提示词模板）：每一步都有专门设计的提示词
- * ✅ Few-shot Learning：步骤2中提供示例大纲引导输出格式
- * ✅ Chain of Thought：步骤3中引导模型逐步思考
- * ✅ 结构化输出：步骤1和4要求输出 JSON 格式便于程序处理
- *
- * 关于 Dify API：
- * - Dify 是企业级 LLM 应用开发平台
- * - 支持多种 LLM 模型接入（OpenAI, Claude, 文心一言等）
- * - 提供可视化工作流编排、提示词管理等功能
- * - API 文档: https://docs.dify.ai/
- *
- * Blocking vs Streaming 模式：
- * - Blocking 模式：等待完整响应后一次性返回，适合需要完整结果的场景
- *   优点：代码简单，易于处理；缺点：等待时间较长，无实时反馈
- * - Streaming 模式：实时流式返回响应，适合需要实时展示的场景
- *   优点：用户体验好，有实时反馈；缺点：代码复杂，需要处理 SSE
- *
- * 注意事项：
- * - 如果 API 返回错误，请检查：
- *   1. baseURL 是否正确（可能需要调整为 /api/v1）
- *   2. endpoint 类型（chat-messages 或 completion-messages）
- *   3. API Key 权限是否正确
- *   4. 某些应用类型（如 Agent）可能只支持特定的 response_mode
- */
