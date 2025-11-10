@@ -343,3 +343,44 @@ node：同步代码(本质第一个宏任务)->清楚所有 process.nextTrick->�
 如何理解并发安全？
 
 并发调用同一个函数时可能改变对象的状态，而函数不会
+
+### 数组去重，将 id 重复的对象去重
+
+```javascript
+function filterRepeatObj(arr) {
+    const ids = [];
+
+    const res = arr.reduce((pre, cur) => {
+        if (!ids.includes(cur.id)) {
+            pre.push(cur);
+        }
+        ids.push(cur.id);
+
+        return pre;
+    }, []);
+
+    return res;
+}
+
+console.log(filterRepeatObj([{ id: 1 }, { id: 2 }, { id: 1 }, { id: 3 }]));
+```
+
+更优解法：
+
+```javascript
+function filterRepeatObj(arr) {
+    const idMap = new Map();
+    // 遍历数组，仅保留首次出现的id对应的对象
+    for (const item of arr) {
+        if (!idMap.has(item.id)) {
+            // Map的has方法查找复杂度为O(1)
+            idMap.set(item.id, item);
+        }
+    }
+    // 将Map的值转为数组返回
+    return Array.from(idMap.values());
+}
+
+console.log(filterRepeatObj([{ id: 1 }, { id: 2 }, { id: 1 }, { id: 3 }]));
+// 输出：[{ id: 1 }, { id: 2 }, { id: 3 }]
+```
