@@ -1,11 +1,15 @@
 {
-    "name": "ai-workflow-demo",
+    "name": "ai-advanced-examples",
     "version": "1.0.0",
-    "description": "多步骤 AI 工作流示例",
+    "description": "AI 进阶应用示例：多步骤工作流、上下文记忆管理等",
     "type": "module",
     "main": "构建多步骤 AI 工作流.js",
     "scripts": {
-        "start": "node 构建多步骤\\ AI\\ 工作流.js"
+        "workflow": "node 构建多步骤\\ AI\\ 工作流.js",
+        "memory": "node 上下文记忆示例/index.js",
+        "memory:scenario1": "node 上下文记忆示例/scenarios/scenario1-personal-assistant.js",
+        "memory:scenario2": "node 上下文记忆示例/scenarios/scenario2-customer-service.js",
+        "memory:scenario3": "node 上下文记忆示例/scenarios/scenario3-long-conversation.js"
     },
     "dependencies": {
         "dotenv": "^17.2.3",
