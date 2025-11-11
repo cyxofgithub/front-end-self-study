@@ -9,10 +9,13 @@
         "memory": "node 上下文记忆示例/index.js",
         "memory:scenario1": "node 上下文记忆示例/scenarios/scenario1-personal-assistant.js",
         "memory:scenario2": "node 上下文记忆示例/scenarios/scenario2-customer-service.js",
-        "memory:scenario3": "node 上下文记忆示例/scenarios/scenario3-long-conversation.js"
+        "memory:scenario3": "node 上下文记忆示例/scenarios/scenario3-long-conversation.js",
+        "tools": "node 集成外部工具示例/集成外部工具.js --interactive"
     },
     "dependencies": {
         "dotenv": "^17.2.3",
-        "groq-sdk": "^0.8.0"
+        "groq-sdk": "^0.8.0",
+        "sqlite": "^5.1.1",
+        "sqlite3": "^5.1.7"
     }
 }
