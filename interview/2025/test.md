@@ -384,3 +384,20 @@ function filterRepeatObj(arr) {
 console.log(filterRepeatObj([{ id: 1 }, { id: 2 }, { id: 1 }, { id: 3 }]));
 // 输出：[{ id: 1 }, { id: 2 }, { id: 3 }]
 ```
+
+### 说说对 promise 的理解，它的 API、它的实现原理
+
+理解：
+
+-   本质就是状态机，有三种不可变状态：pedding/fulfildd/rejected
+-   解决 “回调地狱”：通过链式调用（then）替代多层嵌套回调。
+-   便于错误捕获：通过 catch 统一捕获链中的所有错误，无需在每个回调中单独处理。
+
+实现原理：
+
+参考 [promise 简易版](../../21_Promise/promise简易版实现.md)
+
+-   状态不可逆
+-   then 链式调用
+-   catch 就是没有 onResolve 的 then
+-   finally 不管状态是什么都要执行, 且透传原来状态
