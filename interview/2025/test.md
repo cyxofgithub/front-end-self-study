@@ -401,3 +401,12 @@ console.log(filterRepeatObj([{ id: 1 }, { id: 2 }, { id: 1 }, { id: 3 }]));
 -   then 链式调用
 -   catch 就是没有 onResolve 的 then
 -   finally 不管状态是什么都要执行, 且透传原来状态
+
+### vue3 中是如何使用 proxy 进行代理的
+
+比如 reactvie 在 get 中收集依赖，在 set 和 deleteProperty 中触发依赖
+
+参考
+
+-   [vue3 reactive 原理](../vue/vue3%20reactive%20原理.md)
+-   [vue3为什么改用proxy](../vue/vue3为什么改用proxy.md)
