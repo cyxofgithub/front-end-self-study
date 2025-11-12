@@ -409,4 +409,14 @@ console.log(filterRepeatObj([{ id: 1 }, { id: 2 }, { id: 1 }, { id: 3 }]));
 参考
 
 -   [vue3 reactive 原理](../vue/vue3%20reactive%20原理.md)
--   [vue3为什么改用proxy](../vue/vue3为什么改用proxy.md)
+-   [vue3 为什么改用 proxy](../vue/vue3为什么改用proxy.md)
+
+## 京东一面（4 年）
+
+### react 代码实现，在页面上显示窗口宽度的变化
+
+结合 resize 事件，防抖 通过 innerWidth 获取
+
+### react 为什么不能在 if 里 写 useEffect
+
+参考 [为什么 hooks 要保证顺序调用](../react/为什么%20hooks%20要保证顺序调用.md)
