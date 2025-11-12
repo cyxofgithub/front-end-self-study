@@ -10,7 +10,11 @@
         "memory:scenario1": "node 上下文记忆示例/scenarios/scenario1-personal-assistant.js",
         "memory:scenario2": "node 上下文记忆示例/scenarios/scenario2-customer-service.js",
         "memory:scenario3": "node 上下文记忆示例/scenarios/scenario3-long-conversation.js",
-        "tools": "node 集成外部工具示例/集成外部工具.js --interactive"
+        "tools": "node 集成外部工具示例/集成外部工具.js --interactive",
+        "prompt:few-shot": "node 高级提示词技巧示例/index.js --technique=few-shot",
+        "prompt:cot": "node 高级提示词技巧示例/index.js --technique=cot",
+        "prompt:react": "node 高级提示词技巧示例/index.js --technique=react",
+        "prompt:structured": "node 高级提示词技巧示例/index.js --technique=structured"
     },
     "dependencies": {
         "dotenv": "^17.2.3",
