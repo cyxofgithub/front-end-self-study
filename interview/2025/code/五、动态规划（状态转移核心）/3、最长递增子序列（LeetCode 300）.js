@@ -38,9 +38,10 @@ function getMaxLength2(arr) {
         let left = 0;
         let right = tails.length;
 
+        // 这一步在 tails 数组中查找当前数字 arr[i] 应该插入或替换的位置
+        // tails 数组始终递增，left 最终会找到第一个大于等于 arr[i] 的位置
         while (left < right) {
             const mid = Math.floor((left + right) / 2);
-
             if (arr[i] > tails[mid]) {
                 left = mid + 1;
             } else {
@@ -48,6 +49,8 @@ function getMaxLength2(arr) {
             }
         }
 
+        // 如果 left 等于 tails 的长度，说明 arr[i] 比所有 tails 值都大，可以扩展最长递增子序列
+        // 否则用更小的 arr[i] 替换 tails[left]，保证后续有更优的递增序列可能
         if (left === tails.length) {
             tails.push(arr[i]);
         } else {
@@ -55,7 +58,7 @@ function getMaxLength2(arr) {
         }
     }
 
-    return tails.length;
+    return tails;
 }
 
 console.log(getMaxLength([2, 3, 1, 2, 3, 4, 2, 8]));
