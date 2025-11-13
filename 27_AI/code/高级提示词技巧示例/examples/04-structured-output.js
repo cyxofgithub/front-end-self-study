@@ -1,4 +1,4 @@
-import { callDifyAPI, extractJSON } from '../utils/apiClient.js';
+import { callDifyAPI, extractJSON } from '../../utils/apiClient.js';
 
 /**
  * 结构化输出示例

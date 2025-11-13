@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { SummaryMemory } from '../memory/SummaryMemory.js';
-import { callDifyAPI } from '../utils/apiClient.js';
+import { callDifyAPI } from '../../utils/apiClient.js';
 
 /**
  * 场景 3: 长对话智能助手（使用 Summary Memory）

@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { WindowMemory } from '../memory/WindowMemory.js';
-import { callDifyAPI } from '../utils/apiClient.js';
+import { callDifyAPI } from '../../utils/apiClient.js';
 
 /**
  * 场景 2: 客服机器人（使用 Window Memory）

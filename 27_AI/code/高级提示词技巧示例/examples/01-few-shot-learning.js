@@ -1,4 +1,4 @@
-import { callDifyAPI } from '../utils/apiClient.js';
+import { callDifyAPI } from '../../utils/apiClient.js';
 
 /**
  * Few-shot Learning（少样本学习）示例

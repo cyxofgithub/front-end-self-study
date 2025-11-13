@@ -1,4 +1,4 @@
-import { callDifyAPI } from '../utils/apiClient.js';
+import { callDifyAPI } from '../../utils/apiClient.js';
 
 /**
  * Summary Memory - 对历史对话进行总结压缩

@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import { BufferMemory } from '../memory/BufferMemory.js';
-import { callDifyAPI } from '../utils/apiClient.js';
+import { callDifyAPI } from '../../utils/apiClient.js';
 
 /**
  * 场景 1: 个人助手（使用 Buffer Memory）

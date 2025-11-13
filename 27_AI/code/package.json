@@ -14,7 +14,11 @@
         "prompt:few-shot": "node 高级提示词技巧示例/index.js --technique=few-shot",
         "prompt:cot": "node 高级提示词技巧示例/index.js --technique=cot",
         "prompt:react": "node 高级提示词技巧示例/index.js --technique=react",
-        "prompt:structured": "node 高级提示词技巧示例/index.js --technique=structured"
+        "prompt:structured": "node 高级提示词技巧示例/index.js --technique=structured",
+        "rag": "node --max-old-space-size=4096 RAG应用示例/index.js",
+        "rag:scenario1": "node --max-old-space-size=4096 RAG应用示例/index.js --scenario=1",
+        "rag:scenario2": "node --max-old-space-size=4096 RAG应用示例/index.js --scenario=2",
+        "rag:scenario3": "node --max-old-space-size=4096 RAG应用示例/index.js --scenario=3"
     },
     "dependencies": {
         "dotenv": "^17.2.3",

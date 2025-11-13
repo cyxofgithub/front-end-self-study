@@ -1,4 +1,4 @@
-import { callDifyAPI } from '../utils/apiClient.js';
+import { callDifyAPI } from '../../utils/apiClient.js';
 
 /**
  * ReAct 模式示例（Reasoning + Acting）

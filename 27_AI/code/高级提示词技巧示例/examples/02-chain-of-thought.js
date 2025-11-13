@@ -1,4 +1,4 @@
-import { callDifyAPI } from '../utils/apiClient.js';
+import { callDifyAPI } from '../../utils/apiClient.js';
 
 /**
  * Chain of Thought (CoT) 思维链示例
