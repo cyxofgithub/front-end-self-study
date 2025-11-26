@@ -420,3 +420,71 @@ console.log(filterRepeatObj([{ id: 1 }, { id: 2 }, { id: 1 }, { id: 3 }]));
 ### react 为什么不能在 if 里 写 useEffect
 
 参考 [为什么 hooks 要保证顺序调用](../react/为什么%20hooks%20要保证顺序调用.md)
+
+### 标签树深度
+
+```javascript
+function getDepth(htmlStr) {
+    // 1. 预处理：去除换行、多余空格（避免格式干扰），保留标签结构
+    // \s+ 在正则表达式中表示“匹配一个或多个空白字符”，包括空格、制表符（Tab）、换行符等。
+    // 例子: "  \n\tabc".replace(/\s+/g, "") 会去掉所有空白字符，结果为 "abc"
+    const cleanHtml = htmlStr.replace(/\s+/g, '').trim();
+    console.log('🚀 ~ getDepth ~ cleanHtml:', cleanHtml);
+
+    // 2. 正则匹配所有 HTML 标签（捕获 <tag> 或 </tag>）
+    // 正则说明：
+    // \w+ 表示“匹配一个或多个英文单词字符”，等价于 [A-Za-z0-9_]，也就是英文字母、数字或下划线
+    // 正则表达式最后的 g 是“全局（global）匹配”修饰符，表示会查找目标字符串中所有符合条件的内容，而不仅仅是第一个。如果没有 g，只会返回第一个匹配项。
+    const tags = cleanHtml.match(/<\/?\w+>/g) || [];
+    console.log('🚀 ~ getDepth ~ tags:', tags);
+
+    let currentDepth = 0; // 当前嵌套深度
+    let maxDepth = 0; // 最大深度
+
+    // 3. 遍历标签，计算深度
+    for (const tag of tags) {
+        if (tag.startsWith('</')) {
+            // 遇到结束标签：深度 -1（先减后判断，避免负数）
+            currentDepth = Math.max(0, currentDepth - 1);
+        } else {
+            // 遇到开始标签：深度 +1，再更新最大深度
+            currentDepth++;
+            maxDepth = Math.max(maxDepth, currentDepth);
+        }
+    }
+
+    return maxDepth;
+}
+
+// 测试示例
+const htmlStr = `
+    <div>
+        <div>
+            <span>123</span>
+            <a>222</a>
+            <div>
+                <button>333</button>
+                <br/>
+            </div>
+        </div>
+    </div>
+`;
+
+console.log(getDepth(htmlStr)); // 输出：4
+```
+
+### SSR、SSG、RSC 原理及优缺点
+
+参考[SSR、SSG、RSC 原理及优缺点](../前端常见问题/服务端渲染.md)
+
+### node ssr 什么原因引起堵塞
+
+参考[node ssr 什么原因引起堵塞，怎么解决](../服务端渲染/node%20ssr%20什么原因引起堵塞，怎么解决.md)
+
+总结：堵塞的核心逻辑
+
+Node.js SSR 的堵塞本质上是 **“事件循环被阻塞”或“资源被耗尽”**：
+
+-   同步操作直接阻塞事件循环；
+-   异步操作不当导致资源耗尽（如连接池、内存），间接阻塞；
+-   内存泄漏、第三方依赖问题加剧资源消耗，最终引发堵塞。
