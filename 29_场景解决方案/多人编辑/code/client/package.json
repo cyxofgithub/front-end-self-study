@@ -1,0 +1,21 @@
+{
+    "name": "yjs-client-server",
+    "version": "1.0.0",
+    "description": "Yjs 多人协同编辑系统 - Client 静态文件服务器",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    },
+    "keywords": [
+        "yjs",
+        "static-server",
+        "client"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.18.2"
+    }
+}
+
