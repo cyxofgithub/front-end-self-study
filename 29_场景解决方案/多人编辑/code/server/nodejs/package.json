@@ -1,0 +1,25 @@
+{
+    "name": "yjs-collaborative-editor-demo",
+    "version": "1.0.0",
+    "description": "使用 Yjs 实现的多人协同文档编辑 Demo",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node server.js"
+    },
+    "keywords": [
+        "yjs",
+        "crdt",
+        "collaborative-editing",
+        "websocket"
+    ],
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "express": "^4.18.2",
+        "mysql2": "^3.16.0",
+        "ws": "^8.16.0",
+        "y-websocket": "^1.5.4",
+        "yjs": "^13.6.10"
+    }
+}
