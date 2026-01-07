@@ -16,6 +16,7 @@ webpack 对模块的处理不局限于 ES Module（`import/export`），也支�
     -   `module/rules`：模块解析规则（如处理 CSS、图片的 loader）
     -   `plugins`：插件配置（如清理输出目录、生成 HTML 的插件）
 -   初始化 Compiler 编译对象（webpack 的核心编译控制器），并创建 Compilation 对象（单次编译的上下文）。
+-   **执行插件**：在初始化阶段，webpack 会调用所有已注册插件的 `apply` 方法，让插件订阅 Compiler 的生命周期钩子（hooks），如 `beforeRun`、`run`、`compilation`、`emit`、`done` 等。插件通过这些钩子可以在打包流程的不同时机执行自定义逻辑。
 
 #### 2. 编译阶段：构建依赖图（核心）
 
@@ -40,12 +41,14 @@ webpack 对模块的处理不局限于 ES Module（`import/export`），也支�
 -   所有模块解析完成后，webpack 会将每个模块的代码转换成**兼容 webpack 运行时的格式**：
     -   比如 ES Module 会被转换成 webpack 内部的 `__webpack_require__` 调用（模拟模块化）；
     -   示例：原代码 `import { add } from './utils.js'` 会被转换成 `__webpack_require__("./src/utils.js")`。
+-   **插件执行**：在编译过程中，订阅了 `compilation`、`make`、`afterCompile` 等钩子的插件会被触发，可以访问和修改模块信息、chunk 信息等（如 `HtmlWebpackPlugin` 在编译时收集入口信息，为后续生成 HTML 做准备）。
 
 #### 3. 输出阶段：生成打包文件
 
 -   webpack 根据依赖图，将所有模块的代码整合到一起，生成**运行时 (runtime)** 和 **chunk**：
     -   **runtime**：webpack 的核心运行代码，包含 `__webpack_require__`（模块加载函数）、模块缓存、模块 ID 映射等，负责在浏览器中加载和执行模块；
     -   **chunk**：一组模块的集合，单入口默认生成一个 chunk，多入口/代码分割会生成多个 chunk。
+-   **插件执行**：在输出文件前，订阅了 `emit` 钩子的插件会被执行，可以修改或添加输出资源（如 `HtmlWebpackPlugin` 生成 HTML 文件并注入 bundle 引用，`MiniCssExtractPlugin` 将 CSS 抽离为单独文件）。文件写入磁盘后，`afterEmit` 钩子会被触发。最后，`done` 钩子表示整个打包流程完成。
 -   最终将 runtime + 所有模块代码拼接成一个或多个 bundle 文件（如 `main.js`），输出到 `output` 指定的目录。
 
 ### 三、核心示例：从入口文件到打包结果
