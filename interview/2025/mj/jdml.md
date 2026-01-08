@@ -78,6 +78,15 @@ stream.getTracks().forEach((track) => {
 -   依赖图构建完成后会根据依赖关系输出 chunk （中间涉及到模块转换，比如 es import 语句转换成 webpack 可识别的模块语句**webpack_require**）
 -   n 个入口就有 n 个 chunk 如果有配置 split chunk 会有更多
 
+### 小程序原理
+
+我们从入口讲起
+
+-   入口 App ()/Page () + 宿主环境初始化，类似于 react render(<App />)
+-   wxml + wss + 页面 data + 会生成虚拟节点树
+-   首次创建会构建完整的页面描述（可中断）(类比 reaact 根协调阶段)
+-   小程序 setData 会触发 diff，比对差异更新页面(类比 react 局部协调阶段)
+
 ### 具备跨端开发经验，熟悉 React Natvie/Taro 或鸿蒙适配经验
 
 我没有跨端经验，不过我以前大学的时候倒是写过 uniapp 还有自己也学了一点 eletron 的基本知识
