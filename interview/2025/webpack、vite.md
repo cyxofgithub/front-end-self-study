@@ -257,7 +257,7 @@ Plugin：
 
 ```javascript
 // custom-loader.js
-module.exports = function(source) {
+module.exports = function (source) {
     // source 是文件内容
     const result = source.replace(/console\.log\(/g, 'console.error(');
 
@@ -266,7 +266,7 @@ module.exports = function(source) {
 };
 
 // 异步 Loader
-module.exports = function(source) {
+module.exports = function (source) {
     const callback = this.async();
 
     setTimeout(() => {
@@ -445,7 +445,7 @@ Vite 是一个基于 ESM（ES Modules）的前端构建工具, 主要优势：
 
 -   开发环境：
     使用原生 ES 模块，浏览器直接请求模块
-    用 esbuild 预构建依赖
+    用 esbuild 预构建依赖（cjs->esm）
     实时编译源码
 -   生成环境：
     使用 Rollup 进行打包
@@ -477,7 +477,7 @@ export default defineConfig({
             '/api': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,
-                rewrite: path => path.replace(/^\/api/, ''),
+                rewrite: (path) => path.replace(/^\/api/, ''),
             },
         },
     },
@@ -838,14 +838,14 @@ export default defineConfig({
             '/api': {
                 target: 'http://jsonplaceholder.typicode.com',
                 changeOrigin: true,
-                rewrite: path => path.replace(/^\/api/, ''),
+                rewrite: (path) => path.replace(/^\/api/, ''),
             },
 
             // 正则表达式
             '^/fallback/.*': {
                 target: 'http://jsonplaceholder.typicode.com',
                 changeOrigin: true,
-                rewrite: path => path.replace(/^\/fallback/, ''),
+                rewrite: (path) => path.replace(/^\/fallback/, ''),
             },
 
             // 使用代理实例
@@ -961,7 +961,7 @@ export default defineConfig({
             // name: 库的全局变量名（UMD/IIFE 格式下）。
             name: 'MyLib',
             // fileName: 输出文件名格式，format 为打包格式（如 esm、cjs、umd）。
-            fileName: format => `my-lib.${format}.js`,
+            fileName: (format) => `my-lib.${format}.js`,
         },
     },
 });
@@ -1006,7 +1006,7 @@ UMD 就是“通用打包格式”，让你的库“一次打包，到处可用�
 ```javascript
 // HMR API 使用
 if (import.meta.hot) {
-    import.meta.hot.accept('./component.vue', newModule => {
+    import.meta.hot.accept('./component.vue', (newModule) => {
         // 在这里可以将新的模块内容应用到页面上，比如替换组件实例、刷新视图等
         // 例如：可以通过重新渲染组件或更新相关状态来实现热更新效果
         // 具体处理方式取决于你的应用架构和需求
