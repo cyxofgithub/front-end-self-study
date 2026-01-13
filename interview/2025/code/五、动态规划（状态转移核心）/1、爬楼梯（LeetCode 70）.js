@@ -21,18 +21,17 @@ function getNum(n) {
 // 时间复杂度: o(n)
 // 原因：通过 memo 缓存已计算的结果，每个 n 仅需计算一次（避免重复计算）。
 
-// 空间复杂度： o(nlogn)
-// 原因：
-// 缓存 memo 需要存储 n 个键值对（从 1 到 n 的结果），占用 O(n) 空间；
-// 递归调用栈的最大深度仍为 n（与纯递归相同）。
-// 两者叠加，总空间复杂度为 O(n)。
+// 空间复杂度：O(n)
+// 说明：
+// memo 缓存需要 O(n) 空间来保存从 1 到 n 的结果；
+// 递归调用栈的最大深度同样为 n（从 n 递归到 1）；
+// 两者均为 O(n) 级别，总空间复杂度仍为 O(n)。
+// 在递归时需要始终传递 memo，否则每次递归都会生成新的 memo，无法实现记忆效果。
+// 推荐写法如下：
 function getNum2(n, memo = []) {
     if (memo[n]) return memo[n];
-
     if (n <= 2) return n;
-
-    memo[n] = getNum2(n - 1) + getNum2(n - 2);
-
+    memo[n] = getNum2(n - 1, memo) + getNum2(n - 2, memo);
     return memo[n];
 }
 
