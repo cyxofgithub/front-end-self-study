@@ -20,7 +20,7 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 
 ### vue3 做了哪些性能优化
 
-
+[参考](../../../vue/vue3/vue3%20性能优化做了哪些.md)
 
 ### vue2哪些数组方法可以修改变化
 
