@@ -23,17 +23,3 @@ this.$delete(obj, 'foo');
 
 原因：Vue2 的响应式原理基于 Object.defineProperty，只能追踪已经存在的属性。删除或新增属性时，需要用 `Vue.delete`/`this.$delete` 来确保响应式系统能监听到变化。
 
-
-## vue2 数组支持监听那几个方法的修改
-
-在 Vue2 中，响应式系统主要通过拦截数组的以下 7 个可变方法来实现对数组内容变更的监听：
-
-- `push`
-- `pop`
-- `shift`
-- `unshift`
-- `splice`
-- `sort`
-- `reverse`
-
-这些方法会改变数组本身，Vue2 会对这几个方法做包裹增强处理，使它们能触发视图更新。

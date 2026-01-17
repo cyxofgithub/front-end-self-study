@@ -24,7 +24,7 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 
 ### vue2哪些数组方法可以修改变化
 
-
+[参考](../../../vue/vue2%20中如何实现对数组的操作.md)
 
 
 ### vue2、vue3的生命周期差异，每个生命周期的使用场景
