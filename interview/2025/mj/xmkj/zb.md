@@ -28,5 +28,7 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 
 
 ### vue2、vue3的生命周期差异，每个生命周期的使用场景
+[参考](../../../vue/vue2%20vs%20vue3/vue2与vue3生命周期差异、使用场景.md)
 
 ### ref 和 reactive 区别
+[参考](../../../vue/vue3/ref与reactive的区别.md)
