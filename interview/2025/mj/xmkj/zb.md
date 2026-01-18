@@ -71,3 +71,9 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 ## 跨端兼容
 
 [参考](../../../跨端/跨端兼容.md)
+
+## http 相关
+
+### http 演进过程
+
+[参考](../../../计网知识/http%20协议版本演进.md)
