@@ -40,3 +40,13 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 ### vue中的通讯方式
 
 [参考](../../../vue/vue中的通讯方式.md)
+
+### vue运行流程
+
+[参考](../../../vue/vue运行流程.md)
+
+### vuex与pinia区别
+
+### vue 自定义指令
+
+### vue nextTrick使用场景与原理
