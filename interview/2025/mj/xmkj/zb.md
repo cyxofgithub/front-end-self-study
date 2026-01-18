@@ -36,3 +36,7 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 ### computed 和 watch 的区别与使用场景
 
 [参考](../../../vue/computed和watch的区别.md)
+
+### vue中的通讯方式
+
+[参考](../../../vue/vue中的通讯方式.md)
