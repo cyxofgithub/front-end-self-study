@@ -47,6 +47,8 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 
 ### vuex与pinia区别
 
+[参考](../../../vue/vuex与pinia的区别.md)
+
 ### vue 自定义指令
 
 ### vue nextTrick使用场景与原理
