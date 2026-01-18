@@ -58,3 +58,5 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 [参考](../../../vue/nextTrick作用与原理.md)
 
 ### vue 批量更新原理
+
+[参考](../../../vue/vue%20批量更新原理.md)
