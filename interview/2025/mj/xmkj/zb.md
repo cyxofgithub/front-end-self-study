@@ -32,3 +32,7 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 
 ### ref 和 reactive 区别
 [参考](../../../vue/vue3/ref与reactive的区别.md)
+
+### computed 和 watch 的区别与使用场景
+
+[参考](../../../vue/computed和watch的区别.md)
