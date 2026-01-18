@@ -77,3 +77,7 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 ### http 演进过程
 
 [参考](../../../计网知识/http%20协议版本演进.md)
+
+### 协商缓存与强缓存
+
+[参考](../../../计网知识/http协商缓存和强缓存.md)
