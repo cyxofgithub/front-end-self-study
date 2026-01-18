@@ -51,4 +51,6 @@ vue3: composition Api、ts支持、响应式基于proxy、tree shaking支持、�
 
 ### vue 自定义指令
 
+[参考](../../../vue/vue自定义指令.md)
+
 ### vue nextTrick使用场景与原理
