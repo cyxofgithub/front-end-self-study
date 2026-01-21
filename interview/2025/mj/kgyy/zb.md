@@ -1,0 +1,20 @@
+## 如何封装一个 sdk
+
+[参考](../../../工程化/sdk-monorepo/README.md)
+
+相关问题：
+
+- [lerna、turbo、pnpm workspace 区别](../../../工程化/lerna、turbo、pnpm%20workspace%20区别.md)
+
+- cjs、esm、umd 区别
+
+## h5 常考问题复习
+
+## git 
+
+- merge and rebase 区别
+- ...
+
+## 反问
+
+- sdk 的封装，这是中台业务吗
