@@ -10,6 +10,9 @@
 
 ## h5 常考问题复习
 
+- [h5 与原生通信方式](../../../跨端/jsbridge通信原理.md)
+- 
+
 ## git 
 
 - merge and rebase 区别
