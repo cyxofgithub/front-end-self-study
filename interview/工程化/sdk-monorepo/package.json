@@ -1,0 +1,24 @@
+{
+  "name": "sdk-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "build": "pnpm -r --parallel build",
+    "build:a": "pnpm --filter sdk-a build",
+    "build:b": "pnpm --filter sdk-b build",
+    "dev": "pnpm --filter demo dev",
+    "type-check": "pnpm -r exec -- tsc --noEmit",
+    "clean": "pnpm -r exec -- rm -rf dist"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^27.0.0",
+    "@rollup/plugin-node-resolve": "^15.3.0",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "@types/node": "^20.14.0",
+    "rollup": "^4.18.0",
+    "tslib": "^2.6.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.6.0"
+  }
+}
