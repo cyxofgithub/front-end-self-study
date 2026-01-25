@@ -33,6 +33,8 @@
 
 ## react
 
+-   [react 渲染机制](../../../react/)
+
 ## 看下牛客
 
 -   [手写 promiseall](../../../js/手写promise.all.md)
