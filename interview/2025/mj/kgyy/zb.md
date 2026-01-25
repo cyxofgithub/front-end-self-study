@@ -43,6 +43,7 @@
 -   [http 加密过程](../../../计网知识/htts.md)
 -   [location.href 与 location.replace 差异](../../../前端常见问题/location.href与location.replace区别.md)
 -   [DomContentLoaded 和 window.onload 差异](../../../前端常见问题/DomContentLoade和window.onLoad的区别.md)
+-   [router 原理](../../../前端常见问题/router原理.md)
 
 ## 反问
 
