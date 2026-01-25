@@ -41,6 +41,8 @@
 -   [拓展运算符、深拷贝的区别](../../../js/拓展运算符、深拷贝的区别.md)
 -   [http、https 区别](../../../计网知识/HTTP%20与%20HTTPS%20区别.md)
 -   [http 加密过程](../../../计网知识/htts.md)
+-   [location.href 与 location.replace 差异](../../../前端常见问题/location.href与location.replace区别.md)
+-   [DomContentLoaded 和 window.onload 差异](../../../前端常见问题/DomContentLoade和window.onLoad的区别.md)
 
 ## 反问
 
