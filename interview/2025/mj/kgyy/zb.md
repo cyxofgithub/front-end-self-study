@@ -31,6 +31,9 @@
 
 ## vue
 
+-   [data 属性为什么用函数来写](../../../vue/vue%20data%20为什么是函数.md)
+-   vue 渲染流程
+
 ## react
 
 -   [react 渲染机制](../../../react/)
