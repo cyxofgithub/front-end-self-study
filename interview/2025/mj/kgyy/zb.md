@@ -6,7 +6,7 @@
 
 -   [lerna、turbo、pnpm workspace 区别](../../../工程化/lerna、turbo、pnpm%20workspace%20区别.md)
 
--   cjs、esm、umd 区别
+-   [cjs、esm、umd 区别](../../../js/esm、cmd、umd区别.md)
 
 ## h5 常考问题复习
 
