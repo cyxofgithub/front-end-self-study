@@ -1,21 +1,24 @@
 // 防抖
 function debounce(fn, time, immediate = false) {
     let timer = null; // 初始化定时器为null，避免undefined判断问题
+    let isInvoked = false;
 
-    return function(...args) {
+    return function (...args) {
         // 保存原函数的this上下文（当前return的函数的this）
         const context = this;
         // 清除上一次的定时器（无论是否立即执行，都需要重置）
         if (timer) clearTimeout(timer);
 
         if (immediate) {
-            // 立即执行：如果没有定时器（首次触发或已完成），则立即执行
-            if (!timer) {
+            // 立即执行：如果没有定时器（上次触发已经过了冷却期），则立即执行
+            if (!timer && !isInvoked) {
                 fn.apply(context, args);
+                isInvoked = true;
             }
             // 设定定时器，到期后重置timer（期间再次触发不会执行）
             timer = setTimeout(() => {
                 timer = null;
+                isInvoked = false;
             }, time);
         } else {
             // 非立即执行：每次触发都延迟执行，覆盖上一次的定时器
@@ -40,7 +43,7 @@ function throttle(fn, delay, options = { leading: true, trailing: true }) {
         }
     };
 
-    return function(...args) {
+    return function (...args) {
         const now = Date.now();
         const context = this;
 
