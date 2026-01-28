@@ -141,8 +141,8 @@ webView.evaluateJavascript("javascript:window.jsCallback('result data')", new Va
 });
 
 // 调用带参数的 JS 方法
-String jsCode = String.format("javascript:window.handleNativeCall('%s', '%s')", 
-    methodName, 
+String jsCode = String.format("javascript:window.handleNativeCall('%s', '%s')",
+    methodName,
     jsonParams);
 webView.evaluateJavascript(jsCode, null);
 ```
@@ -151,15 +151,15 @@ webView.evaluateJavascript(jsCode, null);
 
 ```javascript
 // 定义全局回调函数供 Native 调用
-window.jsCallback = function(data) {
+window.jsCallback = function (data) {
     console.log('Native 调用结果:', data);
     // 处理 Native 返回的数据
 };
 
-window.handleNativeCall = function(method, params) {
+window.handleNativeCall = function (method, params) {
     const paramsObj = JSON.parse(params);
     // 根据 method 执行对应逻辑
-    switch(method) {
+    switch (method) {
         case 'updateUI':
             updateUI(paramsObj);
             break;
@@ -171,9 +171,10 @@ window.handleNativeCall = function(method, params) {
 ```
 
 **注意**：
-- API 19 以下使用 `loadUrl("javascript:xxx")`，但无法获取返回值
-- 需要确保 WebView 已加载完成（在 `onPageFinished` 中调用）
-- JS 代码中的字符串需要正确转义
+
+-   API 19 以下使用 `loadUrl("javascript:xxx")`，但无法获取返回值
+-   需要确保 WebView 已加载完成（在 `onPageFinished` 中调用）
+-   JS 代码中的字符串需要正确转义
 
 ### iOS：evaluateJavaScript
 
@@ -207,15 +208,15 @@ webView.evaluateJavaScript(jsCode, completionHandler: nil)
 
 ```javascript
 // 定义全局回调函数供 Native 调用
-window.jsCallback = function(data) {
+window.jsCallback = function (data) {
     console.log('Native 调用结果:', data);
     // 处理 Native 返回的数据
 };
 
-window.handleNativeCall = function(method, params) {
+window.handleNativeCall = function (method, params) {
     const paramsObj = JSON.parse(params);
     // 根据 method 执行对应逻辑
-    switch(method) {
+    switch (method) {
         case 'updateUI':
             updateUI(paramsObj);
             break;
@@ -227,9 +228,10 @@ window.handleNativeCall = function(method, params) {
 ```
 
 **注意**：
-- 需要在主线程调用
-- JS 代码执行是异步的，通过 completionHandler 获取结果
-- 字符串参数需要正确转义，避免注入攻击
+
+-   需要在主线程调用
+-   JS 代码执行是异步的，通过 completionHandler 获取结果
+-   字符串参数需要正确转义，避免注入攻击
 
 ### 回调机制
 
@@ -244,13 +246,13 @@ let callbackId = 0;
 function callNative(method, params, callback) {
     const id = ++callbackId;
     callbackMap[id] = callback;
-    
+
     // 通过 JSBridge 发送请求
     window.JSBridge.callNative(method, JSON.stringify(params), id);
 }
 
-// Native 调用 JS，执行回调
-window.jsCallback = function(callbackId, result) {
+// 提供给 Native 调用的 JS 回调函数
+window.jsCallback = function (callbackId, result) {
     const callback = callbackMap[callbackId];
     if (callback) {
         callback(result);
@@ -263,8 +265,8 @@ window.jsCallback = function(callbackId, result) {
 // Android Native 端：执行回调
 public void executeCallback(String callbackId, String result) {
     String jsCode = String.format(
-        "window.jsCallback('%s', %s)", 
-        callbackId, 
+        "window.jsCallback('%s', %s)",
+        callbackId,
         result
     );
     webView.evaluateJavascript(jsCode, null);
