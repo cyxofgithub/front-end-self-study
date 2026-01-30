@@ -4,7 +4,10 @@ import './globals.css';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 
-// Font optimization - automatically optimizes font loading
+// 解释 Inter() 函数内各个属性作用：
+// subsets: 指定只加载所需的字符子集（如 'latin'），减小字体文件体积。
+// display: 指定字体加载显示策略，'swap' 意味着先用系统字体显示，加载好自定义字体后无缝切换，避免文字闪烁。
+// variable: 定义一个 CSS 变量名称，用于在全局通过 CSS 变量引用此字体。
 const inter = Inter({
     subsets: ['latin'],
     display: 'swap',

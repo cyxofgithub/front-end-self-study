@@ -135,7 +135,9 @@ export async function getPostById(id: string): Promise<BlogPost | null> {
  * Demonstrates revalidateTag for granular cache control
  */
 export async function revalidateBlogCache() {
-  // Revalidate all blog-related cached data using a tag
+  // 这里实现了“缓存重新验证”功能，结合 revalidateTag 和 revalidatePath：
+  // 1. 通过 revalidateTag('blog-posts')，强制刷新所有标记为 'blog-posts' 的缓存内容，适用于数据源变更时快速让相关页面读取最新数据。
+  // 2. 通过 revalidatePath('/blog') 和 revalidatePath('/blog-admin')，手动指定刷新博客列表页和后台管理页的页面缓存，确保用户看到最新内容。
   revalidateTag('blog-posts');
   revalidatePath('/blog');
   revalidatePath('/blog-admin');
