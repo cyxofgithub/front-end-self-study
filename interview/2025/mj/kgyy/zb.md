@@ -47,6 +47,14 @@
 
 -   [防抖、节流](../../../数据结构与算法/2025总结/code/八、前端工程化相关/1、防抖与节流函数.js)
 
+## 工程化
+
+-   [eslint/prettieer 区别](../../../工程化/eslint、prettier区别.md)
+
+## ai
+
+-   [前端能利用 rag 做什么](../../../AI/前端能利用rag做什么.md)
+
 ## 看下牛客
 
 -   [手写 promiseall](../../../js/手写promise.all.md)
