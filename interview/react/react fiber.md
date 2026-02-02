@@ -24,7 +24,7 @@ class FiberNode {
         this.key = key; // 节点唯一标识
         this.pendingProps = pendingProps; // 新的属性
         this.type = type; // 组件类型
-        this.stateNode = null; // 组件实例
+        this.stateNode = null; // 节点实例
         this.child = null; // 子节点
         this.sibling = null; // 兄弟节点
         this.return = null; // 父节点
