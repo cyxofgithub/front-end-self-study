@@ -2,42 +2,61 @@ React Hooks 是 React 16.8 引入的一种新特性，允许在函数组件中�
 
 ### Hooks 的基本原理
 
-1. **钩子链表**：每个函数组件都有一个与之关联的钩子链表，用于存储该组件的所有钩子（如 `useState`、`useEffect` 等）。
-2. **钩子索引**：React 通过一个全局变量 `hookIndex` 来跟踪当前正在处理的钩子索引。
-3. **钩子调用顺序**：Hooks 必须在函数组件的顶层调用，并且每次渲染时调用的顺序必须一致。这是因为 React 依赖调用顺序来正确地管理钩子链表。
+1. **钩子链表**：每个函数组件都有一个与之关联的钩子链表，用于存储该组件的所有钩子（如 `useState`、`useEffect` 等）。链表存储在 `fiber.memoizedState` 上，每个 Hook 节点都有 `next` 指针指向下一个 Hook。
+2. **工作指针**：React 使用一个工作指针（`workInProgressHook`）来遍历链表。`fiber.memoizedState` 存储链表头（保持不变），工作指针每次调用一个钩子时移动到下一个节点（`workInProgressHook = hook.next`）。
+3. **钩子调用顺序**：Hooks 必须在函数组件的顶层调用，并且每次渲染时调用的顺序必须一致。这是因为 React 依赖调用顺序来正确地遍历钩子链表。
 
 ### 具体实现
 
-以下是 React 源码中 Hooks 的简化实现，以 `useState` 为例：
+以下是 React 源码中 Hooks 的简化实现（使用链表结构），以 `useState` 为例：
 
 #### 1. `useState` 的实现
 
 ```javascript
-let hookIndex = 0;
 let currentComponent = null;
+let workInProgressHook = null; // 工作指针，用于遍历链表
+let lastHookInWorkInProgress = null; // 用于首次渲染时快速链接新节点
 
 function useState(initialValue) {
-    const currentHook = currentComponent.hooks[hookIndex] || {
-        state: initialValue,
-        queue: [],
-    };
+    // 获取当前 Hook 节点（从工作指针）
+    let currentHook = workInProgressHook;
 
-    const setState = newState => {
+    if (currentHook) {
+        // 更新渲染：使用已有的 Hook 节点
+        // 处理队列中的所有状态更新
+        currentHook.queue.forEach((update) => {
+            currentHook.memoizedState = typeof update === 'function' ? update(currentHook.memoizedState) : update;
+        });
+        currentHook.queue = [];
+    } else {
+        // 首次渲染：创建新的 Hook 节点
+        currentHook = {
+            memoizedState: initialValue,
+            queue: [],
+            next: null,
+        };
+
+        // 如果是第一个 Hook，设置为链表头
+        if (!currentComponent.memoizedState) {
+            currentComponent.memoizedState = currentHook;
+        } else {
+            // 否则链接到上一个 Hook
+            lastHookInWorkInProgress.next = currentHook;
+        }
+        // 更新最后一个 Hook 的引用
+        lastHookInWorkInProgress = currentHook;
+    }
+
+    const setState = (newState) => {
         currentHook.queue.push(newState);
         // 触发重新渲染
         render(currentComponent);
     };
 
-    // 处理队列中的所有状态更新
-    currentHook.queue.forEach(update => {
-        currentHook.state = typeof update === 'function' ? update(currentHook.state) : update;
-    });
-    currentHook.queue = [];
+    // 移动工作指针到下一个 Hook 节点
+    workInProgressHook = currentHook.next;
 
-    currentComponent.hooks[hookIndex] = currentHook;
-    hookIndex++;
-
-    return [currentHook.state, setState];
+    return [currentHook.memoizedState, setState];
 }
 ```
 
@@ -45,10 +64,29 @@ function useState(initialValue) {
 
 ```javascript
 function useEffect(effect, deps) {
-    const currentHook = currentComponent.hooks[hookIndex] || {
-        deps: undefined,
-        cleanup: undefined,
-    };
+    // 获取当前 Hook 节点（从工作指针）
+    let currentHook = workInProgressHook;
+
+    if (currentHook) {
+        // 更新渲染：使用已有的 Hook 节点
+    } else {
+        // 首次渲染：创建新的 Hook 节点
+        currentHook = {
+            memoizedState: null,
+            deps: undefined,
+            cleanup: undefined,
+            next: null,
+        };
+
+        // 链接到链表
+        if (!currentComponent.memoizedState) {
+            currentComponent.memoizedState = currentHook;
+        } else {
+            lastHookInWorkInProgress.next = currentHook;
+        }
+        // 更新最后一个 Hook 的引用
+        lastHookInWorkInProgress = currentHook;
+    }
 
     const hasChanged = !currentHook.deps || !deps.every((dep, i) => dep === currentHook.deps[i]);
 
@@ -60,20 +98,24 @@ function useEffect(effect, deps) {
         currentHook.deps = deps;
     }
 
-    currentComponent.hooks[hookIndex] = currentHook;
-    hookIndex++;
+    // 移动工作指针到下一个 Hook 节点
+    workInProgressHook = currentHook.next;
 }
 ```
 
 ### 渲染函数
 
-在每次渲染时，React 会重置 `hookIndex` 并调用组件函数：
+在每次渲染时，React 会重置工作指针到链表头并调用组件函数：
 
 ```javascript
 function render(component) {
-    hookIndex = 0;
     currentComponent = component;
+    // 重置工作指针到链表头（memoizedState 存储链表头）
+    workInProgressHook = component.memoizedState;
+    // 重置最后一个 Hook 的引用（用于首次渲染时快速链接）
+    lastHookInWorkInProgress = null;
     component.render();
+    // 渲染完成后，工作指针应该为 null（表示已遍历完所有 Hook）
 }
 ```
 
@@ -102,7 +144,7 @@ function MyComponent() {
 
 // 初始化组件
 const myComponentInstance = {
-    hooks: [],
+    memoizedState: null, // 钩子链表的头节点
     render: MyComponent,
 };
 
@@ -112,8 +154,8 @@ render(myComponentInstance);
 
 ### 技术原理解释
 
-1. **钩子链表**：每个函数组件都有一个钩子链表，用于存储该组件的所有钩子。每次渲染时，React 会遍历这个链表，并根据钩子的调用顺序来更新状态和副作用。
-2. **钩子索引**：React 通过一个全局变量 `hookIndex` 来跟踪当前正在处理的钩子索引。每次调用一个钩子时，`hookIndex` 会递增，以确保钩子的调用顺序一致。
+1. **钩子链表**：每个函数组件都有一个钩子链表（存储在 `fiber.memoizedState`），每个 Hook 节点都有 `next` 指针指向下一个 Hook。每次渲染时，React 会通过工作指针（`workInProgressHook`）来遍历这个链表。这样可以通过调用顺序来访问对应的 Hook。
+2. **工作指针移动**：React 使用工作指针（`workInProgressHook`）来跟踪当前正在处理的钩子。`fiber.memoizedState` 存储链表头（保持不变），工作指针每次调用一个钩子时移动到下一个节点（`workInProgressHook = hook.next`），以确保钩子的调用顺序一致。每次渲染开始时，工作指针会重置到链表头。
 3. **状态更新**：`useState` 通过一个队列来管理状态更新。每次调用 `setState` 时，新的状态会被推入队列，并在下一次渲染时应用。
 4. **副作用管理**：`useEffect` 通过依赖数组来决定是否重新执行副作用。如果依赖数组中的值发生变化，React 会先执行上一次渲染的清理函数，然后执行新的副作用函数。
 

@@ -44,6 +44,7 @@
 <!-- -   [react 渲染机制](../../../react/react%20渲染机制.md) -->
 
 -   [react diff 算法的核心策略是什么](../../../react/react%20diff%20原理.md)
+-   [useState 的工作原理是什么？为什么不能在条件 / 循环语句中使用 Hook？](../../../react/react%20hook原理.md)
 
 ## 基础
 
