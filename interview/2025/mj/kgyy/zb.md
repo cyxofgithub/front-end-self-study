@@ -45,6 +45,7 @@
 
 -   [react diff 算法的核心策略是什么](../../../react/react%20diff%20原理.md)
 -   [useState 的工作原理是什么？为什么不能在条件 / 循环语句中使用 Hook？](../../../react/react%20hook原理.md)
+-   [useEffect 的工作原理是什么？模拟了类组件的那些生命周期](../../../react/react%20useEffect原理.md)
 
 ## 基础
 

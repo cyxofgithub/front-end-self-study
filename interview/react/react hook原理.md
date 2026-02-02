@@ -103,6 +103,12 @@ function useEffect(effect, deps) {
 }
 ```
 
+**useEffect 模拟的生命周期：**
+
+-   componentDidMount（仅挂载后执行一次）：依赖数组传「空数组 []」。
+-   componentDidUpdate（仅依赖项变化时执行）：依赖数组传「需要监听的变量」（比如 [count, props.data]）。
+-   componentWillUnmount（仅卸载前执行）：在 useEffect 中返回「清理函数」。
+
 ### 渲染函数
 
 在每次渲染时，React 会重置工作指针到链表头并调用组件函数：
