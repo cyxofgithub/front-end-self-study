@@ -41,7 +41,9 @@
 
 ## react
 
--   [react 渲染机制](../../../react/)
+<!-- -   [react 渲染机制](../../../react/react%20渲染机制.md) -->
+
+-   [react diff 算法的核心策略是什么](../../../react/react%20diff%20原理.md)
 
 ## 基础
 
