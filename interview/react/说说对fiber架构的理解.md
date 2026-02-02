@@ -10,7 +10,7 @@
 
 ### 是什么
 
-React Fiber 其实就是 Facebook 针对这个问题对 React 做出的一个重大改变与优化
+**React Fiber 其实就是针对 React 15 的 Stack Reconciler 的同步缺陷，引入的一种新的架构，旨在解决 它不可中断的同步渲染问题。React Fiber 基于链表结构让每个 fiber 节点都是一个工作单元，并且可以被中断和恢复。**
 
 主要做了以下的操作：
 
@@ -22,7 +22,7 @@ React Fiber 其实就是 Facebook 针对这个问题对 React 做出的一个重
 ### winodw.requestIdleCallback 使用示例
 
 ```javascript
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from 'react';
 
 function App() {
     const [count, setCount] = useState(0);
@@ -78,10 +78,7 @@ type Fiber = {
     sibling: Fiber | null,
     index: number,
 
-    ref:
-        | null
-        | (((handle: mixed) => void) & { _stringRef: ?string })
-        | RefObject,
+    ref: null | (((handle: mixed) => void) & { _stringRef: ?string }) | RefObject,
 
     // 当前处理过程中的组件props对象
     pendingProps: any,

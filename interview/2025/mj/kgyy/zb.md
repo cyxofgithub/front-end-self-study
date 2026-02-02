@@ -46,6 +46,9 @@
 -   [react diff 算法的核心策略是什么](../../../react/react%20diff%20原理.md)
 -   [useState 的工作原理是什么？为什么不能在条件 / 循环语句中使用 Hook？](../../../react/react%20hook原理.md)
 -   [useEffect 的工作原理是什么？模拟了类组件的那些生命周期](../../../react/react%20useEffect原理.md)
+-   [什么是 React Fiber？它解决了什么问题](../../../react/说说对fiber架构的理解.md)
+-   [react fiber 时间切片原理](../../../react/工作循环原理.md)
+-   [fiber 和 virtual dom 为什么共同存在]()
 
 ## 基础
 
