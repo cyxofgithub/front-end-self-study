@@ -170,6 +170,43 @@ function updateHostComponent(fiber) {
 }
 
 /**
+ * shallowEqual - 浅比较两个对象是否相等
+ *
+ * @param {object} obj1 - 第一个对象
+ * @param {object} obj2 - 第二个对象
+ * @returns {boolean} 是否相等
+ */
+function shallowEqual(obj1, obj2) {
+    if (obj1 === obj2) {
+        return true;
+    }
+
+    if (
+        !obj1 ||
+        !obj2 ||
+        typeof obj1 !== 'object' ||
+        typeof obj2 !== 'object'
+    ) {
+        return false;
+    }
+
+    const keys1 = Object.keys(obj1);
+    const keys2 = Object.keys(obj2);
+
+    if (keys1.length !== keys2.length) {
+        return false;
+    }
+
+    for (const key of keys1) {
+        if (obj1[key] !== obj2[key]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
  * reconcileChildren - 协调子节点
  *
  * 对比新旧子节点，生成新的 Fiber 节点，并建立父子、兄弟关系
@@ -194,12 +231,17 @@ function reconcileChildren(fiber, children) {
         const sameType = oldFiber && child && oldFiber.type === child.type;
 
         if (sameType) {
-            // 类型相同，复用节点，标记为 UPDATE
+            // 类型相同，需要比较 props 是否发生变化
+            const oldProps = oldFiber.props || {};
+            const newProps = child.props || {};
+            const propsChanged = !shallowEqual(oldProps, newProps);
+
+            // 复用节点，只有当 props 发生变化时才标记为 UPDATE
             newFiber = {
                 ...oldFiber,
                 props: child.props,
                 alternate: oldFiber,
-                effectTag: EFFECT_TAG.UPDATE,
+                effectTag: propsChanged ? EFFECT_TAG.UPDATE : null,
                 return: fiber,
             };
         } else {
