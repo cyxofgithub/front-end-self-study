@@ -8,11 +8,6 @@
 
 -   [cjs、esm、umd 区别](../../../js/esm、cmd、umd区别.md)
 
-## git
-
--   [merge and rebase 区别](../../../前端常见问题/git/git%20merge%20and%20rebase%20区别.md)
--   ...
-
 ## 音视频相关
 
 ### [基础概念](../../../音视频/基础概念.md)
