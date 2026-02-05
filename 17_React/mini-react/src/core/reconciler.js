@@ -53,7 +53,7 @@ export function performUnitOfWork(fiber) {
     // beginWork: 处理当前节点
     const next = beginWork(fiber);
 
-    // 如果 beginWork 返回了子节点，继续处理子节点
+    // 1、如果 beginWork 返回了子节点，继续处理子节点
     if (next) {
         return next;
     }
@@ -64,16 +64,16 @@ export function performUnitOfWork(fiber) {
     while (current) {
         completeWork(current);
 
-        // 如果有兄弟节点，处理兄弟节点
+        // 2、如果有兄弟节点，处理兄弟节点
         if (current.sibling) {
             return current.sibling;
         }
 
-        // 否则回到父节点继续 completeWork
+        // 3、否则回到父节点继续 completeWork
         current = current.return;
     }
 
-    // 所有节点都处理完了，返回 null
+    // 4、所有节点都处理完了，返回 null
     return null;
 }
 

@@ -440,6 +440,18 @@ createElement(
 -   **reconcileChildren**: 协调子节点，生成新的 Fiber 节点
 -   **performUnitOfWork**: 执行单个工作单元（深度优先遍历）
 
+**fiber 树的遍历顺序**
+
+```
+        Root
+         ↓ child
+        App
+      ↙    ↛
+   div    button   (sibling)
+    ↓       ↓
+  span   "Click"
+```
+
 ### commit.js
 
 提交阶段，将协调阶段计算出的更新应用到实际的 DOM：

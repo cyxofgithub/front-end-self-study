@@ -8,33 +8,11 @@
 
 -   [cjs、esm、umd 区别](../../../js/esm、cmd、umd区别.md)
 
-## 音视频相关
-
-### [基础概念](../../../音视频/基础概念.md)
-
-### [直播实现](../../../音视频/怎么实现直播.md)
-
--   [hls、flv、webRTC 区别](../../../音视频/hls、flv、webRTC区别.md)
-
-### 核心 API 类（高频手写 / 应用题）
-
-### WebRTC 核心原理（面试高频）
-
 ## vue
 
 -   [data 属性为什么用函数来写](../../../vue/vue%20data%20为什么是函数.md)
 -   [vue 渲染流程](../../../vue/vue运行流程.md)
 -   [最长递增子序列]
-
-## react
-
--   [react diff 算法的核心策略是什么](../../../react/react%20diff%20原理.md)
--   [useState 的工作原理是什么？为什么不能在条件 / 循环语句中使用 Hook？](../../../react/react%20hook原理.md)
--   [useEffect 的工作原理是什么？模拟了类组件的那些生命周期](../../../react/react%20useEffect原理.md)
--   [什么是 React Fiber？它解决了什么问题](../../../react/说说对fiber架构的理解.md)
--   [react fiber 时间切片原理](../../../react/工作循环原理.md)
--   [fiber 和 virtual dom 为什么共同存在](../../../../17_React/React原理/vdom和fiber为什么要共同存在.md)
--   [react 整体实现思路](../../../../17_React/mini-react/README.md)
 
 ## 基础
 
