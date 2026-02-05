@@ -82,3 +82,9 @@
 ## git 协作
 
 [merge and rebase 区别](../../../前端常见问题/git/git%20merge%20and%20rebase%20区别.md)
+
+## ai
+
+-   [figma 生成代码原理](../../../AI/figma生成代码原理.md)
+
+-   [agent skills](../../../AI/agent%20skills.md)
