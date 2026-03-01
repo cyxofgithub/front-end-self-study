@@ -1,9 +1,3 @@
-
-
-
-
-
-
 # 遇到的一些问题
 
 还是要冷静的一道题一道题的过，算法这种东西一次性吃不了太多
@@ -34,7 +28,7 @@
 
 ![image-20211121105738875](labuladon算法笔记.assets/image-20211121105738875.png)
 
-# 	第零章、必读系列 
+# 第零章、必读系列
 
 ## 学习算法和刷题的框架思维
 
@@ -123,7 +117,7 @@ N 叉树的遍历又可以扩展为图的遍历，因为图就是好几 N 叉棵
 
 **所谓框架，就是套路。不管增删查改，这些代码都是永远无法脱离的结构，你可以把这个结构作为大纲，根据具体问题在框架上添加代码就行了，下面会具体举例**。
 
-###  三、算法刷题指南
+### 三、算法刷题指南
 
 首先要明确的是，**数据结构是工具，算法是通过合适的工具解决特定问题的方法**。也就是说，学习算法之前，最起码得了解那些常用的数据结构，了解它们的特性和缺陷。
 
@@ -169,7 +163,7 @@ int oneSideMax(TreeNode* root) {
 LeetCode 105 题，难度 Medium，让你根据前序遍历和中序遍历的结果还原一棵二叉树，很经典的问题吧，主要代码如下：
 
 ```java
-TreeNode buildTree(int[] preorder, int preStart, int preEnd, 
+TreeNode buildTree(int[] preorder, int preStart, int preEnd,
     int[] inorder, int inStart, int inEnd, Map<Integer, Integer> inMap) {
 
     if(preStart > preEnd || inStart > inEnd) return null;
@@ -178,9 +172,9 @@ TreeNode buildTree(int[] preorder, int preStart, int preEnd,
     int inRoot = inMap.get(root.val);
     int numsLeft = inRoot - inStart;
 
-    root.left = buildTree(preorder, preStart + 1, preStart + numsLeft, 
+    root.left = buildTree(preorder, preStart + 1, preStart + numsLeft,
                           inorder, inStart, inRoot - 1, inMap);
-    root.right = buildTree(preorder, preStart + numsLeft + 1, preEnd, 
+    root.right = buildTree(preorder, preStart + numsLeft + 1, preEnd,
                           inorder, inRoot + 1, inEnd, inMap);
     return root;
 }
@@ -415,7 +409,7 @@ ListNode successor = null; // 后驱节点
 
 // 反转以 head 为起点的 n 个节点，返回新的头结点
 ListNode reverseN(ListNode head, int n) {
-    if (n == 1) { 
+    if (n == 1) {
         // 记录第 n + 1 个节点
         successor = head.next;
         return head;
@@ -487,7 +481,7 @@ ListNode reverseBetween(ListNode head, int m, int n) {
 
 值得一提的是，递归操作链表并不高效。和迭代解法相比，虽然时间复杂度都是 O(N)，但是迭代解法的空间复杂度是 O(1)，而递归解法需要堆栈，空间复杂度是 O(N)。所以递归操作链表可以作为对递归算法的练习或者拿去和小伙伴装逼，但是考虑效率的话还是使用迭代算法更好。
 
-### 如何k个一组反转链表
+### 如何 k 个一组反转链表
 
 之前的文章「递归反转链表的一部分」讲了如何递归地反转一部分链表，有读者就问如何迭代地反转链表，这篇文章解决的问题也需要反转链表的函数，我们不妨就用迭代方式来解决。
 
@@ -742,8 +736,6 @@ boolean traverse(ListNode right) {
 
 当然，无论造一条反转链表还是利用后序遍历，算法的时间和空间复杂度都是 O(N)。下面我们想想，能不能不用额外的空间，解决这个问题呢？
 
-
-
 #### 二、优化空间复杂度
 
 更好的思路是这样的：
@@ -920,7 +912,7 @@ int count(TreeNode root) {
 
 我们接下来看几道算法题目实操一下。
 
-####  三、算法实践（看到这里）
+#### 三、算法实践（看到这里）
 
 **第一题、翻转二叉树**
 
@@ -1107,7 +1099,7 @@ void flatten(TreeNode root) {
 
 你看，这就是递归的魅力，你说 `flatten` 函数是怎么把左右子树拉平的？说不清楚，但是只要知道 `flatten` 的定义如此，相信这个定义，让 `root` 做它该做的事情，然后 `flatten` 函数就会按照定义工作。另外注意递归框架是后序遍历，因为我们要先拉平左右子树才能进行后续操作。
 
-至此，这道题也解决了，我们旧文 [k个一组翻转链表](https://labuladong.github.io/algo/高频面试系列/k个一组反转链表.html) 的递归思路和本题也有一些类似。
+至此，这道题也解决了，我们旧文 [k 个一组翻转链表](https://labuladong.github.io/algo/高频面试系列/k个一组反转链表.html) 的递归思路和本题也有一些类似。
 
 #### 四、最后总结
 
@@ -1116,8 +1108,6 @@ void flatten(TreeNode root) {
 写二叉树的算法题，都是基于递归框架的，我们先要搞清楚 `root` 节点它自己要做什么，然后根据题目要求选择使用前序，中序，后续的递归框架。
 
 二叉树题目的难点在于如何通过题目的要求思考出每一个节点需要做什么，这个只能通过多刷题进行练习了。
-
-
 
 ### 手把手刷二叉树（第二期）
 
@@ -1259,12 +1249,12 @@ TreeNode buildTree(int[] preorder, int[] inorder) {
                  inorder, 0, inorder.length - 1);
 }
 
-/* 
+/*
    若前序遍历数组为 preorder[preStart..preEnd]，
    后续遍历数组为 postorder[postStart..postEnd]，
-   构造二叉树，返回该二叉树的根节点 
+   构造二叉树，返回该二叉树的根节点
 */
-TreeNode build(int[] preorder, int preStart, int preEnd, 
+TreeNode build(int[] preorder, int preStart, int preEnd,
                int[] inorder, int inStart, int inEnd) {
     // root 节点对应的值就是前序遍历数组的第一个元素
     int rootVal = preorder[preStart];
@@ -1335,7 +1325,7 @@ root.right = build(preorder, preStart + leftSize + 1, preEnd,
 至此，整个算法思路就完成了，我们再补一补 base case 即可写出解法代码：
 
 ```
-TreeNode build(int[] preorder, int preStart, int preEnd, 
+TreeNode build(int[] preorder, int preStart, int preEnd,
                int[] inorder, int inStart, int inEnd) {
 
     if (preStart > preEnd) {
@@ -1667,8 +1657,6 @@ String traverse(TreeNode root) {
 
 这样，这道题就完全解决了，题目本身算不上难，但是思路拆解下来还是挺有启发性的吧？
 
-
-
 ### 手把手刷二插搜索树（第一期）
 
 首先，BST 的特性大家应该都很熟悉了：
@@ -1697,7 +1685,7 @@ void traverse(TreeNode root) {
 
 #### 寻找第 K 小的元素
 
-首先是力扣第 230 题「二叉搜索树中第K小的元素」，看下题目：
+首先是力扣第 230 题「二叉搜索树中第 K 小的元素」，看下题目：
 
 ![图片](https://mmbiz.qpic.cn/sz_mmbiz_png/gibkIz0MVqdHhbIiaKVgQmmRicyibctQHKeFbBUZPQ9o9X4EdkyPicKXCjJHlApoIgQibKiaCFHuUSkDZlhdBia5WuyxtA/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
 
@@ -1858,8 +1846,6 @@ void traverse(TreeNode root) {
 
 简单总结下吧，BST 相关的问题，要么利用 BST 左小右大的特性提升算法效率，要么利用中序遍历的特性满足题目的要求，也就这么些事儿吧
 
-
-
 ### 手把手刷二插搜索树（第二期）
 
 #### 判断 BST 的合法性（98）
@@ -1877,12 +1863,10 @@ boolean isValidBST(TreeNode root, TreeNode min, TreeNode max) {
     if (min != null && root.val <= min.val) return false;
     if (max != null && root.val >= max.val) return false;
     // 限定左子树的最大值是 root.val，右子树的最小值是 root.val
-    return isValidBST(root.left, min, root) 
+    return isValidBST(root.left, min, root)
         && isValidBST(root.right, root, max);
 }
 ```
-
-
 
 #### 在 BST 中搜索一个数（700）
 
@@ -1900,7 +1884,7 @@ boolean isValidBST(TreeNode root, TreeNode min, TreeNode max) {
 void BST(TreeNode root, int target) {
     if (root.val == target)
         // 找到目标，做点什么
-    if (root.val < target) 
+    if (root.val < target)
         BST(root.right, target);
     if (root.val > target)
         BST(root.left, target);
@@ -1927,7 +1911,7 @@ class Solution {
 }
 ```
 
-#### 删除BST中的节点（405）
+#### 删除 BST 中的节点（405）
 
 **情况 1**：`A`恰好是末端节点，两个子节点都为空，那么它可以当场去世了。
 
@@ -2009,7 +1993,7 @@ class Solution {
 void BST(TreeNode root, int target) {
     if (root.val == target)
         // 找到目标，做点什么
-    if (root.val < target) 
+    if (root.val < target)
         BST(root.right, target);
     if (root.val > target)
         BST(root.left, target);
@@ -2017,8 +2001,6 @@ void BST(TreeNode root, int target) {
 ```
 
 3、根据代码框架掌握了 BST 的增删查改操作。
-
-
 
 ### 二叉树的序列与反序列化（297）
 
@@ -2086,8 +2068,6 @@ public class Codec {
 
 #### 层次遍历
 
-
-
 ### 完全二叉树的节点数（222）
 
 #### 完全二叉树和满二叉树的区别
@@ -2132,7 +2112,7 @@ public int countNodes(TreeNode root) {
 }
 ```
 
-**假设节点个数是 N 则高度为 log2N 循环时间复杂度是O（h）-> O(logN)**
+**假设节点个数是 N 则高度为 log2N 循环时间复杂度是 O（h）-> O(logN)**
 
 **完全**二叉树比普通二叉树特殊，但又没有满二叉树那么特殊，计算它的节点总数，可以说是普通二叉树和完全二叉树的结合版，先看代码：
 
@@ -2157,13 +2137,13 @@ class Solution {
 }
 ```
 
-**Math.pow用于计算第一个参数的第二参数次方的结果**
+**Math.pow 用于计算第一个参数的第二参数次方的结果**
 
 #### 复杂度分析
 
-开头说了，这个算法的时间复杂度是 O(logN*logN)，这是怎么算出来的呢？
+开头说了，这个算法的时间复杂度是 O(logN\*logN)，这是怎么算出来的呢？
 
-直觉感觉好像最坏情况下是 O(N*logN) 吧，因为之前的 while 需要 logN 的时间，最后要 O(N) 的时间向左右子树递归：
+直觉感觉好像最坏情况下是 O(N\*logN) 吧，因为之前的 while 需要 logN 的时间，最后要 O(N) 的时间向左右子树递归：
 
 ```
 return 1 + countNodes(root.left) + countNodes(root.right);
@@ -2171,7 +2151,7 @@ return 1 + countNodes(root.left) + countNodes(root.right);
 
 **关键点在于，这两个递归只有一个会真的递归下去（也只是比另一个递归多几个常数项可以忽略），另一个一定会触发`hl == hr`而立即返回，不会递归下去**。
 
-所以两个递归的时间复杂度是是O(2logN) -> O(logN),上面的while也是O(logN) 所以总的就是O(logN)*O(logN)
+所以两个递归的时间复杂度是是 O(2logN) -> O(logN),上面的 while 也是 O(logN) 所以总的就是 O(logN)\*O(logN)
 
 为什么呢？原因如下：
 
@@ -2181,7 +2161,7 @@ return 1 + countNodes(root.left) + countNodes(root.right);
 
 看图就明显了吧，由于完全二叉树的性质，其子树一定有一棵是满的，所以一定会触发`hl == hr`，只消耗 O(logN) 的复杂度而不会继续递归。
 
-综上，算法的递归深度就是树的高度 O(logN)，每次递归所花费的时间就是 while 循环，需要 O(logN)，所以总体的时间复杂度是 O(logN*logN)。
+综上，算法的递归深度就是树的高度 O(logN)，每次递归所花费的时间就是 while 循环，需要 O(logN)，所以总体的时间复杂度是 O(logN\*logN)。
 
 所以说，「完全二叉树」这个概念还是有它存在的原因的，不仅适用于数组实现二叉堆，而且连计算节点总数这种看起来简单的操作都有高效的算法实现。
 
@@ -2216,7 +2196,7 @@ class UF {
 
 **3、传递性**：如果节点`p`和`q`连通，`q`和`r`连通，那么`p`和`r`也连通。
 
-比如说之前那幅图，0～9 任意两个**不同**的点都不连通，调用`connected`都会返回 false，连通分量为 10 个。
+比如说之前那幅图，0 ～ 9 任意两个**不同**的点都不连通，调用`connected`都会返回 false，连通分量为 10 个。
 
 如果现在调用`union(0, 1)`，那么 0 和 1 被连通，连通分量降为 9 个。
 
@@ -2235,8 +2215,6 @@ class UF {
 怎么用森林来表示连通性呢？我们设定树的每个节点有一个指针指向其父节点，如果是根节点的话，这个指针指向自己。
 
 比如说刚才那幅 10 个节点的图，一开始的时候没有相互连通，就是这样：
-
-
 
 ```
 class UF {
@@ -2263,8 +2241,6 @@ class UF {
 
 **如果某两个节点被连通，则让其中的（任意）一个节点的根节点接到另一个节点的根节点上**：
 
-
-
 ```
 public void union(int p, int q) {
     int rootP = find(p);
@@ -2286,7 +2262,7 @@ private int find(int x) {
 }
 
 /* 返回当前的连通分量个数 */
-public int count() { 
+public int count() {
     return count;
 }
 ```
@@ -2294,8 +2270,6 @@ public int count() {
 **![图片](https://mmbiz.qpic.cn/sz_mmbiz_jpg/gibkIz0MVqdHbnHaPibsAQHPibgTF6OUYzMC5nGrbBiaau4Lp9vgf8uYXWJqb2oqoeyKGIicNskUsIsQ9G2Ex1drpTw/640?wx_fmt=jpeg&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)**
 
 **这样，如果节点`p`和`q`连通的话，它们一定拥有相同的根节点**：
-
-
 
 ```
 public boolean connected(int p, int q) {
@@ -2332,7 +2306,7 @@ public void union(int p, int q) {
     // 将两棵树合并为一棵
     parent[rootP] = rootQ;
     // parent[rootQ] = rootP 也可以
-    count--; 
+    count--;
 ```
 
 我们一开始就是简单粗暴的把`p`所在的树接到`q`所在的树的根节点下面，那么这里就可能出现「头重脚轻」的不平衡状况，比如下面这种局面：
@@ -2413,8 +2387,6 @@ private int find(int x) {
 
 ![图片](https://mmbiz.qpic.cn/sz_mmbiz_gif/gibkIz0MVqdHbnHaPibsAQHPibgTF6OUYzMrQ92pFbd4DUeTpMwUqpl7dm2aiaefC76I9blH9yD4v7GAGY3pKBFglQ/640?wx_fmt=gif&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
 
-
-
 可见，调用`find`函数每次向树根遍历的同时，顺手将树高缩短了，最终所有树高都不会超过 3（`union`的时候树高可能达到 3）。
 
 PS：读者可能会问，这个 GIF 图的`find`过程完成之后，树高恰好等于 3 了，但是如果更高的树，压缩后高度依然会大于 3 呀？不能这么想。这个 GIF 的情景是我编出来方便大家理解路径压缩的，但是实际中，每次`find`都会进行路径压缩，所以树本来就不可能增长到这么高，你的这种担心应该是多余的。
@@ -2435,7 +2407,7 @@ class UF {
     public UF(int n) {
         this.count = n;
         parent = new int[n];
-        size = new int[n];	
+        size = new int[n];
         for (int i = 0; i < n; i++) {
             parent[i] = i;
             size[i] = 1;
@@ -2477,8 +2449,6 @@ class UF {
 ```
 
 Union-Find 算法的复杂度可以这样分析：构造函数初始化数据结构需要 O(N) 的时间和空间复杂度；连通两个节点`union`、判断两个节点的连通性`connected`、计算连通分量`count`所需的时间复杂度均为 O(1)。
-
-
 
 ### Union-Find 算法怎么应用？
 
@@ -2558,7 +2528,7 @@ LRU 缓存淘汰算法就是一种常用策略。LRU 的全称是 Least Recently
 
 #### 一、LRU 算法描述
 
-力扣第 146 题「LRU缓存机制」就是让你设计数据结构：
+力扣第 146 题「LRU 缓存机制」就是让你设计数据结构：
 
 首先要接收一个 `capacity` 参数作为缓存的最大容量，然后实现两个 API，一个是 `put(key, val)` 方法存入键值对，另一个是 `get(key)` 方法获取 `key` 对应的 `val`，如果 `key` 不存在则返回 -1。
 
@@ -2593,7 +2563,7 @@ cache.get(2);       // 返回 -1 (未找到)
 // cache = [(3, 3), (1, 1)]
 // 解释：cache 中不存在键为 2 的数据
 
-cache.put(1, 4);    
+cache.put(1, 4);
 // cache = [(1, 4), (3, 3)]
 // 解释：键 1 已存在，把原始值 1 覆盖为 4
 // 不要忘了也要将键值对提前到队头
@@ -2647,9 +2617,9 @@ class Node {
 然后依靠我们的 `Node` 类型构建一个双链表，实现几个 LRU 算法必须的 API：
 
 ```java
-class DoubleList {  
+class DoubleList {
     // 头尾虚节点
-    private Node head, tail;  
+    private Node head, tail;
     // 链表元素数
     private int size;
 
@@ -2808,7 +2778,7 @@ public void put(int key, int val) {
 class LRUCache {
     int cap;
     LinkedHashMap<Integer, Integer> cache = new LinkedHashMap<>();
-    public LRUCache(int capacity) { 
+    public LRUCache(int capacity) {
         this.cap = capacity;
     }
 
@@ -2850,13 +2820,11 @@ class LRUCache {
 
 # 第二章 手把手刷数据结构
 
-
-
 ## 动态规划解题套路
 
 思路：想暴力解法，对其进行空间和时间上的优化
 
-### 一、斐波那契数列（剑指offer 10-1）
+### 一、斐波那契数列（剑指 offer 10-1）
 
 #### 递归暴力解法
 
@@ -2911,8 +2879,6 @@ int binarySearch(int[] nums, int target) {
 
 第一个，最基本的二分查找算法：
 
-
-
 ```
 因为我们初始化 right = nums.length - 1
 所以决定了我们的「搜索区间」是 [left, right]
@@ -2923,11 +2889,7 @@ int binarySearch(int[] nums, int target) {
 所以当 nums[mid] == target 时可以立即返回
 ```
 
-
-
 第二个，寻找左侧边界的二分查找：
-
-
 
 ```
 因为我们初始化 right = nums.length
@@ -2940,11 +2902,7 @@ int binarySearch(int[] nums, int target) {
 而要收紧右侧边界以锁定左侧边界
 ```
 
-
-
 第三个，寻找右侧边界的二分查找：
-
-
 
 ```
 因为我们初始化 right = nums.length
@@ -2960,31 +2918,19 @@ int binarySearch(int[] nums, int target) {
 所以最后无论返回 left 还是 right，必须减一
 ```
 
-
-
 如果以上内容你都能理解，那么恭喜你，二分查找算法的细节不过如此。
-
-
 
 通过本文，你学会了：
 
+_1._ 分析二分查找代码时，不要出现 else，全部展开成 else if 方便理解。
 
+_2._ 注意「搜索区间」和 while 的终止条件，如果存在漏掉的元素，记得在最后检查。
 
-*1.* 分析二分查找代码时，不要出现 else，全部展开成 else if 方便理解。
-
-
-
-*2.* 注意「搜索区间」和 while 的终止条件，如果存在漏掉的元素，记得在最后检查。
-
-
-
-*3.* 如需要搜索左右边界，只要在 nums[mid] == target 时做修改即可。搜索右侧时需要减一。
+_3._ 如需要搜索左右边界，只要在 nums[mid] == target 时做修改即可。搜索右侧时需要减一。
 
 ### 实例
 
 一、Koko 吃香蕉
-
-
 
 ![图片](https://mmbiz.qpic.cn/mmbiz_png/gibkIz0MVqdGFib5uibU7BTZ15CaCmm3kgqWNVRoeBdfNCutyg7s5qjPgTOT6nRu33SsKtT30zzvS7aXc0sGjicgjw/640?wx_fmt=png&tp=webp&wxfrom=5&wx_lazy=1&wx_co=1)
 
@@ -3009,7 +2955,7 @@ int minEatingSpeed(int[] piles, int H) {
 }
 ```
 
-注意这个 for 循环，就是在**连续的空间线性搜索，这就是二分查找可以发挥作用的标志****。**
+注意这个 for 循环，就是在**连续的空间线性搜索，这就是二分查找可以发挥作用的标志\*\***。\*\*
 
 由于我们要求的是最小速度，所以可以用一个**搜索左侧边界的二分查找**来代替线性搜索，提升效率：
 
@@ -3115,10 +3061,6 @@ for (int i = 0; i < n; i++)
 
 如果是，那么就可以使用二分搜索优化搜索空间：如果要求最小值就是搜索左侧边界的二分，如果要求最大值就用搜索右侧边界的二分。
 
-
-
-
-
 # 回溯算法
 
 ## 核心框架
@@ -3132,35 +3074,33 @@ for (int i = 0; i < n; i++)
 ## 全排列
 
 ```js
-const ans = []
-const path = []
+const ans = [];
+const path = [];
 
 function backTrack(arr) {
-    for ( let i = 0; i < arr.length; i++ ) {
-        const temp = [ ...arr ]
+    for (let i = 0; i < arr.length; i++) {
+        const temp = [...arr];
 
         // 做出选择
-        path.push( arr[i] )
-        temp.splice( i, 1 )
+        path.push(arr[i]);
+        temp.splice(i, 1);
 
         // 从剩余中继续选择
-        backTrack( temp )
+        backTrack(temp);
 
         // 如果长度满足就是答案
-        if ( path.length === 3 ) {
-            ans.push(path.concat())
+        if (path.length === 3) {
+            ans.push(path.concat());
         }
 
         // 回退
-        path.pop()
+        path.pop();
     }
 }
-backTrack([1,2,3])
+backTrack([1, 2, 3]);
 
 console.log(ans);
 ```
-
-
 
 # 动态规划
 
@@ -3198,7 +3138,7 @@ console.log(ans);
 
 ![image-20211121111046307](labuladon算法笔记.assets/image-20211121111046307.png)
 
-tips：要求 11 元需要多少枚硬币（可选择的有 1,2,5）就相当于求 10、9、6 元需要的硬币数 + 1即可
+tips：要求 11 元需要多少枚硬币（可选择的有 1,2,5）就相当于求 10、9、6 元需要的硬币数 + 1 即可
 
 ![image-20211121111350266](labuladon算法笔记.assets/image-20211121111350266.png)
 
@@ -3217,80 +3157,78 @@ tips：使用备忘录优化
 ## DFS（深度优先遍历）
 
 ```js
-var maxDepth = function(root) {
-    if ( !root ) return 0;
+var maxDepth = function (root) {
+    if (!root) return 0;
 
     // 这里有点像动态规划的思想，根节点的高度其实就是子节点中最高的 + 1
     // 自顶向下，再自底向上
-    return 1 + Math.max( maxDepth( root.left), maxDepth( root.right ) )
-}
+    return 1 + Math.max(maxDepth(root.left), maxDepth(root.right));
+};
 ```
 
 ## BFS（广度优先遍历）
 
 ```js
-var maxDepth = function(root) {
+var maxDepth = function (root) {
+    let Que = [];
 
-    let Que = []
+    function BFS(root) {
+        if (!root) return 0;
+        Que.push(root);
 
-    function BFS( root ) {
-        if ( !root ) return 0;
-        Que.push( root )
-        
-        let ans = 0
-        while( Que.length ) {
-            const curLength = Que.length
+        let ans = 0;
+        while (Que.length) {
+            const curLength = Que.length;
 
             // 遍历当前层次的节点
-            for ( let i = 0; i < curLength; i++ ) {
-                if ( Que[i].left ) {
-                    Que.push( Que[i].left )
+            for (let i = 0; i < curLength; i++) {
+                if (Que[i].left) {
+                    Que.push(Que[i].left);
                 }
-                if ( Que[i].right ) {
-                    Que.push( Que[i].right )
+                if (Que[i].right) {
+                    Que.push(Que[i].right);
                 }
             }
             // 清空前面遍历过的节点
-            Que.splice( 0, curLength )
+            Que.splice(0, curLength);
             // 每层遍历完就加 1
-            ans++
-        } 
+            ans++;
+        }
 
-        return ans
+        return ans;
     }
 
-    return BFS(root)
-}
+    return BFS(root);
+};
 ```
 
 ## 回溯解法
 
 ```js
-var maxDepth = function(root) {
-    
-    let path = []
-    let maxLength = 0
+var maxDepth = function (root) {
+    let path = [];
+    let maxLength = 0;
 
-    function backTrack( root ) {
-        if ( !root ) {
-            return
+    function backTrack(root) {
+        if (!root) {
+            return;
         }
-        path.push( root )
-        if ( root.left ) {
-            backTrack( root.left )
+        path.push(root);
+        if (root.left) {
+            backTrack(root.left);
         }
 
-        if ( root.right ) {
-            backTrack( root.right )
+        if (root.right) {
+            backTrack(root.right);
         }
 
         // 左右节点都为空说明是叶子节点
-        maxLength = Math.max( maxLength, path.length ) // 保留最长深度
-        path.pop() // 尽头回退 
+        maxLength = Math.max(maxLength, path.length); // 保留最长深度
+        path.pop(); // 尽头回退
     }
-    backTrack( root )
+    backTrack(root);
 
-    return maxLength
+    return maxLength;
 };
 ```
 
@@ -3299,55 +3237,56 @@ var maxDepth = function(root) {
 ## 冒泡排序
 
 ```js
- /**
-   * 如何理解冒泡？
-   * 每次循环都会确定一个最大值或最小值
-   * 这也是为什么每次循环最后一位就不用再去比较它了
-   * 时间复杂度是 n ²
+/**
+ * 如何理解冒泡？
+ * 每次循环都会确定一个最大值或最小值
+ * 这也是为什么每次循环最后一位就不用再去比较它了
+ * 时间复杂度是 n ²
  */
-function Bubble( array ) {
- 	for ( let i = 0; i < array.length - 1; i++ ) {
- 	    for( let j = 0; j < array.length - i - 1; j++ ) {
- 	        if ( array[j] > array[j+1] ) {
- 	            const temp = array[j]
- 	            array[j] = array[j+1]
- 	            array[j+1] = temp
- 	        }
- 	    }
- 	}
+function Bubble(array) {
+    for (let i = 0; i < array.length - 1; i++) {
+        for (let j = 0; j < array.length - i - 1; j++) {
+            if (array[j] > array[j + 1]) {
+                const temp = array[j];
+                array[j] = array[j + 1];
+                array[j + 1] = temp;
+            }
+        }
+    }
 }
 ```
 
 ## 快速排序
 
 ```js
-        /**
-         * 快速排序: 取一个基准值，然后数组里比它小的放左边，大的放右边，递归
-         * 这个过程即可
-         */
-        function QuickSort( array ) {
-            if ( array.length <= 1 ) return array;
-            let pivotPlace = Math.floor( array.length/2 )
-            let pivot = array.splice( pivotPlace, 1 )[0]
-            let left = []
-            let right = []
-            for ( let i = 0; i < array.length; i++ ) {
-                if ( array[i] > pivot ) right.push( array[i] )
-                else left.push(array[i])
-            }
-            return QuickSort(left).concat( [pivot], QuickSort(right) )
-        }
-        console.log(QuickSort( array ));
+/**
+ * 快速排序: 取一个基准值，然后数组里比它小的放左边，大的放右边，递归
+ * 这个过程即可
+ */
+function QuickSort(array) {
+    if (array.length <= 1) return array;
+    let pivotPlace = Math.floor(array.length / 2);
+    let pivot = array.splice(pivotPlace, 1)[0];
+    let left = [];
+    let right = [];
+    for (let i = 0; i < array.length; i++) {
+        if (array[i] > pivot) right.push(array[i]);
+        else left.push(array[i]);
+    }
+    return QuickSort(left).concat([pivot], QuickSort(right));
+}
+console.log(QuickSort(array));
 ```
 
 ## 二路归并排序
 
 ```js
-function mergeSort(arr) {  // 采用自上而下的递归方法
+function mergeSort(arr) {
+    // 采用自上而下的递归方法
     var len = arr.length;
-    
+
     // 注意 basecase
-    if(len < 2) {
+    if (len < 2) {
         return arr;
     }
     var middle = Math.floor(len / 2),
@@ -3359,12 +3298,10 @@ function mergeSort(arr) {  // 采用自上而下的递归方法
 }
 
 // 核心
-function merge(left, right)
-{
+function merge(left, right) {
     var result = [];
 
     while (left.length && right.length) {
-
         // 这里控制升降序
         if (left[0] <= right[0]) {
             result.push(left.shift());
@@ -3374,63 +3311,58 @@ function merge(left, right)
     }
 
     // 这两步颠倒也没所谓
-    while (left.length)
-        result.push(left.shift());
+    while (left.length) result.push(left.shift());
 
-    while (right.length)
-        result.push(right.shift());
+    while (right.length) result.push(right.shift());
 
     return result;
 }
 
-console.log(mergeSort([6,5,1,2,9,7]));
+console.log(mergeSort([6, 5, 1, 2, 9, 7]));
 ```
-
-
 
 # 二分查找
 
 ```js
 function BinarySearch(nums, target) {
     let left = 0,
-       right = nums.length - 1
+        right = nums.length - 1;
 
     while (left <= right) {
-        const mid = Math.floor((left + right)/2)
+        const mid = Math.floor((left + right) / 2);
 
         if (nums[mid] === target) {
-            return mid // 猜到了
+            return mid; // 猜到了
         } else if (nums[mid] < target) {
-            left = mid + 1 // 猜小了
+            left = mid + 1; // 猜小了
         } else {
-            right = mid - 1 // 猜大了
+            right = mid - 1; // 猜大了
         }
     }
 }
 ```
 
-tips：二分查找的前提是nums是个有序数组
+tips：二分查找的前提是 nums 是个有序数组
 
 ![image-20220224175604297](labuladon算法笔记.assets/image-20220224175604297.png)
 
 ```js
 function missingNumber(nums: number[]): number {
     let left = 0;
-    let right = nums.length - 1
-    while(left <=right) {
-        const middle = Math.floor((left+right)/2)
+    let right = nums.length - 1;
+    while (left <= right) {
+        const middle = Math.floor((left + right) / 2);
 
         // 说明数字在右边
         if (nums[middle] === middle) {
-            left = middle + 1
+            left = middle + 1;
+        } else {
+            // 否则就是找左边边界，因为我们要找最左对补上的那个
+            right = middle - 1;
         }
-        else {
-        // 否则就是找左边边界，因为我们要找最左对补上的那个
-            right = middle - 1
-        } 
     }
-    return left
-};
+    return left;
+}
 ```
 
 # 链表
@@ -3438,24 +3370,23 @@ function missingNumber(nums: number[]): number {
 ## 反转链表
 
 ```js
-var reverseList = function(head) {
-    let pre = null
-    let cur = head
+var reverseList = function (head) {
+    let pre = null;
+    let cur = head;
 
-    while( cur ) {
+    while (cur) {
         // 记录下一个节点
-        const next = cur.next
-        
+        const next = cur.next;
+
         // 反转
-        cur.next = pre
-        
+        cur.next = pre;
+
         // 继续下一个
-        pre = cur
-        cur = next
+        pre = cur;
+        cur = next;
     }
 
     // 因为 cur 是终止条件，所以返回 cur
-    return pre
-}
+    return pre;
+};
 ```
-

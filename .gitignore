@@ -7,3 +7,10 @@ node_modules
 babel/*
 
 .pnpm-store
+
+interview/音视频/webRTC/client
+interview/音视频/webRTC/server
+
+# VitePress
+.vitepress/cache/
+.vitepress/dist/
