@@ -1,5 +1,6 @@
 import { defineConfig } from 'vitepress';
 import { withSidebar } from 'vitepress-sidebar';
+import { MermaidMarkdown, MermaidPlugin } from 'vitepress-plugin-mermaid';
 
 export default defineConfig(
   withSidebar(
@@ -19,9 +20,7 @@ export default defineConfig(
         ],
 
         // 社交链接
-        socialLinks: [
-          { icon: 'github', link: 'https://github.com/cyxofgithub' }
-        ],
+        socialLinks: [{ icon: 'github', link: 'https://github.com/cyxofgithub' }],
 
         // 页脚
         footer: {
@@ -72,6 +71,9 @@ export default defineConfig(
         lineNumbers: true,
         image: {
           lazyLoading: true
+        },
+        config(md) {
+          md.use(MermaidMarkdown);
         }
       },
 
@@ -87,13 +89,14 @@ export default defineConfig(
 
       // ===== Vite 配置 =====
       vite: {
-        build: {
-          // 跳过 TypeScript 检查
-          typeCheck: false
-        },
+        plugins: [MermaidPlugin()],
         optimizeDeps: {
           // 排除 code 目录下的文件，避免解析其依赖
-          exclude: ['code', 'demo']
+          exclude: ['code', 'demo'],
+          include: ['mermaid']
+        },
+        ssr: {
+          noExternal: ['mermaid']
         },
         resolve: {
           alias: {
