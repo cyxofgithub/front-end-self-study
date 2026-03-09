@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rust + wasm-pack 示例</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+    h1 { font-size: 1.25rem; }
+    .result { margin: 1rem 0; padding: 0.75rem; background: #f5f5f5; border-radius: 6px; }
+    button { padding: 0.5rem 1rem; margin-right: 0.5rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Rust + wasm-pack 示例</h1>
+  <p>数组求和、斐波那契（含 JS vs WASM 性能对比）</p>
+  <button onclick="runDemo()">运行示例</button>
+  <button onclick="runBenchmark()">性能对比</button>
+  <div id="output" class="result"></div>
+
+  <script type="module">
+    let wasmModule = null;
+
+    async function initWasm() {
+      if (wasmModule) return wasmModule;
+      wasmModule = await import('./pkg/rust_wasm_demo.js');
+      await wasmModule.default();
+      return wasmModule;
+    }
+
+    window.runDemo = async function () {
+      const output = document.getElementById('output');
+      output.textContent = '加载中...';
+
+      try {
+        const m = await initWasm();
+        const arr = new Int32Array([1, 2, 3, 4, 5]);
+        const sum = m.sum_array(arr);
+        const fib40 = m.fib(40);
+        output.textContent = `sum_array([1,2,3,4,5]) = ${sum}\nfib(40) = ${fib40}`;
+      } catch (err) {
+        output.textContent = `错误: ${err.message}\n\n请先运行: wasm-pack build --target web`;
+      }
+    };
+
+    window.runBenchmark = async function () {
+      const output = document.getElementById('output');
+      output.textContent = '运行中...';
+
+      try {
+        const m = await initWasm();
+
+        function fibJs(n) {
+          if (n <= 1) return n;
+          return fibJs(n - 1) + fibJs(n - 2);
+        }
+
+        const n = 40;
+        const iter = 3;
+
+        let jsTime = 0;
+        for (let i = 0; i < iter; i++) {
+          const t0 = performance.now();
+          fibJs(n);
+          jsTime += performance.now() - t0;
+        }
+        jsTime /= iter;
+
+        let wasmTime = 0;
+        for (let i = 0; i < iter; i++) {
+          const t0 = performance.now();
+          m.fib(n);
+          wasmTime += performance.now() - t0;
+        }
+        wasmTime /= iter;
+
+        output.textContent = `fib(${n}) 性能对比（${iter} 次平均）:\nJS:   ${jsTime.toFixed(2)} ms\nWASM: ${wasmTime.toFixed(2)} ms`;
+      } catch (err) {
+        output.textContent = `错误: ${err.message}`;
+      }
+    };
+  </script>
+</body>
+</html>
