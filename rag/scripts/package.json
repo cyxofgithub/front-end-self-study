@@ -1,0 +1,20 @@
+{
+    "name": "rag-scripts",
+    "version": "1.0.0",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "index": "tsx index-docs.ts",
+        "index:clean": "tsx index-docs.ts --clean"
+    },
+    "dependencies": {
+        "chromadb": "^1.9.2",
+        "gray-matter": "^4.0.3",
+        "glob": "^11.0.0"
+    },
+    "devDependencies": {
+        "tsx": "^4.19.0",
+        "typescript": "^5.5.0",
+        "@types/node": "^22.0.0"
+    }
+}

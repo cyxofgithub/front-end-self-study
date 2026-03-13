@@ -16,6 +16,7 @@ export default defineConfig(
         nav: [
           { text: '首页', link: '/' },
           { text: 'quick', link: '/interview/2021前端面试秋招' },
+          { text: 'AI 助手', link: '/rag-chat' },
           { text: 'GitHub', link: 'https://github.com/cyxofgithub/front-end-self-study' }
         ],
 
@@ -145,7 +146,9 @@ export default defineConfig(
         '**/demo/**',
         '**/dist/**',
         '**/.DS_Store',
-        '**/.vitepress/**'
+        '**/.vitepress/**',
+        '**/rag/scripts/**',
+        '**/rag/server/**'
       ],
 
       // 不包含点文件
