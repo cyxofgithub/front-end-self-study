@@ -79,6 +79,7 @@ debugLog('bootstrap.sourceDoc', {
 });
 
 const { doc, mapping } = initProseMirrorDoc(yXmlFragment, proseMirrorSchema);
+console.log("🚀 ~ proseMirrorSchema:", proseMirrorSchema)
 
 // 插件顺序会影响行为：先接入 Yjs 同步，再叠加光标/撤销，最后补充表格与基础快捷键能力。
 const state = EditorState.create({
@@ -103,6 +104,7 @@ const state = EditorState.create({
         keymap(baseKeymap),
     ],
 });
+console.log("🚀 ~ state:", state)
 
 let editorView: EditorView;
 const toolbarController = createToolbarController({
@@ -117,6 +119,7 @@ editorView = new EditorView(editorRoot, {
         spellcheck: 'true',
     },
     dispatchTransaction(transaction) {
+        console.log("🚀 ~ transaction:", transaction)
         // 所有本地/远端变更都会走这里，更新状态后立刻刷新工具栏可用性与激活态。
         const nextState = editorView.state.apply(transaction);
         editorView.updateState(nextState);
