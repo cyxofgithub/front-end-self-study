@@ -2,7 +2,7 @@
 node_modules
 *.env
 .idea
-.cursor
+
 
 babel/*
 
@@ -14,3 +14,11 @@ interview/音视频/webRTC/server
 # VitePress
 .vitepress/cache/
 .vitepress/dist/
+
+logs/
+chroma/
+
+run/
+dist/
+
+*.log
