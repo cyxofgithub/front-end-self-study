@@ -6,6 +6,8 @@
 const mysql = require('mysql2/promise');
 const Y = require('yjs');
 
+const PREVIEW_LIMIT = 2000;
+
 class MySQLPersistence {
     /**
      * @param {Object} config - MySQL 连接配置
@@ -111,7 +113,18 @@ class MySQLPersistence {
      * @param {Uint8Array} update - 文档更新数据
      */
     async storeUpdate(docName, update) {
-        console.log('存储文档更新--', docName);
+        const decodedProsemirror = this.decodeProsemirrorFragment(update);
+        const decodedPreview = this.toPreview(decodedProsemirror);
+        console.log('[Yjs] 持久化写入前数据结构', {
+            归属: 'Yjs',
+            存储字段: 'update_data (LONGBLOB)',
+            docName,
+            updateLength: update?.length ?? 0,
+            解码预览: {
+                归属: 'Yjs->ProseMirror',
+                decodedProsemirrorPreview: decodedPreview,
+            },
+        });
         try {
             // 使用 INSERT ... ON DUPLICATE KEY UPDATE 来更新或插入
             await this.pool.execute(
@@ -122,10 +135,47 @@ class MySQLPersistence {
                  updated_at = CURRENT_TIMESTAMP`,
                 [docName, update]
             );
+            console.log('[Yjs] 持久化写入后摘要', {
+                归属: 'Yjs',
+                docName,
+                updateLength: update?.length ?? 0,
+                writtenAt: new Date().toISOString(),
+            });
         } catch (error) {
             console.error(`存储文档 ${docName} 更新失败:`, error);
             throw error;
         }
+    }
+
+    decodeProsemirrorFragment(updateData) {
+        try {
+            if (!updateData) {
+                return null;
+            }
+            const decodedDoc = new Y.Doc();
+            Y.applyUpdate(decodedDoc, updateData);
+            return decodedDoc.getXmlFragment('prosemirror').toJSON();
+        } catch (error) {
+            return {
+                error: 'decode_failed',
+                reason: error?.message || String(error),
+            };
+        }
+    }
+
+    toPreview(value) {
+        if (value == null) {
+            return value;
+        }
+        const json = JSON.stringify(value);
+        if (json.length <= PREVIEW_LIMIT) {
+            return value;
+        }
+        return {
+            truncated: true,
+            preview: json.slice(0, PREVIEW_LIMIT),
+            totalChars: json.length,
+        };
     }
 
     /**
@@ -147,7 +197,11 @@ class MySQLPersistence {
                         try {
                             const decodedDoc = new Y.Doc();
                             Y.applyUpdate(decodedDoc, persistedState);
-                            return decodedDoc.getText('content').toString();
+                            return this.toPreview(
+                                decodedDoc
+                                    .getXmlFragment('prosemirror')
+                                    .toJSON()
+                            );
                         } catch (e) {
                             return '[文档内容解析失败]';
                         }

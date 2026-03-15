@@ -1,229 +1,374 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Yjs 多人协同文档编辑 Demo</title>
-        <style>
-            * {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yjs + ProseMirror 多人协同编辑 Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-            body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI',
-                    Roboto, 'Helvetica Neue', Arial, sans-serif;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                min-height: 100vh;
-                padding: 20px;
-            }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+                'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-            .container {
-                max-width: 1200px;
-                margin: 0 auto;
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                overflow: hidden;
-            }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
 
-            .header {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 30px;
-                text-align: center;
-            }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
 
-            .header h1 {
-                font-size: 2em;
-                margin-bottom: 10px;
-            }
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
 
-            .header p {
-                opacity: 0.9;
-                font-size: 1.1em;
-            }
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
 
-            .status-bar {
-                background: #f5f5f5;
-                padding: 15px 30px;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 1px solid #e0e0e0;
-            }
+        .status-bar {
+            background: #f5f5f5;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #e0e0e0;
+        }
 
-            .status-item {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-            .status-indicator {
-                width: 12px;
-                height: 12px;
-                border-radius: 50%;
-                background: #4caf50;
-                animation: pulse 2s infinite;
-            }
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
 
-            .status-indicator.disconnected {
-                background: #f44336;
-                animation: none;
-            }
+        .status-indicator.disconnected {
+            background: #f44336;
+            animation: none;
+        }
 
-            @keyframes pulse {
-                0%,
-                100% {
-                    opacity: 1;
-                }
-                50% {
-                    opacity: 0.5;
-                }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
             }
+            50% {
+                opacity: 0.5;
+            }
+        }
 
-            .editor-container {
-                padding: 30px;
-            }
+        .editor-container {
+            padding: 30px;
+        }
 
-            .editor-wrapper {
-                position: relative;
-                border: 2px solid #e0e0e0;
-                border-radius: 8px;
-                overflow: hidden;
-                transition: border-color 0.3s;
-            }
+        .editor-wrapper {
+            position: relative;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: border-color 0.3s;
+            background: #fafafa;
+        }
 
-            .editor-wrapper:focus-within {
-                border-color: #667eea;
-            }
+        .editor-wrapper:focus-within {
+            border-color: #667eea;
+        }
 
-            #editor {
-                width: 100%;
-                min-height: 500px;
-                padding: 20px;
-                font-size: 16px;
-                line-height: 1.6;
-                border: none;
-                outline: none;
-                resize: vertical;
-                font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-                background: #fafafa;
-            }
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            background: #fdfdfd;
+        }
 
-            .info-panel {
-                margin-top: 20px;
-                padding: 20px;
-                background: #f9f9f9;
-                border-radius: 8px;
-                border-left: 4px solid #667eea;
-            }
+        .toolbar-group {
+            display: flex;
+            gap: 6px;
+            padding-right: 12px;
+            margin-right: 4px;
+            border-right: 1px solid #ececec;
+        }
 
-            .info-panel h3 {
-                margin-bottom: 15px;
-                color: #333;
-            }
+        .toolbar-group:last-child {
+            border-right: none;
+            margin-right: 0;
+            padding-right: 0;
+        }
 
-            .info-panel ul {
-                list-style: none;
-                padding-left: 0;
-            }
+        .toolbar-btn {
+            border: 1px solid #d8d8d8;
+            border-radius: 6px;
+            background: #fff;
+            color: #333;
+            padding: 4px 10px;
+            font-size: 14px;
+            line-height: 1.6;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
 
-            .info-panel li {
-                padding: 8px 0;
-                color: #666;
-                border-bottom: 1px solid #eee;
-            }
+        .toolbar-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+        }
 
-            .info-panel li:last-child {
-                border-bottom: none;
-            }
+        .toolbar-btn.active {
+            border-color: #667eea;
+            background: #eef1ff;
+            color: #4b5fc9;
+        }
 
-            .info-panel code {
-                background: #e8e8e8;
-                padding: 2px 6px;
-                border-radius: 3px;
-                font-size: 0.9em;
-            }
+        .toolbar-btn.disabled,
+        .toolbar-btn:disabled {
+            cursor: not-allowed;
+            color: #a8a8a8;
+            border-color: #e6e6e6;
+            background: #f7f7f7;
+        }
 
-            .user-list {
-                display: flex;
-                gap: 10px;
-                flex-wrap: wrap;
-            }
+        #editor {
+            min-height: 500px;
+        }
 
-            .user-badge {
-                background: #667eea;
-                color: white;
-                padding: 5px 12px;
-                border-radius: 20px;
-                font-size: 0.9em;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>📝 Yjs 多人协同文档编辑</h1>
-                <p>基于 CRDT 的实时协作编辑系统</p>
+        .ProseMirror {
+            min-height: 500px;
+            padding: 20px;
+            font-size: 16px;
+            line-height: 1.6;
+            outline: none;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .ProseMirror p {
+            margin: 0 0 0.8em;
+        }
+
+        .ProseMirror p:last-child {
+            margin-bottom: 0;
+        }
+
+        .ProseMirror table {
+            border-collapse: collapse;
+            table-layout: fixed;
+            width: 100%;
+            margin: 12px 0;
+            overflow: hidden;
+        }
+
+        .ProseMirror td,
+        .ProseMirror th {
+            border: 1px solid #d0d0d0;
+            vertical-align: top;
+            box-sizing: border-box;
+            min-width: 80px;
+            padding: 6px 8px;
+            position: relative;
+        }
+
+        .ProseMirror th {
+            background: #f7f8fd;
+            font-weight: 600;
+        }
+
+        .ProseMirror .selectedCell::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            pointer-events: none;
+            background: rgba(102, 126, 234, 0.14);
+        }
+
+        .ProseMirror .tableWrapper {
+            overflow-x: auto;
+        }
+
+        .ProseMirror-focused {
+            outline: none;
+        }
+
+        .ProseMirror-yjs-cursor {
+            border-left: 2px solid #4caf50;
+            border-right: 2px solid #4caf50;
+            margin-left: -1px;
+            margin-right: -1px;
+            pointer-events: none;
+            position: relative;
+            word-break: normal;
+        }
+
+        .ProseMirror-yjs-cursor > div {
+            position: absolute;
+            top: -1.35em;
+            left: -2px;
+            font-size: 12px;
+            color: #fff;
+            background-color: #4caf50;
+            border-radius: 3px;
+            padding: 0 4px;
+            line-height: normal;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .info-panel ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-panel li {
+            padding: 8px 0;
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-panel li:last-child {
+            border-bottom: none;
+        }
+
+        .user-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .user-badge {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📝 Yjs + ProseMirror 多人协同文档编辑</h1>
+            <p>基于 CRDT 的实时协作编辑系统</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="statusText">连接中...</span>
             </div>
-
-            <div class="status-bar">
-                <div class="status-item">
-                    <span class="status-indicator" id="statusIndicator"></span>
-                    <span id="statusText">连接中...</span>
-                </div>
-                <div class="status-item">
-                    <span>在线用户: </span>
-                    <div class="user-list" id="userList"></div>
-                </div>
-            </div>
-
-            <div class="editor-container">
-                <div class="editor-wrapper">
-                    <textarea
-                        id="editor"
-                        placeholder="开始输入... 打开多个标签页测试多人协同编辑"
-                    ></textarea>
-                </div>
-
-                <div class="info-panel">
-                    <h3>💡 使用说明</h3>
-                    <ul>
-                        <li>
-                            <strong>多人协同：</strong
-                            >打开多个浏览器标签页访问同一地址，在不同标签页中编辑，可以看到实时同步
-                        </li>
-                        <li>
-                            <strong>离线支持：</strong
-                            >断开网络后仍可编辑，重新连接后自动同步
-                        </li>
-                        <li>
-                            <strong>冲突解决：</strong>Yjs 使用 CRDT
-                            算法自动解决编辑冲突，无需手动处理
-                        </li>
-                        <li>
-                            <strong>实时同步：</strong
-                            >所有编辑操作会实时同步到其他客户端
-                        </li>
-                        <li>
-                            <strong>状态持久化：</strong
-                            >刷新页面后内容不会丢失（存储在内存中，可扩展为数据库存储）
-                        </li>
-                    </ul>
-                </div>
+            <div class="status-item">
+                <span>在线用户: </span>
+                <div class="user-list" id="userList"></div>
             </div>
         </div>
 
-        <script type="importmap">
-            {
-                "imports": {
-                    "yjs": "https://esm.sh/yjs@13.6.10?deps=yjs@13.6.10",
-                    "y-websocket": "https://esm.sh/y-websocket@1.5.4?deps=yjs@13.6.10"
-                }
-            }
-        </script>
-        <script type="module" src="client.js"></script>
-    </body>
+        <div class="editor-container">
+            <div class="editor-wrapper">
+                <div class="toolbar" id="editorToolbar">
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" type="button" data-command="toggleBold">
+                            粗体
+                        </button>
+                        <button class="toolbar-btn" type="button" data-command="toggleItalic">
+                            斜体
+                        </button>
+                        <button class="toolbar-btn" type="button" data-command="toggleUnderline">
+                            下划线
+                        </button>
+                        <button class="toolbar-btn" type="button" data-command="toggleStrike">
+                            删除线
+                        </button>
+                    </div>
+                    <div class="toolbar-group">
+                        <button class="toolbar-btn" type="button" data-command="insertTable">
+                            插入表格
+                        </button>
+                        <button class="toolbar-btn" type="button" data-command="addRow">
+                            增加行
+                        </button>
+                        <button class="toolbar-btn" type="button" data-command="deleteRow">
+                            删除行
+                        </button>
+                        <button class="toolbar-btn" type="button" data-command="addColumn">
+                            增加列
+                        </button>
+                        <button class="toolbar-btn" type="button" data-command="deleteColumn">
+                            删除列
+                        </button>
+                    </div>
+                </div>
+                <div id="editor"></div>
+            </div>
+
+            <div class="info-panel">
+                <h3>💡 使用说明</h3>
+                <ul>
+                    <li>
+                        <strong>多人协同：</strong
+                        >打开多个浏览器标签页访问同一地址，在不同标签页中编辑，可以看到实时同步
+                    </li>
+                    <li>
+                        <strong>离线支持：</strong
+                        >断开网络后仍可编辑，重新连接后自动同步
+                    </li>
+                    <li>
+                        <strong>冲突解决：</strong>Yjs 使用 CRDT
+                        算法自动解决编辑冲突，无需手动处理
+                    </li>
+                    <li>
+                        <strong>实时同步：</strong
+                        >所有编辑操作会实时同步到其他客户端
+                    </li>
+                    <li>
+                        <strong>状态持久化：</strong
+                        >刷新页面后内容不会丢失（存储在内存中，可扩展为数据库存储）
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
 </html>

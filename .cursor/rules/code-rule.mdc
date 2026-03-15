@@ -1,0 +1,66 @@
+---
+description: 代码真实示例优先使用 ts + pnpm + next + react + vite
+alwaysApply: true
+---
+
+# 代码示例技术栈规则
+
+## 触发条件
+
+-   仅在需要给出“可运行、真实”的代码示例时应用本规则。
+-   概念解释、伪代码或无代码回答时可不强制。
+
+## 默认技术栈优先级
+
+-   语言优先 `TypeScript`，避免默认使用 JavaScript。
+-   包管理与命令优先 `pnpm`，不要默认写 `npm`。
+-   前端示例优先 `React + Vite`（组件、路由、构建与启动命令）。
+-   全栈/服务端示例优先 `Next`（App Router、Route Handlers、Server Actions）。
+
+## 依赖安装镜像规则
+
+-   涉及依赖安装时，默认优先使用淘宝镜像（`https://registry.npmmirror.com`）。
+-   `pnpm` 仍是默认首选；若用户指定 `yarn` 或 `npm`，也要给出对应镜像优先写法。
+-   需要临时切换源时，优先在命令中显式指定或先设置再安装，避免省略镜像导致安装不稳定。
+
+## 输出要求
+
+-   先给最小可运行示例，再补 1-3 句必要说明。
+-   命令要可直接执行，尽量包含完整上下文（安装、启动、验证）。
+-   同一回答中保持栈一致，避免混用多个无关框架。
+
+## 冲突与降级
+
+-   若用户明确指定其他技术栈，优先遵循用户要求。
+-   若当前项目已有既定栈，优先遵循项目上下文。
+-   若用户明确要求官方源或公司私有源，优先遵循其源配置，不强制淘宝镜像。
+-   偏离本规则时，先用 1 句说明原因，再给最接近替代示例。
+
+## 命令示例
+
+```bash
+# React + Vite + TypeScript
+pnpm create vite my-app --template react-ts
+cd my-app
+pnpm install
+pnpm dev
+```
+
+```bash
+# Next + TypeScript
+pnpm create next-app@latest my-next-app --ts
+cd my-next-app
+pnpm dev
+```
+
+```bash
+# 依赖安装优先使用淘宝镜像（pnpm/yarn/npm）
+pnpm config set registry https://registry.npmmirror.com
+pnpm install
+
+yarn config set registry https://registry.npmmirror.com
+yarn install
+
+npm config set registry https://registry.npmmirror.com
+npm install
+```

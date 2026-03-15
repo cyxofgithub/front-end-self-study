@@ -6,9 +6,10 @@
 
 ```
 code/
-├── client/                   # 前端静态资源及 Yjs 客户端
+├── client/                   # 前端（ProseMirror + Yjs）
 │   ├── index.html            # 编辑器页面
-│   └── client.js             # Yjs 同步逻辑及连接配置
+│   ├── src/main.ts           # ProseMirror + Yjs 协作逻辑
+│   └── package.json          # 前端依赖与构建脚本
 │
 ├── server/                   # 服务端代码
 │   ├── nodejs/               # Node.js 实现
@@ -38,7 +39,7 @@ code/
 
 ```bash
 cd server/nodejs
-npm install
+pnpm install
 ```
 
 #### 2. 初始化数据库
@@ -52,19 +53,19 @@ mysql -u root -p < ../../init-db.sql
 
 ```bash
 cd server/nodejs
-npm start
+pnpm start
 ```
 
 服务默认启动于 [http://localhost:3000](http://localhost:3000)
 
-### 方案二：Spring Boot 服务端
+### 方案二：任意兼容 y-websocket 协议的服务端（如 Spring Boot）
 
 #### 1. 环境要求
 
 -   JDK 1.8+
 -   Maven 3.6+
 -   MySQL 5.7+
--   Node.js（用于启动 client 静态资源服务器）
+-   Node.js（用于启动 client）
 
 #### 2. 数据库准备
 
@@ -88,29 +89,144 @@ spring:
 
 分别启动：
 
--   Spring Boot WebSocket 服务（3000 端口默认）
+-   WebSocket 服务（3000 端口默认）
 
 ```bash
 cd server/spring-boot
 mvn spring-boot:run
 ```
 
--   Client 前端静态服务器（8080 端口默认）
+-   Client 前端开发服务（Vite，默认 5173 端口）
 
 ```bash
 cd client
-npm install        # 首次需
-npm start
+pnpm install
+pnpm dev
 ```
 
 ### 访问应用
 
-浏览器访问 [http://localhost:8080](http://localhost:8080)
+浏览器访问 [http://localhost:5173](http://localhost:5173)
 
 1. 打开多个标签页/浏览器测试多端实时编辑
 2. 内容输入任意变动将自动同步到所有已打开标签页
 
 ## 📖 技术原理简述
+
+一句话结论：本项目的实时协同由 `ProseMirror` 负责编辑体验、`Yjs` 负责 CRDT 收敛、`y-websocket server` 负责跨端转发与状态装载、`MySQL` 负责持久化。
+
+### 协作流程图（深入版）
+
+#### 图 1：ProseMirror + Yjs + Server + MySQL 架构关系
+
+```mermaid
+flowchart LR
+  subgraph browserA [BrowserClientA]
+    userA[UserInput]
+    pmA[ProseMirrorCore]
+    syncA[ySyncPlugin]
+    ydocA[YDoc]
+    awareA[Awareness]
+    wsA[WebsocketProvider]
+    userA --> pmA
+    pmA --> syncA
+    syncA --> ydocA
+    awareA --> wsA
+    ydocA --> wsA
+  end
+
+  subgraph browserB [BrowserClientB]
+    pmB[ProseMirrorCore]
+    syncB[ySyncPlugin]
+    ydocB[YDoc]
+    awareB[Awareness]
+    wsB[WebsocketProvider]
+    wsB --> ydocB
+    ydocB --> syncB
+    syncB --> pmB
+    wsB --> awareB
+  end
+
+  subgraph server [YWebsocketServer]
+    hub[setupWSConnection]
+    persist[PersistenceAdapter]
+  end
+
+  db[(MySQL)]
+
+  wsA --> hub
+  hub --> wsB
+  hub --> persist
+  persist --> db
+```
+
+#### 图 2：一次编辑从本地事务到远端回放
+
+```mermaid
+sequenceDiagram
+  participant UserA as UserA
+  participant PMA as ProseMirrorA
+  participant SyncA as ySyncPluginA
+  participant YDocA as YDocA
+  participant WSA as WSProviderA
+  participant Hub as yWebsocketServer
+  participant WSB as WSProviderB
+  participant YDocB as YDocB
+  participant SyncB as ySyncPluginB
+  participant PMB as ProseMirrorB
+  participant Persist as writeState
+  participant DB as MySQL
+
+  UserA->>PMA: 输入文本触发 transaction
+  PMA->>SyncA: plugin 接收 transaction
+  SyncA->>YDocA: 写入 CRDT update
+  YDocA->>WSA: 产生增量更新
+  WSA->>Hub: 发送 update docName
+  Hub->>Persist: writeState docName ydoc
+  Persist->>DB: 持久化最新状态
+  Hub->>WSB: 广播 update 到同房间客户端
+  WSB->>YDocB: 应用远端 update
+  YDocB->>SyncB: 触发同步回放
+  SyncB->>PMB: 更新编辑器视图
+```
+
+#### 图 3：首次连接与后续增量同步
+
+```mermaid
+sequenceDiagram
+  participant Client as Client
+  participant Provider as WebsocketProvider
+  participant Hub as yWebsocketServer
+  participant Bind as bindState
+  participant DB as MySQL
+  participant Awareness as awarenessChannel
+
+  Client->>Provider: 初始化 WebsocketProvider wsUrl docName
+  Provider->>Hub: 建立连接并加入 docName 房间
+  Hub->>Bind: bindState docName ydoc
+  Bind->>DB: 读取历史文档状态
+  DB-->>Bind: 返回状态快照
+  Bind-->>Hub: 回填到内存 ydoc
+  Hub-->>Provider: 下发初始同步状态
+  Provider-->>Client: 触发 sync 事件 isSynced true
+
+  Client->>Provider: 后续本地编辑产生增量 update
+  Provider->>Hub: 发送增量 update
+  Hub-->>Provider: 广播给同房间其他客户端
+
+  Client->>Awareness: 更新用户名称与光标
+  Awareness->>Hub: 发送 presence 变更
+  Hub-->>Awareness: 转发在线状态给其他客户端
+```
+
+#### 重点解读
+
+-   `ProseMirror` 不直接处理多端冲突，它通过 `ySyncPlugin` 把编辑事务映射到 `Y.Doc`，冲突收敛由 Yjs 的 CRDT 负责。
+-   `Y.Doc` 的 update 具备可交换与幂等特性，即使网络乱序到达，也能收敛到一致状态。
+-   `docName` 是协作房间路由键，只有同 `docName` 的连接才会互相广播文档更新。
+-   文档内容同步与在线状态同步是两条链路：内容走 `Y.Doc update`，在线状态走 `awareness`，二者相互独立。
+-   首次连接强调 `bindState`：先把历史状态装载进服务端文档，再进行客户端初始同步。
+-   后续编辑通常是增量 update，同步成本更低；服务端通过 `writeState` 持续落库保障恢复能力。
 
 ### Yjs 协同机制
 
@@ -144,9 +260,9 @@ export MYSQL_TABLE_NAME=yjs_documents
 
 ## 📚 目录与组件补充说明
 
--   **client/** 前端编辑器页面及 Yjs 适配代码
+-   **client/** 前端编辑器页面及 ProseMirror + Yjs 适配代码
     -   `index.html`：基础页面
-    -   `client.js`：连接服务器，实现实时同步
+    -   `src/main.ts`：连接服务器，实现实时同步
 -   **server/nodejs/** Node.js 服务端
     -   `server.js`：Express + ws 搭建实时通道
     -   `mysql-persistence.js`：MySQL 文档持久化实现
@@ -155,19 +271,19 @@ export MYSQL_TABLE_NAME=yjs_documents
 
 ## 🐞 常见问题解答
 
--   **为何需要 WebSocket？**  
+-   **为何需要 WebSocket？**
     WebSocket 用于在多客户端之间转发消息和同步文档状态。
 
--   **文档数据存储位置？**  
+-   **文档数据存储位置？**
     所有协同编辑内容最终持久化于 MySQL（默认表名 `yjs_documents`）。
 
--   **并发编辑规模如何？**  
+-   **并发编辑规模如何？**
     Yjs 支持大规模并发同步，但受服务器和带宽影响，建议负载测试评估。
 
--   **是否支持访问权限控制？**  
+-   **是否支持访问权限控制？**
     可在服务端自定义认证和文档访问鉴权逻辑，具体见服务端实现。
 
--   **Node.js/Spring Boot 两方案主要差异？**  
+-   **Node.js/Spring Boot 两方案主要差异？**
     Node.js 采取现成 [y-websocket](https://github.com/yjs/y-websocket) 实现，配置简单、自带持久化接口；Spring Boot 适合 Java 生态，但 WebSocket/CRDT 需自行集成。
 
 ## 参考资料
