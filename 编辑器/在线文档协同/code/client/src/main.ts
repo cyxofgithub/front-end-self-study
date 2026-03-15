@@ -10,13 +10,15 @@ import {
 } from 'prosemirror-tables';
 import {
     initProseMirrorDoc,
-    yCursorPlugin,
+    ySyncPluginKey,
     ySyncPlugin,
     yUndoPlugin,
     undo,
     redo,
 } from 'y-prosemirror';
 import { createCollabContext } from './collab/provider';
+import { CanvasCursorLayer } from './cursor/canvas-cursor-layer';
+import { createLocalCursorAwarenessPlugin } from './cursor/local-cursor-plugin';
 import { createCommandRegistry } from './editor/commands';
 import { proseMirrorSchema } from './editor/schema';
 import { createToolbarController } from './editor/toolbar';
@@ -70,7 +72,7 @@ function getYjsFragmentSnapshot() {
 }
 
 const TRANSACTION_REPORT_INTERVAL = 20;
-const { editorRoot, statusIndicator, statusText, userList, toolbar } = getAppDomNodes();
+const { editorRoot, editorWrapper, statusIndicator, statusText, userList, toolbar } = getAppDomNodes();
 const { ydoc, yXmlFragment, wsProvider, engineSelection, perfTracker, perfLogEnabled } =
     await createCollabContext();
 const commandRegistry = createCommandRegistry(proseMirrorSchema);
@@ -99,7 +101,7 @@ const state = EditorState.create({
     schema: proseMirrorSchema,
     plugins: [
         ySyncPlugin(yXmlFragment, { mapping }),
-        yCursorPlugin(wsProvider.awareness),
+        createLocalCursorAwarenessPlugin(wsProvider.awareness),
         yUndoPlugin(),
         keymap({
             'Mod-z': undo,
@@ -119,6 +121,7 @@ const state = EditorState.create({
 console.log("🚀 ~ state:", state)
 
 let editorView: EditorView;
+let canvasCursorLayer: CanvasCursorLayer | undefined;
 const toolbarController = createToolbarController({
     toolbar,
     getView: () => editorView,
@@ -137,6 +140,7 @@ editorView = new EditorView(editorRoot, {
         const nextState = editorView.state.apply(transaction);
         editorView.updateState(nextState);
         toolbarController.updateToolbarState();
+        canvasCursorLayer?.requestRender();
         const duration = performance.now() - begin;
         transactionCount += 1;
         const txSummary = perfTracker.record('transaction.dispatchMs', duration);
@@ -157,6 +161,22 @@ editorView = new EditorView(editorRoot, {
             pmDocJson: nextState.doc.toJSON(),
         });
     },
+});
+
+canvasCursorLayer = new CanvasCursorLayer({
+    editorView,
+    awareness: wsProvider.awareness,
+    ydoc,
+    yXmlFragment,
+    host: editorWrapper,
+    getMapping: () => {
+        const syncState = ySyncPluginKey.getState(editorView.state) as
+            | { binding?: { mapping?: Map<unknown, { nodeSize: number }> } }
+            | null;
+        return syncState?.binding?.mapping ?? null;
+    },
+    perfTracker,
+    perfLogEnabled,
 });
 
 let hasInjectedInitialText = false;
@@ -216,6 +236,7 @@ if (isDebugEnabled()) {
 
 wsProvider.awareness.on('change', () => {
     updateUserList(userList, wsProvider);
+    canvasCursorLayer?.requestRender();
 });
 
 connectionTimeout = window.setTimeout(() => {
@@ -229,6 +250,7 @@ connectionTimeout = window.setTimeout(() => {
 updateConnectionStatus(statusIndicator, statusText, 'connecting', connectionTimeout);
 updateUserList(userList, wsProvider);
 toolbarController.updateToolbarState();
+canvasCursorLayer.requestRender();
 
 if (isDebugEnabled()) {
     window.__collabDebug = {
@@ -242,6 +264,7 @@ if (isDebugEnabled()) {
 window.addEventListener('beforeunload', () => {
     // 页面关闭前释放监听与连接，避免残留会话与内存泄漏。
     toolbarController.destroy();
+    canvasCursorLayer?.destroy();
     unobserveYXmlFragment?.();
     editorView.destroy();
     wsProvider.destroy();
