@@ -21,6 +21,20 @@
 
 
 
-#### 编辑器框架：proseMirror 
+### 编辑器框架：proseMirror 
 
 - [常见问题](../../../../编辑器/proseMirror常见问题.md)
+
+### wasm 的优化
+
+- Pulldown-cmark WASM Markdown 解析
+- Yjs WASM 绑定（协同场景）
+- Shiki WASM 语法高亮
+
+#### wasm 快的原因
+
+- 避开 GC 停顿：Wasm 线性内存由开发者手动管理，没有 JS 那种 “自动暂停执行回收内存” 的 GC 操作，执行过程连续无中断；
+- 二进制格式 + 静态类型：大幅降低解析 / 编译成本，避免运行时类型开销；
+- 接近机器码的指令集：执行效率对标 C/C++，远超动态类型的 JS（计算密集型场景）。
+
+### canvas 优化
