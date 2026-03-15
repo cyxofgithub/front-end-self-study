@@ -26,7 +26,8 @@
         "prosemirror-view": "^1.41.3",
         "y-prosemirror": "^1.2.17",
         "y-websocket": "^3.0.0",
-        "yjs": "^13.6.27"
+        "yjs": "^13.6.27",
+        "ywasm": "^0.25.0"
     },
     "devDependencies": {
         "typescript": "^5.9.2",

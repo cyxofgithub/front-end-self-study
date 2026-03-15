@@ -37,11 +37,48 @@ pnpm build
 可通过 URL 参数覆盖：
 
 ```text
-http://localhost:5173?ws=ws://localhost:3000&doc=demo
+http://localhost:5173?ws=ws://localhost:3000&doc=demo&crdtEngine=wasm&perf=1
 ```
 
 -   `ws`：WebSocket 服务地址
 -   `doc`：房间/文档名（同名文档会同步）
+-   `crdtEngine`：`js`（默认）或 `wasm`（实验模式）
+-   `perf`：`1/true/on` 时强制输出性能采样日志
+
+## Yjs WASM 协同实验模式
+
+一句话结论：当前示例默认走稳定 `yjs` 协同链路；当传入 `?crdtEngine=wasm` 时，会尝试加载 `ywasm` 进行 CRDT 计算采样，失败自动回退到 `yjs`。
+
+```mermaid
+flowchart LR
+  boot[Bootstrap] --> engineSelect[SelectEngineByURL]
+  engineSelect --> jsMode[YjsStablePath]
+  engineSelect --> wasmTry[TryLoadYwasm]
+  wasmTry --> wasmMode[YwasmProbePath]
+  wasmTry --> fallback[FallbackToYjs]
+  wasmMode --> perfLog[PerfSummaryLog]
+  jsMode --> perfLog
+  fallback --> perfLog
+```
+
+### 使用方式
+
+1. 默认稳定模式：`http://localhost:5173?doc=demo`
+2. WASM 实验模式：`http://localhost:5173?doc=demo&crdtEngine=wasm`
+3. 强制打印性能日志：`http://localhost:5173?doc=demo&crdtEngine=wasm&perf=1`
+
+### 性能观测说明
+
+-   采样项 1：`transaction.dispatchMs`（ProseMirror 事务更新耗时）。
+-   采样项 2：`applyUpdate.jsProbeMs`（同一 update 在 JS CRDT 探针中的应用耗时）。
+-   采样项 3：`applyUpdate.wasmProbeMs`（同一 update 在 WASM CRDT 探针中的应用耗时，WASM 可用时才有）。
+-   日志节奏：默认每 20 次事务 / update 打印一条摘要（含 `avg/p50/p95`）。
+
+### 已知限制
+
+-   当前 `y-prosemirror` 与 `y-websocket` 主链路仍基于 `yjs`，保证协同稳定。
+-   `crdtEngine=wasm` 的定位是“可运行实验模式”，用于观测 WASM CRDT 计算收益，不直接替换主同步链路。
+-   若 `ywasm` 加载失败，会在控制台输出回退原因并自动降级到 `yjs`。
 
 ## 关键流程说明
 
@@ -117,6 +154,7 @@ function createInsertTableCommand(rows = 3, cols = 3): EditorCommand {
 5. 点击“插入表格”，在单元格中输入内容，然后执行“增加行/增加列/删除行/删除列”，确认另一端实时同步结构变化。
 6. 在任意一端执行 `Cmd/Ctrl + Z` 与 `Cmd/Ctrl + Shift + Z`，确认撤销/重做在协同场景下可用。
 7. 关闭网络后继续编辑，恢复网络后确认自动同步。
+8. 使用 `?crdtEngine=wasm&perf=1` 重新访问页面，观察控制台是否出现 `applyUpdate.jsProbeMs` / `applyUpdate.wasmProbeMs` 的对比摘要。
 
 ## 建议观察点
 

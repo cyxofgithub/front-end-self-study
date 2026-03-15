@@ -41,6 +41,9 @@ importers:
       yjs:
         specifier: ^13.6.27
         version: 13.6.29
+      ywasm:
+        specifier: ^0.25.0
+        version: 0.25.0
     devDependencies:
       typescript:
         specifier: ^5.9.2
@@ -498,6 +501,9 @@ packages:
     resolution: {integrity: sha512-kHqDPdltoXH+X4w1lVmMtddE3Oeqq48nM40FD5ojTd8xYhQpzIDcfE2keMSU5bAgRPJBe225WTUdyUgj1DtbiQ==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
+  ywasm@0.25.0:
+    resolution: {integrity: sha512-5PqtxSekgWVlV4r8ala+WHRreFoOOwnqNf+KtF2AcIOEOz83II2mj+qQy32vLlJPkKLyMNzqmafSorlwYCzG+w==}
+
 snapshots:
 
   '@esbuild/aix-ppc64@0.27.4':
@@ -839,3 +845,5 @@ snapshots:
   yjs@13.6.29:
     dependencies:
       lib0: 0.2.117
+
+  ywasm@0.25.0: {}

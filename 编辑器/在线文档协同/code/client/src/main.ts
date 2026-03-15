@@ -29,6 +29,7 @@ interface CollabDebugSnapshot {
     getDocJson: () => unknown;
     getTextContent: () => string;
     getAwarenessUsers: () => Array<{ clientId: number; user: unknown }>;
+    getPerfSnapshot: () => unknown;
 }
 
 declare global {
@@ -68,13 +69,24 @@ function getYjsFragmentSnapshot() {
     };
 }
 
+const TRANSACTION_REPORT_INTERVAL = 20;
 const { editorRoot, statusIndicator, statusText, userList, toolbar } = getAppDomNodes();
-const { ydoc, yXmlFragment, wsProvider } = createCollabContext();
+const { ydoc, yXmlFragment, wsProvider, engineSelection, perfTracker, perfLogEnabled } =
+    await createCollabContext();
 const commandRegistry = createCommandRegistry(proseMirrorSchema);
+let transactionCount = 0;
+
+if (perfLogEnabled) {
+    console.info('[collab-perf] 性能观测已启用', {
+        engineSelection,
+        reportInterval: TRANSACTION_REPORT_INTERVAL,
+    });
+}
 
 debugLog('bootstrap.sourceDoc', {
     归属: 'Yjs',
     说明: '原始文档结构（createCollabContext 后）',
+    crdtEngine: engineSelection,
     ...getYjsFragmentSnapshot(),
 });
 
@@ -120,10 +132,21 @@ editorView = new EditorView(editorRoot, {
     },
     dispatchTransaction(transaction) {
         console.log("🚀 ~ transaction:", transaction)
+        const begin = performance.now();
         // 所有本地/远端变更都会走这里，更新状态后立刻刷新工具栏可用性与激活态。
         const nextState = editorView.state.apply(transaction);
         editorView.updateState(nextState);
         toolbarController.updateToolbarState();
+        const duration = performance.now() - begin;
+        transactionCount += 1;
+        const txSummary = perfTracker.record('transaction.dispatchMs', duration);
+        if (perfLogEnabled && transactionCount % TRANSACTION_REPORT_INTERVAL === 0) {
+            console.info('[collab-perf] transaction 采样摘要', {
+                transactionCount,
+                engineSelection,
+                txSummary,
+            });
+        }
         debugLog('[ProseMirror] 事务后文档结构', {
             归属: 'ProseMirror',
             说明: '中间态数据结构（transaction 后）',
@@ -212,6 +235,7 @@ if (isDebugEnabled()) {
         getDocJson: () => editorView.state.doc.toJSON(),
         getTextContent: () => editorView.state.doc.textContent,
         getAwarenessUsers,
+        getPerfSnapshot: () => perfTracker.getSnapshot(),
     };
 }
 

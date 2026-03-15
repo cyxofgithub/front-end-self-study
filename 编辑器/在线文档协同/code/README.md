@@ -258,6 +258,40 @@ export MYSQL_TABLE_NAME=yjs_documents
 -   WebSocket 默认端口：3000
 -   路径格式：`ws://localhost:3000/{docName}`，如 `/demo`、`/文档1` 等
 
+## Yjs WASM 协同优化（实验模式）
+
+一句话结论：该示例新增 `crdtEngine=wasm` 实验开关，用于在不影响主协同链路的情况下观测 WASM 版 CRDT 计算性能，加载失败自动回退到 `yjs`。
+
+```mermaid
+flowchart LR
+  urlParam[URLParamcrdtEngine] --> jsDefault[YjsMainPath]
+  urlParam --> wasmExperiment[LoadYwasmProbe]
+  wasmExperiment --> perfCompare[CompareJsAndWasmApplyUpdate]
+  wasmExperiment --> fallbackReason[FallbackToYjsWithReason]
+  jsDefault --> wsSync[YWebsocketSync]
+  fallbackReason --> wsSync
+  perfCompare --> consolePerf[ConsoleSummary]
+```
+
+### 开关参数
+
+-   默认：`http://localhost:5173?doc=demo`
+-   WASM：`http://localhost:5173?doc=demo&crdtEngine=wasm`
+-   WASM + 强制性能日志：`http://localhost:5173?doc=demo&crdtEngine=wasm&perf=1`
+
+### 压测建议（10+ 协同用户）
+
+1. 同一 `doc` 打开 10-20 个标签页，持续输入和删除，观察同步是否稳定。
+2. 在 `crdtEngine=js` 与 `crdtEngine=wasm` 两组场景下分别采集控制台 `transaction.dispatchMs` 摘要。
+3. 在 `crdtEngine=wasm` 下对比 `applyUpdate.jsProbeMs` 与 `applyUpdate.wasmProbeMs` 的 `avg/p95`，评估收益。
+4. 人为制造弱网和重连，确认失败或抖动时自动回退后仍可持续协同。
+
+### 兼容边界
+
+-   主同步链路仍基于 `yjs + y-prosemirror + y-websocket`，优先保障业务稳定。
+-   `ywasm` 当前作为 CRDT 计算实验引擎接入，用于对比评估，不直接替换生产链路。
+-   若 WASM 运行环境受限，会自动回退并输出原因，不影响协同功能。
+
 ## 📚 目录与组件补充说明
 
 -   **client/** 前端编辑器页面及 ProseMirror + Yjs 适配代码
