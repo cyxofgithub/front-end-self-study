@@ -1,5 +1,5 @@
 ---
-description: 代码真实示例优先使用企业级方案（ts + pnpm + next + react + vite）
+description: 代码真实示例优先使用企业级方案（ts + pnpm + next + vue + vite + tailwindcss）
 alwaysApply: true
 ---
 
@@ -14,7 +14,7 @@ alwaysApply: true
 
 -   语言优先 `TypeScript`，避免默认使用 JavaScript。
 -   包管理与命令优先 `pnpm`，不要默认写 `npm`。
--   前端示例优先 `React + Vite`（组件、路由、构建与启动命令）。
+-   前端示例优先 `Vue + Vite`（组件、路由、构建与启动命令），样式库优先 `Tailwind CSS`。
 -   全栈/服务端示例优先 `Next`（App Router、Route Handlers、Server Actions）。
 
 ## 方案选型优先级（企业级）
@@ -60,12 +60,14 @@ alwaysApply: true
 ## 命令示例
 
 ```bash
-# 创建 React + Vite + TypeScript 项目骨架（最小可运行起点）
-pnpm create vite my-app --template react-ts
+# 创建 Vue + Vite + TypeScript 项目骨架（最小可运行起点）
+pnpm create vite my-app --template vue-ts
 # 进入项目目录，后续安装与启动都在此目录执行
 cd my-app
 # 安装依赖
 pnpm install
+# 安装 Tailwind CSS（样式库）
+pnpm add -D tailwindcss @tailwindcss/vite
 # 启动本地开发服务器（默认会输出访问地址用于验证）
 pnpm dev
 ```
