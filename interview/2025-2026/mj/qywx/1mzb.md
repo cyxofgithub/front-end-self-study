@@ -93,3 +93,9 @@
 
 - 从根html触发，读取主入口文件，用 esbuild 打成少量 ESM（如一个 deps.js），放到 node_modules/.vite/。
 - 当浏览器请求 url 时拦截，读取文件 → esbuild.transform(启动时未预构建部分) → 将 import 'lodash-es' 改写为 import '/node_modules/.vite/deps.js?t=...'，返回 JS。
+
+
+## TypeScript
+
+[详细参考](../../../typescript/高频梳理.md)
+
