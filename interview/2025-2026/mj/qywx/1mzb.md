@@ -68,3 +68,28 @@
 ## openClaw
 
 [openClaw相关](../../../../interview/AI/openClaw相关.md)
+
+## Webpack/Vite 构建原理
+
+### webpack
+
+[详细看](../../../webpack/webpack打包原理.md)
+
+我们从入口讲起
+
+-   在配置 webpack 的时候我们配置 entry、output、plugin、module/rules
+-   执行 webpack 后会先根据配置找到入口文件读取文件内容 利用 babel 转换成 ast 识别依赖
+-   如果依赖是 module rules 的文件会根据对应的 loader 转换然后继续重复这个读取 -> ast -> 识别依赖这个过程构建出依赖图
+-   依赖图构建完成后会根据依赖关系输出 chunk （中间涉及到模块转换，比如 es import 语句转换成 webpack 可识别的模块语句**webpack_require**）
+-   n 个入口就有 n 个 chunk 如果有配置 split chunk 会有更多
+
+
+
+### vite
+
+[详细参考](../../../vite/README.md)
+
+思路：
+
+- 从根html触发，读取主入口文件，用 esbuild 打成少量 ESM（如一个 deps.js），放到 node_modules/.vite/。
+- 当浏览器请求 url 时拦截，读取文件 → esbuild.transform(启动时未预构建部分) → 将 import 'lodash-es' 改写为 import '/node_modules/.vite/deps.js?t=...'，返回 JS。

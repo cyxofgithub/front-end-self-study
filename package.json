@@ -1,17 +1,17 @@
 {
-  "name": "front-end-self-study-docs",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "docs:dev": "vitepress dev",
-    "docs:build": "vitepress build",
-    "docs:preview": "vitepress preview"
-  },
-  "devDependencies": {
-    "mermaid": "^11.12.3",
-    "vitepress": "^1.6.0",
-    "vitepress-plugin-mermaid": "^2.0.17",
-    "vitepress-sidebar": "^1.33.0",
-    "vue": "^3.5.30"
-  }
+    "name": "front-end-self-study-docs",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vitepress dev",
+        "docs:build": "vitepress build",
+        "docs:preview": "vitepress preview"
+    },
+    "devDependencies": {
+        "mermaid": "^11.12.3",
+        "vitepress": "^1.6.0",
+        "vitepress-plugin-mermaid": "^2.0.17",
+        "vitepress-sidebar": "^1.33.0",
+        "vue": "^3.5.30"
+    }
 }

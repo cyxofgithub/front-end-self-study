@@ -1,0 +1,20 @@
+{
+  "name": "mini-vite",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build:deps": "tsx src/prebundle.ts"
+  },
+  "dependencies": {
+    "chokidar": "^4.0.1",
+    "esbuild": "^0.24.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.18.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

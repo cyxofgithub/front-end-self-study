@@ -1,0 +1,7 @@
+{
+  "name": "mini-vite-demo",
+  "private": true,
+  "dependencies": {
+    "lodash-es": "^4.17.21"
+  }
+}
