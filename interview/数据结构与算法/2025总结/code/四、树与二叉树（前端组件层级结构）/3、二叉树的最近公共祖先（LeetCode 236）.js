@@ -17,6 +17,7 @@ class Tree {
 // 最好情况（平衡二叉树）：h = log2 n，空间复杂度为 O(log n)。
 function getAncestor2(root, node1, node2) {
     // 如果一个目标节点就在root，那么root就是结果
+    // 在「以 root 为根的子树」里找 node1、node2 的最近公共祖先（或其中一个目标结点），并把结果往上返回。
     if (!root || root === node1 || root === node2) return root;
 
     const left = getAncestor2(root.left, node1, node2);
