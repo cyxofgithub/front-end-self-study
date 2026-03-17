@@ -1,0 +1,43 @@
+---
+description: 生成或修改 TypeScript 文件后，若有类型报错则自动修复
+globs: '**/*.ts,**/*.tsx'
+alwaysApply: false
+---
+
+# TypeScript 类型报错自动修复
+
+## 触发条件
+
+-   生成新的 `.ts` / `.tsx` 文件时。
+-   编辑已有 `.ts` / `.tsx` 文件时。
+
+## 必须行为
+
+-   写入或修改后，**主动检查类型**：使用工作区 `ReadLints` 或项目 `pnpm exec tsc --noEmit`（根目录有 `tsconfig.json` 时优先用项目配置）进行验证。
+-   若存在类型报错，**在当轮对话中自动修复**，不得仅列出错误或交给用户手动改。
+
+## 修复方式（按优先级）
+
+1. 补全类型注解、修正泛型或重载。
+2. 调整实现以满足类型约束。
+3. 使用类型断言（`as T`）时在旁注释原因。
+4. 避免 `// @ts-ignore`，确需使用时须注释说明理由。
+
+## 自检
+
+-   修复后再次对该文件（及受影响文件）执行类型检查，确保无新增报错。
+
+## 示例
+
+```typescript
+// ❌ 不推荐：留类型错误不修
+const data = fetchSomething(); // 类型为 unknown 或 any，未标注
+data.id; // 可能报错
+
+// ✅ 推荐：补全类型或断言并验证通过
+interface Result {
+    id: string;
+}
+const data = fetchSomething() as Result;
+data.id;
+```
