@@ -199,7 +199,7 @@
 
 # 面筋
 
-### 算法与数据结构
+## 算法与数据结构
 
 - 数组：
   - [去重（多种方案：Set、indexOf、reduce、Map）](../../../../interview/js/数组去重.md)
@@ -224,3 +224,13 @@
 - 高频手写：
   - [防抖节流(闭包 + 定时器)](../../../../interview/数据结构与算法/2025总结/code/八、前端工程化相关/1、防抖与节流函数.js)
   - [Promise 系列](../../../../interview/js/手写promise.all.md)
+
+## ai 
+
+### lanchain
+-  [对 lanchain 理解、原理](../../../../interview/AI/LangChain理解与原理.md)
+
+LangChain 是什么：面向 LLM 的应用编排框架，把「调用 LLM、检索、记忆、工具」等能力抽象成可组合单元，用声明式链式调用（LCEL）串联。
+解决什么问题：统一多模型/多工具接口，降低 RAG、Agent 的编排与流式/批处理代码量
+
+

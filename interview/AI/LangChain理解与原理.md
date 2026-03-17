@@ -125,9 +125,80 @@ const result = await chain.invoke({ question: "年假怎么申请？" });
 
 ---
 
+## 4.5 Chains 与 Agents：差异与拼装
+
+### 差异（一句话 + 表格 + 图）
+
+- **Chain**：步骤和顺序在写代码时就定死，每次请求都走同一条流水线（例如：检索 → 拼 Prompt → LLM → 解析）。
+- **Agent**：步骤由模型根据当前输入**动态决定**，可能多次「规划 → 选工具 → 执行 → 再规划」再给出答案。
+
+| 维度 | Chain | Agent |
+|------|--------|--------|
+| 步骤谁定 | 开发者写死 | 模型按输入决定 |
+| 是否调工具 | 一般不直接调，或只在固定环节调 | 按需选工具、可多轮调用 |
+| 执行形状 | 直线/固定 DAG | 带循环的 DAG（ReAct） |
+| 典型场景 | RAG 问答、固定格式生成、标准化流程 | 需查天气/算数/搜网页等多步决策 |
+
+**流程对比**：
+
+```mermaid
+flowchart LR
+  subgraph chainFlow [Chain 固定流程]
+    A1[输入] --> A2[步骤1] --> A3[步骤2] --> A4[输出]
+  end
+```
+
+```mermaid
+flowchart TD
+  subgraph agentFlow [Agent 动态流程]
+    B1[输入] --> B2[规划]
+    B2 --> B3{要调工具?}
+    B3 -->|是| B4[选工具并执行]
+    B4 --> B2
+    B3 -->|否| B5[输出]
+  end
+```
+
+### 能否拼装？
+
+**可以。** Chain 和 Agent 在 LangChain 里都是 **Runnable**，同一套 `pipe`/`invoke`/`stream`，因此可以互相嵌套、组合。
+
+常见拼装方式：
+
+1. **Agent 的某个 Tool 内部是一条 Chain**  
+   例如：工具「查知识库」内部 = 检索 + 拼 Prompt + LLM，对外只暴露一个 Tool 接口，Agent 在需要时调用。
+2. **Chain 里某一「步」是一个 Agent**  
+   例如：先跑一条检索链拿到文档，再把「文档 + 用户问题」交给 Agent，由 Agent 决定是否再调其他工具、最后生成答案。
+
+**拼装示例（思路）**：
+
+```typescript
+// 方式 1：Agent 的工具 = 一条 RAG Chain
+const ragTool = {
+  name: "search_knowledge_base",
+  description: "在内部知识库中检索并返回相关片段",
+  func: async (query: string) => {
+    const chain = prompt.pipe(llm).pipe(parser);
+    const docs = await retriever.invoke(query);
+    return await chain.invoke({ context: docs, question: query });
+  },
+};
+const agent = createReactAgent({ llm, tools: [ragTool, calculatorTool] });
+
+// 方式 2：Chain 中一步是 Agent（先检索，再交给 Agent 决策）
+const retrievalStep = (input: { q: string }) => retriever.invoke(input.q);
+const agentStep = (input: { docs: Doc[]; q: string }) =>
+  agent.invoke({ context: input.docs, question: input.q });
+const pipeline = retrievalStep.pipe(agentStep);
+```
+
+结论：Chain 负责「固定流程」，Agent 负责「何时用、用哪个工具」；两者可以互为子步骤，按业务拆成「链+智能体」组合。
+
+---
+
 ## 5. Agents（智能体）原理
 
-Agent = **规划 → 执行（调工具）→ 反思** 的循环；由 LangGraph 等做 DAG 调度与 ReAct。与 Chain 的差异：Chain 步骤固定，Agent 按输入动态选择是否再调用工具或结束。
+Agent = **规划 → 执行（调工具）→ 反思** 的循环；由 LangGraph 等做 DAG 调度与 ReAct。与 Chain 的对比与拼装方式见上一节 [4.5 Chains 与 Agents：差异与拼装](#45-chains-与-agents差异与拼装)。
 
 **三阶段流程**：
 
