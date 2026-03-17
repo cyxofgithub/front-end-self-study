@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress';
 import { withSidebar } from 'vitepress-sidebar';
 import { MermaidMarkdown, MermaidPlugin } from 'vitepress-plugin-mermaid';
+import { watchContentPlugin } from './plugins/watch-content.mts';
 
 export default defineConfig(
   withSidebar(
@@ -90,7 +91,14 @@ export default defineConfig(
 
       // ===== Vite 配置 =====
       vite: {
-        plugins: [MermaidPlugin()],
+        plugins: [MermaidPlugin(), watchContentPlugin()],
+        server: {
+          // 确保内容目录被监听，新建/删除 .md 时能触发热更新
+          watch: {
+            // 若在部分系统上新建文件不触发，可改为 usePolling: true
+            usePolling: false
+          }
+        },
         optimizeDeps: {
           // 排除 code 目录下的文件，避免解析其依赖
           exclude: ['code', 'demo'],

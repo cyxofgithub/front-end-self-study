@@ -233,4 +233,14 @@
 LangChain 是什么：面向 LLM 的应用编排框架，把「调用 LLM、检索、记忆、工具」等能力抽象成可组合单元，用声明式链式调用（LCEL）串联。
 解决什么问题：统一多模型/多工具接口，降低 RAG、Agent 的编排与流式/批处理代码量
 
+## js、ts 基础
+
+### js
+- [this 指向](../../../../interview/js/this指向.md) new绑定、显示绑定（call/apply/bind）、隐式绑定(对象属性)、箭头函数、函数上下文（指向全局）
+- [['1','2','3'].map(parseInt) 的执行结果是：[1, NaN, NaN]。](../../../../interview/js/map与parseInt.md)
+
+### ts
+
+- [类型体操：实现 DeepPartial、UnionToIntersection、ReturnType 等](../../../../interview/typescript/类型体操.md)
+- [类型守卫、infer 关键字应用](../../../../interview/typescript/类型守卫与infer.md)
 
