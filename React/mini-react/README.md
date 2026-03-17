@@ -427,9 +427,28 @@ createElement(
 
 -   **MessageChannel**: 用于任务调度，`port.postMessage()` 会在浏览器空闲时执行回调
 -   **requestAnimationFrame**: 获取帧开始时间（rafTime），精确对齐浏览器刷新节奏
+    -   关键：不是「rAF + 16ms」，而是**一帧总预算约 16.6ms**（60Hz）。这 16.6ms 要完成整条流水线：`[rAF 回调] → [Layout] → [Paint] → [Composite]`，总耗时 ≤ 16.6ms 才不掉帧。把任务拆成 5ms 以内，是为了不占满预算，给浏览器留时间做布局和绘制。
 -   **performance.now()**: 高精度时间戳，用于计算时间差
 -   **shouldYieldToHost**: 判断是否需要让出主线程，每帧允许 5ms JS 执行
 -   **performWorkUntilDeadline**: 工作循环入口，结合 `requestAnimationFrame` 和 `MessageChannel` 实现时间切片
+
+**一帧时间线（含宏任务 / 微任务 / 同步代码）：**
+
+```
+帧 N 开始
+    → [宏任务 1]（内含同步代码顺序执行）
+    → [微任务队列清空]（该宏任务触发的 Promise、queueMicrotask 等）
+    → （可有多轮 宏任务 → 微任务，直到到达渲染时机）
+    → [rAF 回调]
+    → [Layout] → [Paint] → [Composite]
+    → 帧 N+1 开始
+       ↑___________________________________________________________↑
+                      总耗时必须 ≤ 16.6ms（才不会掉帧）
+```
+
+-   **同步代码**：在「当前正在执行的宏任务」内部顺序执行；一个宏任务未执行完，不会去执行下一个宏任务或 rAF。
+-   **微任务**：当前宏任务中同步代码执行完后、下一个宏任务（或 rAF）之前，会清空整个微任务队列。
+-   **rAF**：在浏览器下一次重绘前执行，与 Layout/Paint/Composite 同属本帧的渲染流水线。
 
 ### reconciler.js
 
