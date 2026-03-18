@@ -136,6 +136,12 @@
 ### vue（最后）
 
 
+## tensorFlow.js
+
+[详细参考](../../../../interview/AI/TensorFlow.js应用经验.md)
+
+端侧跑模型
+
 # 个人经历复习
 
 ## 自我介绍
