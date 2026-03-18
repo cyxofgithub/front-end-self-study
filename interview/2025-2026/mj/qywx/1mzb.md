@@ -84,8 +84,14 @@
 -   如果依赖是 module rules 的文件会根据对应的 loader 转换然后继续重复这个读取 -> ast -> 识别依赖这个过程构建出依赖图
 -   依赖图构建完成后会根据依赖关系输出 chunk （中间涉及到模块转换，比如 es import 语句转换成 webpack 可识别的模块语句**webpack_require**）
 -   n 个入口就有 n 个 chunk 如果有配置 split chunk 会有更多
+   
+#### 构建优化
 
+[详细参考](../../../webpack/讲讲webpack优化.md)
 
+#### Loader和Plugin是什么，常见的
+
+[详细参考](../../../webpack/Loader和Plugin.md)
 
 ### vite
 
