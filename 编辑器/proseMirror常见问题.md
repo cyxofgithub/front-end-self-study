@@ -4,101 +4,426 @@
 
 1. **ProseMirror 的核心数据结构有哪些？它们如何协同工作？**
 
-    - **Node**：文档的树形结构节点（如段落、标题、图片），包含类型、属性、子节点等。
-    - **Mark**：节点内的样式标记（如加粗、斜体），不改变文档结构，仅修饰文本。
-    - **Schema**：定义文档的规则约束（允许哪些节点/标记、节点的父子关系、属性结构）。
-    - **Transaction**：描述对文档的修改操作（如插入、删除、样式变更），是状态更新的载体。
-    - **State**：包含文档（doc）、选区（selection）、插件状态等完整编辑器状态。
-    - **协同流程**：Schema 定义规则 → Node/Mark 组成文档 → Transaction 描述修改 → 生成新 State → View 渲染更新。
+    **结论**：Schema → Node/Mark → Transaction → State → View 形成单向数据流。
+
+    ```mermaid
+    flowchart LR
+        Schema["Schema<br/>规则定义"] --> NodeMark["Node + Mark<br/>文档结构"]
+        NodeMark --> Transaction["Transaction<br/>变更描述"]
+        Transaction --> State["State<br/>完整状态"]
+        State --> View["View<br/>DOM渲染"]
+        View --> NodeMark
+    ```
+
+    - **Node**：树形结构节点（段落、标题、图片），含类型、属性、子节点
+    - **Mark**：样式标记（加粗、斜体），依附文本，不改结构
+    - **Schema**：规则约束，定义允许的节点/标记及父子关系
+    - **Transaction**：变更描述，含多个 Step（原子操作），是状态更新载体
+    - **State**：包含 doc、selection、plugins 的完整编辑器状态
 
 2. **Node 和 Mark 的区别是什么？分别适用于什么场景？**
 
-    - **Node**：是文档的“结构单元”，有独立的 DOM 节点（如 `<p>`、`<h1>`、`<img>`），可包含子节点，用于构建文档骨架。
-    - **Mark**：是“样式修饰”，依附于文本节点（如 `<strong>`、`<em>`），不改变文档层级，用于文本样式、链接等。
+    **结论**：Node 是结构单元，Mark 是样式修饰。
+
+    ```mermaid
+    flowchart TD
+        subgraph Node示例["Node 示例"]
+            P["<p>段落文本</p>"]
+            H1["<h1>标题</h1>"]
+            IMG["<img src='...'/>"]
+        end
+        subgraph Mark示例["Mark 示例"]
+            Strong["<strong>加粗</strong>"]
+            Em["<em>斜体</em>"]
+            Link["<a href='...'>链接</a>"]
+        end
+    ```
+
+    | 特性         | Node                  | Mark                      |
+    | ------------ | --------------------- | ------------------------- |
+    | 作用         | 构建文档骨架          | 修饰文本样式              |
+    | DOM          | 独立节点              | 依附文本节点              |
+    | 可包含子节点 | ✅                    | ❌                        |
+    | 示例         | `<p>`、`<h1>`、`<ul>` | `<strong>`、`<em>`、`<a>` |
 
 3. **Schema 的作用是什么？如何定义一个 Schema？**
-    - **作用**：约束文档结构的合法性（如“标题下不能直接放图片”“列表项必须在列表内”），避免非法文档状态，同时为节点/标记提供元数据（如如何解析 HTML、如何渲染 DOM）。
-    - **定义方式**：通过 `nodes` 和 `marks` 配置对象，指定每个节点/标记的 `name`、`schema`（属性定义）、`toDOM`（渲染逻辑）、`parseDOM`（解析逻辑）等。
+
+    **结论**：Schema 是文档的"类型系统"，约束合法结构并定义渲染/解析规则。
+
+    ```javascript
+    const mySchema = new Schema({
+        nodes: {
+            doc: { content: 'block+' },
+            paragraph: { group: 'block', content: 'inline*' },
+            heading: {
+                group: 'block',
+                attrs: { level: { default: 1 } },
+                parseDOM: [{ tag: 'h1' }],
+                toDOM(node) {
+                    return ['h' + node.attrs.level, 0];
+                },
+            },
+            text: { group: 'inline' },
+        },
+        marks: {
+            strong: {
+                parseDOM: [{ tag: 'strong' }],
+                toDOM() {
+                    return ['strong', 0];
+                },
+            },
+            link: {
+                attrs: { href: {} },
+                parseDOM: [
+                    {
+                        tag: 'a',
+                        getAttrs(dom) {
+                            return { href: dom.href };
+                        },
+                    },
+                ],
+                toDOM(mark) {
+                    return ['a', { href: mark.attrs.href }, 0];
+                },
+            },
+        },
+    });
+    ```
+
+    - **content**：允许的子节点（如 `'block+'` 表示至少一个 block）
+    - **group**：节点分类（如 `'block'`、`'inline'`）
+    - **attrs**：属性定义（如 heading 的 level）
+    - **toDOM/parseDOM**：渲染与解析 HTML 的映射函数
 
 #### 二、架构与工作原理
 
 4. **Transaction 的工作原理是什么？如何应用到 State 上？**
 
-    - Transaction 是一个“变更描述”，包含一系列步骤（Step，如 `ReplaceStep`、`AddMarkStep`），每个步骤描述一个原子操作。
-    - 通过 `state.apply(tr)` 将 Transaction 应用到旧 State，生成新 State（不可变更新，旧 State 保持不变）。
-    - Transaction 还可携带元数据（如“是否合并到历史记录”“是否由插件触发”），用于插件间通信。
+    **结论**：Transaction 描述变更，apply 后生成新 State（旧 State 不变）。
+
+    ```mermaid
+    sequenceDiagram
+        participant OldState as state (旧)
+        participant Tr as Transaction
+        participant NewState as state (新)
+        OldState->>Tr: apply(tr)
+        Tr->>Tr: 执行 Step 序列
+        Tr->>NewState: 返回新 State
+        Note over OldState,NewState: 不可变更新
+    ```
+
+    ```javascript
+    // 创建 Transaction
+    const tr = state.tr;
+    tr.insertText('Hello', state.selection.from);
+    // 或删除内容
+    tr.delete(0, 5);
+    // 或添加 Mark
+    tr.addMark(0, 10, state.schema.marks.strong.create());
+
+    // 应用到 State（生成新 State）
+    const newState = state.apply(tr);
+    // 旧 state 保持不变，可用于撤销
+    ```
+
+    - **Step**：原子操作单元（`ReplaceStep`、`AddMarkStep` 等）
+    - **Meta**：携带元数据（如 `{ addToHistory: false }` 控制是否记录）
 
 5. **View 层的作用是什么？如何将 State 映射到 DOM？**
 
-    - **作用**：负责将 State 渲染为可交互的 DOM，处理用户输入（键盘、鼠标、粘贴等），并将用户操作转换为 Transaction。
-    - **DOM 映射**：通过节点/标记的 `toDOM` 方法定义如何从 ProseMirror Node 生成 DOM；通过 `parseDOM` 定义如何从 HTML 解析回 ProseMirror Node。
-    - **交互处理**：View 监听 DOM 事件（如 `keydown`、`input`），将其转换为 ProseMirror 的“命令（Command）”或 Transaction，更新 State 后重新渲染。
+    **结论**：View 负责渲染 State 到 DOM，并拦截用户输入转为 Transaction。
+
+    ```mermaid
+    flowchart TD
+        DOM["用户 DOM<br/>输入事件"] --> View
+        View --> Tr["Transaction"]
+        Tr --> State["State"]
+        State --> View
+        View --> Render["重新渲染"]
+    ```
+
+    ```javascript
+    const view = new EditorView(document.querySelector('#editor'), {
+        state: initialState,
+        dispatchTransaction(tr) {
+            const newState = this.state.apply(tr);
+            this.updateState(newState);
+        },
+    });
+    ```
+
+    - **toDOM(node)**：Node → DOM 映射
+    - **parseDOM**：HTML → Node 映射
+    - **dispatchTransaction**：将用户操作转为 Transaction 并更新 State
 
 6. **ProseMirror 的插件系统如何工作？如何编写一个插件？**
-    - 插件是扩展编辑器功能的核心方式，可介入状态更新、DOM 渲染、事件处理等流程。
-    - **插件组成**：
-        - `state`：定义插件自身的状态（如“当前是否显示菜单”），以及如何随 Transaction 更新。
-        - `props`：覆盖 View 的默认行为（如 `handleKeyDown` 处理快捷键、`decorations` 渲染装饰性 DOM）。
-        - `filterTransaction`/`appendTransaction`：拦截或修改 Transaction。
-    - **示例**：编写一个“保存快捷键”插件，通过 `props.handleKeyDown` 监听 `Ctrl/Cmd+S`，触发保存逻辑。
+
+    **结论**：插件通过 state/props/filterTransaction 介入编辑器的各个流程。
+
+    ```mermaid
+    flowchart TD
+        Plugin["Plugin"]
+        subgraph 组成["插件组成"]
+            S["state<br/>插件状态"]
+            P["props<br/>覆盖 View 行为"]
+            F["filterTransaction<br/>拦截 Transaction"]
+        end
+        Plugin --> S
+        Plugin --> P
+        Plugin --> F
+    ```
+
+    ```javascript
+    // 保存快捷键插件示例
+    const savePlugin = new Plugin({
+        key: new PluginKey('save'),
+        props: {
+            handleKeyDown(view, event) {
+                if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+                    event.preventDefault();
+                    saveDocument(view.state);
+                    return true;
+                }
+                return false;
+            },
+        },
+    });
+    ```
+
+    - **state**：插件自有状态，随 Transaction 更新
+    - **props**：覆盖 View 行为（`handleKeyDown`、`decorations` 等）
+    - **filterTransaction**：拦截 Transaction，返回 false 可阻止该 Transaction 生效
+    - **appendTransaction**：在 Transaction 应用后追加新的 Transaction（适合自动补全、格式修正等）
+
+    ```javascript
+    // filterTransaction：限制文档最大长度，超过 10000 字符的修改直接拦截
+    const maxLengthPlugin = new Plugin({
+        filterTransaction(tr, state) {
+            const maxLen = 10000;
+            if (tr.docChanged && tr.doc.textContent.length > maxLen) {
+                return false; // 阻止该 Transaction
+            }
+            return true;
+        },
+    });
+    ```
+
+    ```javascript
+    // appendTransaction：自动将空标题降级为段落
+    const autoFixPlugin = new Plugin({
+        appendTransaction(transactions, oldState, newState) {
+            const hasDocChanged = transactions.some((tr) => tr.docChanged);
+            if (!hasDocChanged) return null;
+
+            const tr = newState.tr;
+            let modified = false;
+
+            newState.doc.descendants((node, pos) => {
+                // 空标题自动转为段落
+                if (
+                    node.type.name === 'heading' &&
+                    node.textContent.length === 0
+                ) {
+                    tr.setNodeMarkup(pos, newState.schema.nodes.paragraph);
+                    modified = true;
+                }
+            });
+
+            return modified ? tr : null;
+        },
+    });
+    ```
+
+    ```mermaid
+    flowchart LR
+        Tr["Transaction"] --> Filter["filterTransaction<br/>返回 false 拦截"]
+        Filter -->|通过| Apply["apply 到 State"]
+        Apply --> Append["appendTransaction<br/>追加新 Transaction"]
+        Append --> Final["最终 State"]
+    ```
 
 #### 三、实际开发与常见问题
 
 7. **如何实现一个自定义节点（如图片、待办事项）？**
 
-    - **步骤**：
-        1. 在 Schema 的 `nodes` 中定义节点类型（指定 `group`、`content`、`attrs` 等）。
-        2. 实现 `toDOM`（如何渲染为 DOM，如 `<img src="...">`）和 `parseDOM`（如何从 HTML 解析回节点）。
-        3. （可选）编写 `NodeView`，用于复杂交互（如图片上传、待办事项的勾选框交互），可完全控制 DOM 的创建、更新和销毁。
-    - **关键**：确保节点定义符合 Schema 约束，避免非法文档结构。
+    **结论**：定义 Schema 节点 + 实现 toDOM/parseDOM +（可选）NodeView 控制交互。
+
+    ```javascript
+    // 1. Schema 定义
+    const imageNode = {
+        inline: false,
+        attrs: { src: {}, alt: { default: null } },
+        group: 'block',
+        toDOM(node) {
+            return ['img', { src: node.attrs.src, alt: node.attrs.alt || '' }];
+        },
+        parseDOM: [
+            {
+                tag: 'img',
+                getAttrs(dom) {
+                    return { src: dom.src, alt: dom.alt };
+                },
+            },
+        ],
+    };
+
+    // 2. 带交互的 NodeView（可选）
+    class ImageNodeView extends NodeView {
+        constructor(node, view, getPos) {
+            super();
+            this.img = document.createElement('img');
+            this.img.src = node.attrs.src;
+            this.img.addEventListener('dblclick', () =>
+                openImageUploader(this)
+            );
+            this.dom = this.img;
+        }
+    }
+    ```
 
 8. **如何处理粘贴内容？如何过滤或转换粘贴的 HTML？**
 
-    - ProseMirror 默认通过 `parseDOM` 将粘贴的 HTML 解析为文档，但可通过以下方式定制：
-        1. 在 Schema 的 `parseDOM` 中定义更严格的解析规则（如只允许特定标签）。
-        2. 使用 `transformPasted` 钩子（在插件或 View props 中），对解析后的文档进行二次处理（如删除非法节点、转换格式）。
-        3. 监听 `paste` 事件，完全自定义粘贴逻辑（如粘贴图片时上传到服务器，再插入图片节点）。
+    **结论**：通过 parseDOM 解析 + transformPasted 钩子二次处理。
+
+    ```javascript
+    // 方式 1：严格 parseDOM 规则
+    parseDOM: [
+        {
+            tag: 'img',
+            getAttrs(dom) {
+                if (!dom.src.includes('allowed-domain.com')) return false;
+                return { src: dom.src };
+            },
+        },
+    ];
+
+    // 方式 2：transformPasted 钩子
+    const pasteFilterPlugin = new Plugin({
+        props: {
+            transformPasted(step) {
+                return step;
+            },
+        },
+    });
+
+    // 方式 3：监听 paste 事件（图片上传场景）
+    const view = new EditorView(editor, {
+        handlePaste(view, event) {
+            const items = event.clipboard.items;
+            for (const item of items) {
+                if (item.type === 'image/png') {
+                    uploadAndInsertImage(item.getAsFile());
+                    return true;
+                }
+            }
+            return false;
+        },
+    });
+    ```
 
 9. **如何实现撤销/重做？ProseMirror 内部如何管理历史记录？**
-    - ProseMirror 提供 `history` 插件，默认管理撤销/重做栈。
-    - **原理**：
-        - 每个 Transaction 可标记为“可撤销”（默认），会被添加到撤销栈。
-        - 撤销时，将该 Transaction 的逆操作应用到 State，并将原 Transaction 移到重做栈。
-        - 可通过 `tr.setMeta("addToHistory", false)` 让某个 Transaction 不进入历史记录（如插件内部的状态更新）。
+
+    **结论**：history 插件维护撤销/重做栈，通过逆操作实现撤销。
+
+    ```mermaid
+    flowchart LR
+        A[操作 1] --> B[撤销栈]
+        B --> C[撤销时执行逆操作]
+        C --> D[移到重做栈]
+    ```
+
+    ```javascript
+    // 默认 history 插件已启用
+    // 某些操作不记录历史（如自动保存）
+    const tr = state.tr;
+    tr.setMeta('addToHistory', false);
+    dispatch(tr);
+
+    // 手动触发撤销/重做
+    undoCommand(state, dispatch);
+    redoCommand(state, dispatch);
+    ```
 
 #### 四、进阶与深度问题
 
 10. **协同编辑的实现原理是什么？如何处理冲突？**
 
-    -   ProseMirror 提供 `prosemirror-collab` 模块，基于**操作转换（OT）**思想实现协同。
-    -   **核心流程**：
-        1. 每个客户端维护本地 State，同时记录“已确认的版本号”。
-        2. 本地修改生成 Transaction 后，先应用到本地 State，再将“步骤（Step）+ 版本号”发送给服务器。
-        3. 服务器接收步骤后，基于当前版本号对步骤进行“转换”（解决并发冲突），然后广播给所有客户端。
-        4. 客户端接收远程步骤后，先转换为适配本地 State 的步骤，再应用到本地。
-    -   **冲突处理**：通过步骤的“位置映射”（Position Mapping）调整操作位置，确保并发修改后的文档一致性。
+    **结论**：基于 OT（操作转换），通过版本号和步骤转换实现多客户端同步。
+
+    ```mermaid
+    sequenceDiagram
+        participant C1 as 客户端 A
+        participant S as 服务器
+        participant C2 as 客户端 B
+        C1->>S: 发送 Step + 版本号 7
+        S->>S: 转换步骤解决冲突
+        S->>C2: 广播转换后的 Step
+        C2->>C2: apply 远程 Step
+        Note over C1,C2: 版本号对齐后同步
+    ```
+
+    -   **版本号**：文档的乐观锁机制
+    -   **Step**：原子操作，可合并和转换
+    -   **Position Mapping**：调整并发操作的位置
 
 11. **大文档下的性能优化策略有哪些？**
 
-    -   **文档分片**：仅渲染可视区域的节点（虚拟滚动），可通过 `NodeView` 或第三方库（如 `prosemirror-virtual-scroll`）实现。
-    -   **Transaction 批量处理**：将频繁的小操作（如连续输入）合并为一个 Transaction，减少状态更新次数。
-    -   **装饰器优化**：避免使用大量全局 `Decorations`，仅在必要时渲染（如仅在当前选区显示高亮）。
-    -   **Schema 简化**：避免过于复杂的 Schema 规则，减少文档验证的开销。
+    **结论**：虚拟滚动 + 批量 Transaction + 精简 Decorations + 简化 Schema。
+
+    | 策略        | 实现方式                       | 效果           |
+    | ----------- | ------------------------------ | -------------- |
+    | 文档分片    | `NodeView` + 虚拟滚动          | 只渲染可视区域 |
+    | 批量处理    | 合并连续输入为一个 Transaction | 减少重渲染     |
+    | 装饰器优化  | 仅在必要时创建 Decorations     | 降低 DOM 开销  |
+    | Schema 简化 | 减少复杂规则验证               | 加快文档验证   |
 
 12. **如何调试 ProseMirror？有哪些常用技巧？**
-    -   **查看文档状态**：`console.log(state.doc.toJSON())` 打印文档的 JSON 结构，`console.log(state.selection)` 查看选区信息。
-    -   **断点调试**：在 `applyTransaction`、插件的 `state.apply` 或 `props.handleKeyDown` 中打断点，追踪状态更新流程。
-    -   **使用调试工具**：
-        -   `prosemirror-log` 插件：记录所有 Transaction，便于回溯。
-        -   `prosemirror-inspect`：可视化展示文档树和选区。
-    -   **Schema 严格模式**：启用 Schema 的严格验证（`new Schema({ nodes, marks, strict: true })`），及时发现非法文档状态。
+
+    **结论**：打印 State JSON、断点调试、专用调试工具。
+
+    ```javascript
+    // 查看文档结构
+    console.log(state.doc.toJSON());
+    // 查看选区
+    console.log(state.selection.toJSON());
+
+    // 使用调试工具
+    import { log } from 'prosemirror-log';
+    const view = new EditorView(editor, {
+        state: initialState,
+        dispatchTransaction(tr) {
+            log('transaction', tr);
+            const newState = this.state.apply(tr);
+            this.updateState(newState);
+        },
+    });
+    ```
+
+    -   **prosemirror-log**：记录所有 Transaction
+    -   **prosemirror-inspect**：可视化文档树
+    -   **Schema 严格模式**：`new Schema({ ..., strict: true })`
 
 #### 五、生态与扩展
 
 13. **Tiptap 与 ProseMirror 的关系是什么？为什么选择 Tiptap？**
-    -   **关系**：Tiptap 是基于 ProseMirror 的封装库，提供更简洁的 API、预设的节点/标记（如标题、列表、代码块）、以及 Vue/React 等框架的集成。
-    -   **Tiptap 优势**：
-        -   降低上手门槛，无需从零定义 Schema 和基础功能。
-        -   提供丰富的官方扩展（如协作编辑、表格、语法高亮）。
-        -   更好的框架集成（如 React 的 `useEditor` Hook）。
-    -   **适用场景**：快速开发富文本编辑器，且需求与 Tiptap 的预设功能匹配；若需高度定制化（如复杂的文档结构、深度性能优化），直接使用 ProseMirror 更灵活。
+
+    **结论**：Tiptap 是 ProseMirror 的封装，提供更简洁 API 和框架集成。
+
+    | 特性     | ProseMirror           | Tiptap           |
+    | -------- | --------------------- | ---------------- |
+    | 上手难度 | 较高（需定义 Schema） | 较低（即用型）   |
+    | 定制化   | 高度灵活              | 受限于扩展生态   |
+    | 框架支持 | 原生 JS               | React/Vue/Svelte |
+    | 适用场景 | 深度定制              | 快速开发         |
+
+    ```javascript
+    // Tiptap 快速上手（React）
+    import { useEditor } from '@tiptap/react';
+    import StarterKit from '@tiptap/starter-kit';
+
+    const editor = useEditor({
+        extensions: [StarterKit],
+        content: '<p>Hello World!</p>',
+    });
+    // Tiptap 内部仍是 ProseMirror
+    ```
