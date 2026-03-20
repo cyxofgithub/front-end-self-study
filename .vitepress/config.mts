@@ -1,13 +1,12 @@
 import { defineConfig } from 'vitepress';
 import { withSidebar } from 'vitepress-sidebar';
-import { MermaidMarkdown, MermaidPlugin } from 'vitepress-plugin-mermaid';
 import { watchContentPlugin } from './plugins/watch-content.mts';
 
 export default defineConfig(
   withSidebar(
     {
       // ===== 基础配置 =====
-      title: '前端自学笔记',
+      title: 'Ryan\'s Blog',
       description: '前端开发学习笔记文档站',
       lang: 'zh-CN',
 
@@ -16,8 +15,8 @@ export default defineConfig(
         // 导航栏
         nav: [
           { text: '首页', link: '/' },
-          { text: 'quick', link: '/interview/2021前端面试秋招' },
           { text: 'AI 助手', link: '/rag-chat' },
+          { text: '掘金', link: 'https://juejin.cn/user/1636525352423527' },
           { text: 'GitHub', link: 'https://github.com/cyxofgithub/front-end-self-study' }
         ],
 
@@ -74,9 +73,6 @@ export default defineConfig(
         image: {
           lazyLoading: true
         },
-        config(md) {
-          md.use(MermaidMarkdown);
-        }
       },
 
       // ===== 忽略死链接检查 =====
@@ -91,7 +87,7 @@ export default defineConfig(
 
       // ===== Vite 配置 =====
       vite: {
-        plugins: [MermaidPlugin(), watchContentPlugin()],
+        plugins: [watchContentPlugin()],
         server: {
           // 确保内容目录被监听，新建/删除 .md 时能触发热更新
           watch: {
@@ -102,10 +98,6 @@ export default defineConfig(
         optimizeDeps: {
           // 排除 code 目录下的文件，避免解析其依赖
           exclude: ['code', 'demo'],
-          include: ['mermaid']
-        },
-        ssr: {
-          noExternal: ['mermaid']
         },
         resolve: {
           alias: {
