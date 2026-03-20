@@ -4,12 +4,12 @@ node_modules
 .idea
 
 
-babel/*
+工程化/babel/*
 
 .pnpm-store
 
-interview/音视频/webRTC/client
-interview/音视频/webRTC/server
+跨端与多媒体/音视频/面试题/webRTC/client
+跨端与多媒体/音视频/面试题/webRTC/server
 
 # VitePress
 .vitepress/cache/

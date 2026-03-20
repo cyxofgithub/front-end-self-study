@@ -14,11 +14,11 @@
 
 **HashSet 的常用函数**
 
-![image-20220320131406453](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20220320131406453.png)
+<!-- ![image-20220320131406453](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20220320131406453.png) -->
 
 **HashMap 的常用函数**
 
-![image-20220320131504050](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20220320131504050.png)
+<!-- ![image-20220320131504050](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20220320131504050.png) -->
 
 ## 5.2 哈希表的设计
 
@@ -63,7 +63,7 @@ console.log(map);
 
 ### 面试题31：最近最少使用缓存
 
-![image-20220320134557725](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20220320134557725.png)
+<!-- ![image-20220320134557725](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20220320134557725.png) -->
 
 ```js
 // 面试题31：最近最少使用缓存

@@ -6,23 +6,23 @@
 
 ## **入门**
 
-![image-20210124093208448](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093208448.png)
+<!-- ![image-20210124093208448](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093208448.png) -->
 
-![image-20210124092137205](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124092137205.png)
+<!-- ![image-20210124092137205](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124092137205.png) -->
 
-![image-20210124092238185](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124092238185.png)
+<!-- ![image-20210124092238185](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124092238185.png) -->
 
-![image-20210124092329394](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124092329394.png)
+<!-- ![image-20210124092329394](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124092329394.png) -->
 
-![image-20210124093815186](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093815186.png)
+<!-- ![image-20210124093815186](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093815186.png) -->
 
 ## 例题
 
-![image-20210124093423719](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093423719.png)
+<!-- ![image-20210124093423719](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093423719.png) -->
 
 ## 时间复杂度升序表
 
-![image-20210124093321322](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093321322.png)
+<!-- ![image-20210124093321322](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210124093321322.png) -->
 
 ## 递归的时间复杂度计算
 
@@ -336,7 +336,7 @@ ListNode reverse(ListNode head) {
 
 明白了函数的定义，在来看这个问题。比如说我们想反转这个链表：
 
-![image-20210119093020037](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093020037.png)
+<!-- ![image-20210119093020037](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093020037.png) -->
 
 那么输入 `reverse(head)` 后，会在这里进行递归：
 
@@ -346,11 +346,11 @@ ListNode last = reverse(head.next);
 
 不要跳进递归（你的脑袋能压几个栈呀？），而是要根据刚才的函数定义，来弄清楚这段代码会产生什么结果：
 
-![image-20210119093252379](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093252379.png)
+<!-- ![image-20210119093252379](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093252379.png) -->
 
 这个 `reverse(head.next)` 执行完成后，整个链表就成了这样：
 
-![image-20210119093329661](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093329661.png)
+<!-- ![image-20210119093329661](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093329661.png) -->
 
 并且根据函数定义，`reverse` 函数会返回反转之后的头结点，我们用变量 `last` 接收了。
 
@@ -360,7 +360,7 @@ ListNode last = reverse(head.next);
 head.next.next = head;
 ```
 
-![image-20210119093356779](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093356779.png)
+<!-- ![image-20210119093356779](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093356779.png) -->
 
 接下来：
 
@@ -369,7 +369,7 @@ head.next = null;
 return last;
 ```
 
-![image-20210119093420876](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093420876.png)
+<!-- ![image-20210119093420876](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093420876.png) -->
 
 神不神奇，这样整个链表就反转过来了！递归代码就是这么简洁优雅，不过其中有两个地方需要注意：
 
@@ -400,7 +400,7 @@ ListNode reverseN(ListNode head, int n)
 
 比如说对于下图链表，执行 `reverseN(head, 3)`：
 
-![image-20210119093727358](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093727358.png)
+<!-- ![image-20210119093727358](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119093727358.png) -->
 
 解决思路和反转整个链表差不多，只要稍加修改即可：
 
@@ -430,7 +430,7 @@ ListNode reverseN(ListNode head, int n) {
 
 2、刚才我们直接把 `head.next` 设置为 null，因为整个链表反转后原来的 `head` 变成了整个链表的最后一个节点。但现在 `head` 节点在递归反转之后不一定是最后一个节点了，所以要记录后驱 `successor`（第 n + 1 个节点），反转之后将 `head` 连接上。
 
-![image-20210119094017882](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119094017882.png)
+<!-- ![image-20210119094017882](C:\Users\hp\AppData\Roaming\Typora\typora-user-images\image-20210119094017882.png) -->
 
 OK，如果这个函数你也能看懂，就离实现「反转一部分链表」不远了。
 
