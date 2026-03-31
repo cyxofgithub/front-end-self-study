@@ -1,0 +1,26 @@
+AI/进阶应用/LangChian/可中断(人机交互)原理.md
+  2282eef30331f298 1-258
+AI/进阶应用/LangChian/官网文档总结.md
+  2282eef30331f298 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "8de856859376e164f2e02c2d154e34f4fa5029da",
+  "prompts": {
+    "2282eef30331f298": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8b2c117b-5c7d-4b7a-a733-03767b9523a6",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "chenyuanxin <chenyuanxin@cvte.com>",
+      "messages": [],
+      "total_additions": 7039,
+      "total_deletions": 3896,
+      "accepted_lines": 2240,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/ef8834691c11b5b78f0a5c8817aa499294cb5a29a5e6e19aeb194477e43db216"
+    }
+  }
+}
