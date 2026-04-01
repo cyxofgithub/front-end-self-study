@@ -1,0 +1,40 @@
+AI/进阶应用/LangChian/官网文档总结.md
+  d0c8cad0640ed13b 18-23
+AI/进阶应用/LangChian/流中断和恢复.md
+  d0c8cad0640ed13b 1-71,73-119,122-124,127,130-131,133-134,136-141,143,145-147,149,151,153-158,161-163,165-190,193,195,199-201,203-307
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.23",
+  "base_commit_sha": "41c04086182b8832a9e1a65fcb835fcd71f418dc",
+  "prompts": {
+    "2282eef30331f298": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "8b2c117b-5c7d-4b7a-a733-03767b9523a6",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "chenyuanxin <chenyuanxin@cvte.com>",
+      "messages": [],
+      "total_additions": 0,
+      "total_deletions": 0,
+      "accepted_lines": 3,
+      "overriden_lines": 0,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/ef8834691c11b5b78f0a5c8817aa499294cb5a29a5e6e19aeb194477e43db216"
+    },
+    "d0c8cad0640ed13b": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "f1488df7-00f0-4dad-9c7a-508fcfcb0968",
+        "model": "gpt-5.3-codex"
+      },
+      "human_author": "chenyuanxin <chenyuanxin@cvte.com>",
+      "messages": [],
+      "total_additions": 343,
+      "total_deletions": 32,
+      "accepted_lines": 289,
+      "overriden_lines": 16,
+      "messages_url": "https://gitai.gz.cvte.cn/cas/4b3fa7fd2f15886c281360e5a2566e32af1cce3b5524b6edd938d87eee66cc12"
+    }
+  }
+}
