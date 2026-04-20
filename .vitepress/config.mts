@@ -73,6 +73,22 @@ export default defineConfig(
         image: {
           lazyLoading: true
         },
+        config: (md) => {
+          // 历史笔记里存在大量裸 HTML 片段，关闭 HTML 解析避免 Vue 模板编译报错
+          md.set({ html: false });
+          md.core.ruler.before('normalize', 'sanitize-typora-abs-image-path', (state) => {
+            // 将 Windows 下 Typora 绝对路径图片替换为普通注释，避免 Vite 解析为 import
+            state.src = state.src
+              .replace(
+                /<!--\s*!\[[^\]]*]\(C:\\Users\\[^\\]+\\AppData\\Roaming\\Typora\\typora-user-images\\[^)]+\)\s*-->/g,
+                '<!-- 图片已省略（原为本机 Typora 路径） -->'
+              )
+              .replace(
+                /!\[[^\]]*]\(C:\\Users\\[^\\]+\\AppData\\Roaming\\Typora\\typora-user-images\\[^)]+\)/g,
+                '`[图片已省略（原为本机 Typora 路径）]`'
+              );
+          });
+        }
       },
 
       // ===== 忽略死链接检查 =====
@@ -108,7 +124,14 @@ export default defineConfig(
         }
       },
       // 排除特定文件不被 Vite 处理
-      srcExclude: ['**/code/**', '**/demo/**', '**/client/**', '**/server/**']
+      srcExclude: [
+        '**/code/**',
+        '**/demo/**',
+        '**/client/**',
+        '**/server/**',
+        '前端基础/html/H5.md',
+        '前端框架/react/尚硅谷React网课总结.md',
+      ]
     },
     // ===== vitepress-sidebar 配置 =====
     {
@@ -148,6 +171,8 @@ export default defineConfig(
         '**/.DS_Store',
         '**/.vitepress/**',
         '**/rag/scripts/**',
+        '前端基础/html/H5.md',
+        '前端框架/react/尚硅谷React网课总结.md',
         '**/rag/server/**'
       ],
 
