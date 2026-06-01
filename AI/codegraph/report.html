@@ -1,0 +1,319 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CodeGraph 有效性验证报告</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+<style>
+:root{--g:#10b981;--gbg:#ecfdf5;--a:#f59e0b;--abg:#fffbeb;--pos:#059669;--neg:#dc2626;--bg:#f8fafc;--c:#fff;--t:#1e293b;--s:#64748b;--bd:#e2e8f0}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;padding:24px;max-width:1400px;margin:0 auto}
+.hdr{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:28px 32px;border-radius:14px;margin-bottom:20px}.hdr h1{font-size:24px;margin-bottom:6px}.hdr .m{color:#94a3b8;font-size:13px}
+.sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}.sc{background:var(--c);border-radius:10px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.08);border-left:4px solid var(--g)}.sc.no{border-left-color:var(--a)}.sc h3{font-size:11px;color:var(--s);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}.sc .v{font-size:28px;font-weight:700}.sc .n{font-size:11px;color:var(--s);margin-top:2px}
+.sec{background:var(--c);border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,.08)}.sec h2{font-size:17px;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--bd)}
+table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f8fafc;padding:8px;font-size:11px;text-transform:uppercase;color:var(--s);border-bottom:2px solid var(--bd)}td{padding:8px;text-align:center;border-bottom:1px solid var(--bd);vertical-align:top}
+.dim{color:var(--s);font-size:11px}.ql{text-align:left!important;font-size:12px;color:var(--s);font-style:italic}
+.w{color:var(--g);font-weight:500}.o{color:var(--a);font-weight:500}.hl{font-weight:700}.sub{font-size:10px;color:var(--s);font-weight:400}
+.positive{color:var(--pos)}.negative{color:var(--neg)}
+.total{background:#f8fafc;font-weight:600}
+.cg{display:grid;grid-template-columns:1fr 1fr;gap:16px}@media(max-width:900px){.cg{grid-template-columns:1fr}}.ch{width:100%;height:360px}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}@media(max-width:900px){.dg{grid-template-columns:1fr}}
+.dc{border-radius:8px;padding:14px;border:1px solid var(--bd)}.dc.ws{background:var(--gbg);border-color:#a7f3d0}.dc.os{background:var(--abg);border-color:#fde68a}
+.dt{font-weight:600;font-size:13px;margin-bottom:4px}.ds{font-size:11px;color:var(--s);margin-bottom:8px}.dr{font-size:12px;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;background:#fff;border-radius:4px;padding:8px;border:1px solid var(--bd)}
+.ft{text-align:center;color:var(--s);font-size:11px;padding:12px}
+</style></head><body>
+<div class="hdr"><h1>CodeGraph 有效性验证报告</h1><div class="m">
+项目: xterminal.fxweb.fanxing.com | 时间: 2026-05-26 17:13 | 模型: glm-5.1 | 测试轮次: 8次
+</div></div>
+
+<div class="sg">
+<div class="sc"><h3>WITH 总耗时</h3><div class="v" style="color:var(--g)">252s</div><div class="n">4 题 × 1 轮</div></div>
+<div class="sc no"><h3>WITHOUT 总耗时</h3><div class="v" style="color:var(--a)">437s</div><div class="n">4 题 × 1 轮</div></div>
+<div class="sc"><h3>耗时提升</h3><div class="v" style="color:var(--pos)">42% 更快</div><div class="n">WITH 相对 WITHOUT</div></div>
+<div class="sc"><h3>WITH 总成本</h3><div class="v" style="color:var(--g)">$0.6500</div><div class="n">Token: 380K</div></div>
+<div class="sc no"><h3>WITHOUT 总成本</h3><div class="v" style="color:var(--a)">$0.7510</div><div class="n">Token: 714K</div></div>
+<div class="sc"><h3>成本差异</h3><div class="v" style="color:var(--pos)">13% 更省</div><div class="n">$-0.1010</div></div>
+</div>
+
+<div class="sec"><h2>逐题对比（含问题原文 + 成本明细）</h2>
+<p style="font-size:12px;color:var(--s);margin-bottom:12px">Token 格式: 输入K + 缓存K → 输出K | 成本差: WITH - WITHOUT（负值=WITH更省）</p>
+<table>
+<thead><tr><th>题号</th><th style="text-align:left">测试问题</th><th colspan="4"></th><th></th><th></th><th>WITH<br>耗时</th><th>WITHOUT<br>耗时</th><th>加速比</th><th>WITH<br>轮次</th><th>WITHOUT<br>轮次</th><th>WITH<br>成本</th><th>WITHOUT<br>成本</th><th>成本差</th></tr></thead>
+<tbody>
+        <tr>
+          <td><b>Q1</b><br><span class="dim">调用链追踪</span></td>
+          <td class="ql" colspan="7">找出所有调用 getSignParams 的函数，追踪完整的调用链（谁调用了 getSignParams，以及谁又调用了这些调用者）。</td>
+          <td class="w">100.0s</td>
+          <td class="o">173.5s</td>
+          <td class="w hl">&times;1.7</td>
+          <td class="w">15</td>
+          <td class="o">18</td>
+          <td class="w">$0.2215<br><span class="sub">18K+108K&rarr;2K</span></td>
+          <td class="o">$0.3290<br><span class="sub">31K+231K&rarr;2K</span></td>
+          <td class="positive">$-0.1075</td>
+        </tr>
+        <tr>
+          <td><b>Q2</b><br><span class="dim">影响分析</span></td>
+          <td class="ql" colspan="7">如果修改 packages/utils/src/mcache.ts 中 getMCache 函数的缓存策略，哪些文件和模块会受到影响？列出完整受影响范围。</td>
+          <td class="w">68.9s</td>
+          <td class="o">98.0s</td>
+          <td class="w hl">&times;1.4</td>
+          <td class="w">4</td>
+          <td class="o">13</td>
+          <td class="w">$0.1433<br><span class="sub">14K+76K&rarr;1K</span></td>
+          <td class="o">$0.2030<br><span class="sub">11K+215K&rarr;1K</span></td>
+          <td class="positive">$-0.0597</td>
+        </tr>
+        <tr>
+          <td><b>Q3</b><br><span class="dim">架构理解</span></td>
+          <td class="ql" colspan="7">packages/request 中 requestWithSign、requestWithSignInKg、requestWithSignInKtv 三种签名请求的区别和各自的适用场景是什么？</td>
+          <td class="w">63.4s</td>
+          <td class="o">138.3s</td>
+          <td class="w hl">&times;2.2</td>
+          <td class="w">4</td>
+          <td class="o">10</td>
+          <td class="w">$0.1366<br><span class="sub">10K+87K&rarr;1K</span></td>
+          <td class="o">$0.1465<br><span class="sub">7K+160K&rarr;1K</span></td>
+          <td class="positive">$-0.0099</td>
+        </tr>
+        <tr>
+          <td><b>Q4</b><br><span class="dim">组件使用</span></td>
+          <td class="ql" colspan="7">LazyImage 组件在哪些业务模块中被使用？列出所有使用该组件的文件路径。</td>
+          <td class="w">20.0s</td>
+          <td class="o">27.6s</td>
+          <td class="w hl">&times;1.4</td>
+          <td class="w">3</td>
+          <td class="o">2</td>
+          <td class="w">$0.1486<br><span class="sub">24K+32K&rarr;0K</span></td>
+          <td class="o">$0.0726<br><span class="sub">8K+42K&rarr;0K</span></td>
+          <td class="negative">$+0.0760</td>
+        </tr>
+    <tr class="total">
+      <td><b>合计</b></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+      <td class="w">252.2s</td>
+      <td class="o">437.4s</td>
+      <td class="w hl">&times;1.7</td>
+      <td class="w">-</td><td class="o">-</td>
+      <td class="w">$0.6500</td>
+      <td class="o">$0.7510</td>
+      <td class="positive">$-0.1010</td>
+    </tr></tbody>
+</table></div>
+
+<div class="sec"><h2>可视化对比</h2><div class="cg"><div id="c1" class="ch"></div><div id="c2" class="ch"></div></div></div>
+
+<div class="sec"><h2>详细回答</h2><div class="dg">
+            <div class="dc ws">
+              <div class="dt">Q1 调用链追踪 &mdash; WITH CodeGraph</div>
+              <div class="ds">耗时: 100.0s | 轮次: 15 | 成本: $0.2215 | Token: 18K+108K&rarr;2K</div>
+              <div class="dr">现在我已经获取了完整的调用链数据。以下是 `getSignParams` 的完整调用链分析：
+
+---
+
+## `getSignParams` 完整调用链
+
+项目中存在 **4 个同名 `getSignParams` 实现**：
+
+| # | 定义位置 | 说明 |
+|---|---------|------|
+| 1 | `packages/request/src/sign-params.ts:50` | **主共享实现**，被最多模块使用 |
+| 2 | `ktv/comeback_award/src/api/sign-params.ts:41` | KTV 回流奖励专用 |
+| 3 | `ktv/relationship_card/src/api/sign-params.ts:51` | KTV 关系卡专用 |
+| 4 | `ktv/unlock_gift/src/api/sign-params.ts:41` | KTV 解锁礼物专用 |
+
+---
+
+### 第一层：直接调用 `getSignParams` 的函数（15 个）
+
+分为以下几条主要链路：
+
+#### 链路 A：`requestWithSign`（最核心的中间层，100+ 上游 API 函数）
+
+```
+getSignParams
+  └── requestWithSign (packages/request/src/request-with-sign.ts:6)
+```
+
+`requestWithSign` 是全项目最核心的签名请求封装，**被 100+ API 函数调用**，覆盖以下模块：
+
+| 模块 | 调用的 API 函数 |
+|------|----------------|
+| `fx/bean_detail` | `taxGetMonthlyBeanListApi`, `taxGetMont...</div>
+            </div>
+            <div class="dc os">
+              <div class="dt">Q1 调用链追踪 &mdash; WITHOUT CodeGraph</div>
+              <div class="ds">耗时: 173.5s | 轮次: 18 | 成本: $0.3290 | Token: 31K+231K&rarr;2K</div>
+              <div class="dr">数据已经足够。下面是完整的调用链分析：
+
+---
+
+## `getSignParams` 完整调用链
+
+项目中存在 **4 处独立的 `getSignParams` 定义** 和 **2 类封装函数**：
+
+### 一、定义位置
+
+| # | 定义文件 | 来源 |
+|---|---|---|
+| 1 | `packages/request/src/sign-params.ts:50` | 公共包（通过 `@fx/xterm-request` 导出） |
+| 2 | `ktv/unlock_gift/src/api/sign-params.ts:41` | 项目内本地定义 |
+| 3 | `ktv/comeback_award/src/api/sign-params.ts:41` | 项目内本地定义 |
+| 4 | `ktv/relationship_card/src/api/sign-params.ts:51` | 项目内本地定义 |
+
+### 二、直接调用者（第一层）
+
+#### A. 通过公共包 `@fx/xterm-request` 的 `getSignParams`（定义 1）
+
+| 调用者 | 文件位置 |
+|---|---|
+| `requestWithSign` | `packages/request/src/request-with-sign.ts:8` |
+| `requestFxSign` | `ys/gift-red-packets/src/api/red-packets.ts:28` |
+| `fetchGiftModel` | `fx/upgrade-gift/src/common/js/sendGift.ts:137` |
+| `sendGift` | `fx/upgrade-gift/src/common/js/sendGift.ts:334...</div>
+            </div>
+            <div class="dc ws">
+              <div class="dt">Q2 影响分析 &mdash; WITH CodeGraph</div>
+              <div class="ds">耗时: 68.9s | 轮次: 4 | 成本: $0.1433 | Token: 14K+76K&rarr;1K</div>
+              <div class="dr">以下是修改 `getMCache` 缓存策略的完整影响范围分析：
+
+---
+
+## `getMCache` 函数概况
+
+**位置：** `packages/utils/src/mcache.ts:8`  
+**功能：** 基于内存的缓存读取，支持 TTL 过期（`ddl` 字段控制）。key 不存在或已过期则返回 `undefined`。
+
+---
+
+## 直接调用方（7 个函数，4 个模块）
+
+`getMCache` 被以下 **签名/鉴权相关函数** 直接调用：
+
+| 调用函数 | 文件 | 用途 |
+|---|---|---|
+| `getSignParams` | `packages/request/src/sign-params.ts:50` | **核心签名参数获取**（FX 通用） |
+| `getKtvSignUserInfo` | `packages/request/src/sign-params-ktv.ts:85` | KTV 签名-用户信息 |
+| `getKtvSignDeviceInfo` | `packages/request/src/sign-params-ktv.ts:117` | KTV 签名-设备信息 |
+| `getKtvSignVersionInfo` | `packages/request/src/sign-params-ktv.ts:187` | KTV 签名-版本信息 |
+| `getSignParams` | `ktv/comeback_award/src/api/sign-params.ts:41` | 回流奖励签名 |
+| `getSignParams` | `ktv/relationship_card/src/api/sign-params.ts:51` | 关系卡签名 |
+| `getSignParams` | `k...</div>
+            </div>
+            <div class="dc os">
+              <div class="dt">Q2 影响分析 &mdash; WITHOUT CodeGraph</div>
+              <div class="ds">耗时: 98.0s | 轮次: 13 | 成本: $0.2030 | Token: 11K+215K&rarr;1K</div>
+              <div class="dr">以下是修改 `getMCache` 缓存策略后的完整受影响范围：
+
+---
+
+## 第一层：直接调用 `getMCache`（7 个函数，4 个文件）
+
+| 文件 | 函数 |
+|---|---|
+| `packages/request/src/sign-params.ts:50` | `getSignParams` |
+| `packages/request/src/sign-params-ktv.ts:85` | `getKtvSignUserInfo` |
+| `packages/request/src/sign-params-ktv.ts:117` | `getKtvSignDeviceInfo` |
+| `packages/request/src/sign-params-ktv.ts:187` | `getKtvSignVersionInfo` |
+| `ktv/comeback_award/src/api/sign-params.ts:41` | `getSignParams` |
+| `ktv/relationship_card/src/api/sign-params.ts:51` | `getSignParams` |
+| `ktv/unlock_gift/src/api/sign-params.ts:41` | `getSignParams` |
+
+&gt; 所有直接调用都用于**签名参数缓存**（用户信息、设备信息、版本信息），通过 `getMCache` 读取缓存的签名参数来避免重复计算。
+
+---
+
+## 第二层：调用 `getSignParams` / 签名相关函数的业务模块（15 个函数，8 个文件）
+
+**fx/ 繁星业务线：**
+- `fx/lucky-koi/src/api/fetch.ts` — `limitInfoApi`、`giftKoiF...</div>
+            </div>
+            <div class="dc ws">
+              <div class="dt">Q3 架构理解 &mdash; WITH CodeGraph</div>
+              <div class="ds">耗时: 63.4s | 轮次: 4 | 成本: $0.1366 | Token: 10K+87K&rarr;1K</div>
+              <div class="dr">三种签名请求的区别如下：
+
+## 1. `requestWithSign` — 繁星业务（FX）
+
+**文件**: `packages/request/src/request-with-sign.ts`
+
+- **底层库**: `@fx/ajax-ack`（FxAjax）
+- **签名参数来源**: `getSignParams()` 从繁星客户端 Bridge 获取设备信息、房间信息、用户信息
+- **签名参数内容**: header（kgid, pid, token, appId）+ data（std_rid, std_kid, std_dev, std_plat, kfd, ssad, dfid 等）
+- **默认域名**: `fxDomain`（繁星直播域名）
+- **适用场景**: 繁星直播（fx/）下的业务接口，如 starvip、game_broadcast 等
+
+## 2. `requestWithSignInKg` — 酷狗业务（KG）
+
+**文件**: `packages/request/src/request-with-sign-inkg.ts`
+
+- **底层库**: `@kugou/request`（酷狗官方请求 SDK，自带验签能力）
+- **签名参数来源**: 由 `@kugou/request` 内部处理，支持端内 mobileCall 自动切换
+- **默认配置**: `sign: 'h5'`, `isAllowSign: true`, `isGateway: false`, `timeout: 5000`
+- **特殊能力**: 自动检测是否在端内（`KG.LightMobileCall?.isInClient?.()`），端内自动走 mobileCall
+- **适用场景**: 酷狗 APP 宿主环境下的业务，如 concert_tic...</div>
+            </div>
+            <div class="dc os">
+              <div class="dt">Q3 架构理解 &mdash; WITHOUT CodeGraph</div>
+              <div class="ds">耗时: 138.3s | 轮次: 10 | 成本: $0.1465 | Token: 7K+160K&rarr;1K</div>
+              <div class="dr">以下是三种签名请求的对比总结：
+
+---
+
+## `requestWithSign` — 繁星/FX 通用签名请求
+
+- **底层库**：`@fx/ajax-ack`（项目自封装的 Ajax）
+- **签名方式**：通过 `getSignParams()` 收集设备信息、房间信息、用户信息，拼成 `header`（kgid/pid/token/appId）+ `data`（std_rid/std_kid/kfd/ssad/dfid 等）随请求发出
+- **域名**：默认走 `fxDomain`（`fx.service.kugou.com`）
+- **特点**：携带房间信息（`roomId`）、渠道信息、支持 `supportFullview`/`notInRoom` 等繁星特有参数；`withCredentials: true`
+- **适用场景**：繁星直播间、繁星业务后端（`fx.service.kugou.com`）的接口调用
+
+## `requestWithSignInKg` — 酷狗 APP 宿主签名请求
+
+- **底层库**：`@kugou/request`（酷狗官方请求 SDK）
+- **签名方式**：完全委托给 `@kugou/request` 内部的验签逻辑，通过 `sign: 'h5'` + `isAllowSign: true` 配置开启
+- **域名**：调用方通过 `baseURL` 自行指定
+- **特点**：支持 `mobileCall`（端内 bridge 调用）、`isGateway`、`isAllowKGAntiBush` 等酷狗 APP 专有能力；错误返回格式为 `{ status: 0, errcode: 400500, errmsg }` 而非直接 reject
+- **适用场景**：运行在酷狗 APP 宿主内、需要走酷狗网关签名体...</div>
+            </div>
+            <div class="dc ws">
+              <div class="dt">Q4 组件使用 &mdash; WITH CodeGraph</div>
+              <div class="ds">耗时: 20.0s | 轮次: 3 | 成本: $0.1486 | Token: 24K+32K&rarr;0K</div>
+              <div class="dr">以下是所有使用 `LazyImage` 组件的文件：
+
+| 文件路径 | 使用方式 |
+|---|---|
+| `fx/annual2025/src/components/MemberCard/index.tsx:22` | `MemberCard` 组件内调用 |
+| `fx/clan-annual2025/src/components/GuildBadge/index.tsx:17` | `GuildBadge` 组件内调用 |
+| `fx/clan-annual2025/src/components/MemberCard/index.tsx:18` | `MemberCard` 组件内调用 |
+
+组件定义在 `packages/components/src/components/LazyImage.tsx:110`，通过 `@fx/xterm-components/components/LazyImage` 路径被上述 3 个业务文件引入。
+
+目前仅涉及两个业务模块：
+- **fx/annual2025** — 繁星2025年度活动
+- **fx/clan-annual2025** — 公会2025年度活动</div>
+            </div>
+            <div class="dc os">
+              <div class="dt">Q4 组件使用 &mdash; WITHOUT CodeGraph</div>
+              <div class="ds">耗时: 27.6s | 轮次: 2 | 成本: $0.0726 | Token: 8K+42K&rarr;0K</div>
+              <div class="dr">排除测试结果和 worktree 中的文件后，**`LazyImage` 组件** 的使用情况如下：
+
+**组件定义：**
+- `packages/components/src/components/LazyImage.tsx`
+
+**业务模块使用：**
+
+| 业务模块 | 文件路径 |
+|---|---|
+| `fx/clan-annual2025` (家族年度活动2025) | `fx/clan-annual2025/src/components/MemberCard/index.tsx` |
+| `fx/clan-annual2025` (家族年度活动2025) | `fx/clan-annual2025/src/components/GuildBadge/index.tsx` |
+| `fx/annual2025` (年度活动2025) | `fx/annual2025/src/components/MemberCard/index.tsx` |
+
+共 **3 个业务文件** 引用了 `LazyImage`，分布在 2 个业务模块中（`clan-annual2025` 和 `annual2025`），用于成员卡片和公会徽章等组件中的图片懒加载。</div>
+            </div></div></div>
+
+<div class="ft">CodeGraph 有效性验证报告 | 2026-05-26 17:13</div>
+
+<script>
+const dur=[{"name": "调用链追踪", "with": 100.0, "without": 173.5}, {"name": "影响分析", "with": 68.9, "without": 98.0}, {"name": "架构理解", "with": 63.4, "without": 138.3}, {"name": "组件使用", "with": 20.0, "without": 27.6}],cost=[{"name": "调用链追踪", "with": 0.2215, "without": 0.329}, {"name": "影响分析", "with": 0.1433, "without": 0.203}, {"name": "架构理解", "with": 0.1366, "without": 0.1465}, {"name": "组件使用", "with": 0.1486, "without": 0.0726}];
+function mk(id,d,wk,ok,t,u,pre){const c=echarts.init(document.getElementById(id));c.setOption({title:{text:t,left:'center',textStyle:{fontSize:14}},tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:p=>p.map(x=>x.marker+' '+x.seriesName+': '+x.value+' '+u).join('<br/>')},legend:{top:28,data:['WITH CodeGraph','WITHOUT CodeGraph']},grid:{top:64,bottom:24,left:pre?80:50,right:16},xAxis:{type:'category',data:d.map(x=>x.name),axisLabel:{rotate:15,fontSize:10}},yAxis:{type:'value',name:u},series:[{name:'WITH CodeGraph',type:'bar',data:d.map(x=>x[wk]),itemStyle:{color:'#10b981'}},{name:'WITHOUT CodeGraph',type:'bar',data:d.map(x=>x[ok]),itemStyle:{color:'#f59e0b'}}]});window.addEventListener('resize',()=>c.resize())}
+mk('c1',dur,'with','without','耗时对比（秒）','s',false);
+mk('c2',cost,'with','without','成本对比（美元）','USD',true);
+</script>
+</body></html>
