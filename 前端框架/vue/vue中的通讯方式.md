@@ -10,7 +10,7 @@
 
 父组件通过 `props` 向子组件传递数据：
 
-```vue
+```javascript
 <!-- ParentComponent.vue -->
 <template>
     <ChildComponent :message="parentMessage" />
@@ -30,7 +30,7 @@ export default {
 </script>
 ```
 
-```vue
+```javascript
 <!-- ChildComponent.vue -->
 <template>
     <div>{{ message }}</div>
@@ -49,7 +49,7 @@ export default {
 
 子组件通过 `$emit` 触发事件，父组件监听事件：
 
-```vue
+```javascript
 <!-- ParentComponent.vue -->
 <template>
     <ChildComponent @childEvent="handleChildEvent" />
@@ -69,7 +69,7 @@ export default {
 </script>
 ```
 
-```vue
+```javascript
 <!-- ChildComponent.vue -->
 <template>
     <button @click="sendMessage">Send Message to Parent</button>
@@ -94,7 +94,7 @@ export default {
 
 兄弟组件之间的通讯可以通过父组件作为中转站：
 
-```vue
+```javascript
 <!-- ParentComponent.vue -->
 <template>
     <SiblingOne @messageToSibling="handleMessage" />
@@ -121,7 +121,7 @@ export default {
 </script>
 ```
 
-```vue
+```javascript
 <!-- SiblingOne.vue -->
 <template>
     <button @click="sendMessage">Send Message to Sibling</button>
@@ -138,7 +138,7 @@ export default {
 </script>
 ```
 
-```vue
+```javascript
 <!-- SiblingTwo.vue -->
 <template>
     <div>{{ message }}</div>
@@ -167,7 +167,7 @@ import Vue from 'vue';
 export const EventBus = new Vue();
 ```
 
-```vue
+```javascript
 <!-- ComponentA.vue -->
 <template>
     <button @click="sendMessage">Send Message</button>
@@ -186,7 +186,7 @@ export default {
 </script>
 ```
 
-```vue
+```javascript
 <!-- ComponentB.vue -->
 <template>
     <div>{{ message }}</div>
@@ -216,7 +216,7 @@ export default {
 
 Vue 3 提供了 `provide` 和 `inject` API 来实现跨层级组件通讯：
 
-```vue
+```javascript
 <!-- ParentComponent.vue -->
 <template>
     <ChildComponent />
@@ -234,7 +234,7 @@ export default {
 </script>
 ```
 
-```vue
+```javascript
 <!-- ChildComponent.vue -->
 <template>
     <div>{{ sharedData }}</div>
@@ -288,7 +288,7 @@ export default new Vuex.Store({
 });
 ```
 
-```vue
+```javascript
 <!-- ComponentA.vue -->
 <template>
     <button @click="updateMessage">Update Message</button>
