@@ -489,16 +489,146 @@ sequenceDiagram
 | 组件状态 | useState Hook | setup() + reactive state |
 | DOM 操作 | 一次性 commit | 立即 patch |
 | 双缓冲 | 有（alternate Fiber） | 无（直接原地 patch） |
+| 调度 | 时间切片 + MessageChannel | 微任务 nextTick 合并更新 |
+
+### 8. Scheduler 调度器
+
+#### 解决什么问题
+
+**没有 scheduler 时**：每次 `state.xxx = newVal` 触发 `trigger` → 立即 `effect.run()` → 同步 patch DOM。同一个同步代码块中修改 3 次 state 就会 patch 3 次，最后一次才是最终结果。
+
+**有 scheduler 时**：`trigger` 不直接 `run()`，而是调用 `effect.scheduler()` → `queueJob(effect)` → 将 effect 加入 `Set` 去重 → 微任务 `Promise.resolve().then(flushJobs)` → 一次 `flushJobs` 统一执行所有 effect。
+
+#### 核心函数一览
+
+| 文件 | 函数 | 作用 |
+|------|------|------|
+| `scheduler.ts` | `nextTick(fn?)` | `Promise.resolve().then(fn)` 的封装，返回 Promise |
+| `scheduler.ts` | `queueJob(job)` | 将 effect 加入队列（Set 去重），首次调用时通过 `nextTick` 注册 `flushJobs` |
+| `scheduler.ts` | `flushJobs()` | 排空队列：遍历所有 effect 执行 `job.run()`，清空队列 |
+| `effect.ts` | `ReactiveEffect(fn, scheduler?)` | 构造函数新增 `scheduler` 可选参数 |
+| `effect.ts` | `trigger()` | 改为：如果 effect 有 scheduler 则调用 scheduler，否则直接 `effect.run()` |
+| `renderer.ts` | `setupRenderEffect()` | 改为：创建 `new ReactiveEffect(componentUpdateFn, () => queueJob(componentEffect))` |
+
+#### 主流程图
+
+```mermaid
+flowchart TD
+    subgraph "无 scheduler (旧)"
+        A1["state.count = 1"] --> B1["trigger → effect.run() → patch"]
+        A2["state.name = 'a'"] --> B2["trigger → effect.run() → patch"]
+        A3["state.count = 2"] --> B3["trigger → effect.run() → patch"]
+        B1 --> B2 --> B3 --> C1["3 次同步 patch"]
+    end
+
+    subgraph "有 scheduler (新)"
+        D1["state.count = 1"] --> E1["trigger → effect.scheduler()"]
+        D2["state.name = 'a'"] --> E2["trigger → effect.scheduler()"]
+        D3["state.count = 2"] --> E3["trigger → effect.scheduler()"]
+        E1 --> F["queueJob(effect) → Set 去重"]
+        E2 --> F
+        E3 --> F
+        F --> G{"isFlushPending?"}
+        G -->|"否"| H["nextTick(flushJobs)"]
+        H --> I["微任务队列: flushJobs"]
+        I --> J["effect.run() → patch"]
+        J --> K["1 次异步 patch"]
+    end
+
+    style C1 fill:#ffccbc
+    style K fill:#c8e6c9
+```
+
+#### 关键代码变更
+
+**effect.ts — trigger 判断 scheduler：**
+```ts
+// 旧：直接同步执行
+dep.forEach((e) => e.run());
+
+// 新：有 scheduler 则走调度，否则直接执行
+dep.forEach((e) => {
+  if (e.scheduler) { e.scheduler(); }
+  else { e.run(); }
+});
+```
+
+**renderer.ts — 组件 effect 传入 scheduler：**
+```ts
+// 旧：每次 instance.update() 创建新 effect
+instance.update = () => {
+  effect(() => { /* render + patch */ });
+};
+
+// 新：创建稳定的 ReactiveEffect，scheduler 引用自身入队
+const componentEffect = new ReactiveEffect(
+  () => { /* render + patch */ },
+  () => queueJob(componentEffect)
+);
+instance.update = () => componentEffect.run();
+```
+
+**scheduler.ts — 调度核心：**
+```ts
+const queue = new Set();          // Set 天然去重
+let isFlushPending = false;
+
+export const queueJob = (job) => {
+  queue.add(job);
+  if (!isFlushPending) {
+    isFlushPending = true;
+    Promise.resolve().then(() => {  // 微任务
+      isFlushPending = false;
+      queue.forEach((j) => j.run());
+      queue.clear();
+    });
+  }
+};
+```
+
+#### scheduler 与 trigger / renderer 的协作关系
+
+```mermaid
+sequenceDiagram
+    participant State as 响应式数据
+    participant Trigger as trigger()
+    participant Effect as ReactiveEffect
+    participant Scheduler as scheduler.ts
+    participant Micro as 微任务队列
+
+    Note over State,Micro: 同步代码块中连续修改 3 次 state
+
+    State->>Trigger: state.count = 1
+    Trigger->>Effect: effect.scheduler()
+    Effect->>Scheduler: queueJob(componentEffect)
+    Scheduler->>Scheduler: Set.add(effect), isFlushPending = true
+    Scheduler->>Micro: Promise.resolve().then(flushJobs)
+
+    State->>Trigger: state.name = 'a'
+    Trigger->>Effect: effect.scheduler()
+    Effect->>Scheduler: queueJob(componentEffect)
+    Scheduler->>Scheduler: Set.add(effect) 已存在，跳过
+
+    State->>Trigger: state.count = 2
+    Trigger->>Effect: effect.scheduler()
+    Effect->>Scheduler: queueJob(componentEffect)
+    Scheduler->>Scheduler: Set.add(effect) 已存在，跳过
+
+    Note over Micro: 同步代码执行完毕，微任务执行
+
+    Micro->>Scheduler: flushJobs()
+    Scheduler->>Effect: effect.run() 仅一次
+    Effect->>Effect: render + patch DOM
+```
 
 ## 当前实现限制
 
 - 仅支持单根模板节点。
 - 仅支持基础元素、文本、`&#123;&#123;变量&#125;&#125;` 插值。
 - children diff 是简化版（按索引更新），未实现 keyed diff。
-- 未实现 `computed`、`watch`、scheduler、异步队列。
+- 未实现 `computed`、`watch`。
 
 ## 下一步扩展建议
 
-1. 增加 scheduler，把多次 `trigger` 合并到微任务。
-2. 增加 `computed/watch`，完善响应式家族能力。
-3. 实现 keyed diff，补齐列表更新优化。
+1. 增加 `computed/watch`，完善响应式家族能力。
+2. 实现 keyed diff，补齐列表更新优化。

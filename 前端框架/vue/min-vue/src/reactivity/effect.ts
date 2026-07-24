@@ -7,10 +7,12 @@ let activeEffect: ReactiveEffect | undefined;
 export class ReactiveEffect {
   public deps: Dep[] = [];
   public active = true;
+  public scheduler?: () => void;
   private readonly fn: () => unknown;
 
-  constructor(fn: () => unknown) {
+  constructor(fn: () => unknown, scheduler?: () => void) {
     this.fn = fn;
+    this.scheduler = scheduler;
   }
 
   run(): unknown {
@@ -34,8 +36,8 @@ export class ReactiveEffect {
   }
 }
 
-export const effect = (fn: () => unknown): (() => void) => {
-  const reactiveEffect = new ReactiveEffect(fn);
+export const effect = (fn: () => unknown, scheduler?: () => void): (() => void) => {
+  const reactiveEffect = new ReactiveEffect(fn, scheduler);
   reactiveEffect.run();
   return () => reactiveEffect.stop();
 };
@@ -74,5 +76,11 @@ export const trigger = (target: object, key: PropertyKey): void => {
     return;
   }
 
-  dep.forEach((reactiveEffect) => reactiveEffect.run());
+  dep.forEach((reactiveEffect) => {
+    if (reactiveEffect.scheduler) {
+      reactiveEffect.scheduler();
+    } else {
+      reactiveEffect.run();
+    }
+  });
 };
