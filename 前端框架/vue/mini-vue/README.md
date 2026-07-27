@@ -4,7 +4,7 @@
 
 ## 你将掌握什么
 
-- 响应式：`reactive`、`effect`、`track/trigger`
+- 响应式：`reactive`、`effect`、`track/trigger`、`computed`、`watch`
 - 运行时：VNode、组件实例、`mount + patch`
 - 编译器：`template -> AST -> render`
 - 串联：`createApp` 如何把编译产物接到渲染更新链路
@@ -16,7 +16,10 @@ min-vue/
 ├── src/
 │   ├── reactivity/
 │   │   ├── effect.ts
-│   │   └── reactive.ts
+│   │   ├── reactive.ts
+│   │   ├── computed.ts
+│   │   ├── watch.ts
+│   │   └── scheduler.ts
 │   ├── runtime-core/
 │   │   ├── component.ts
 │   │   ├── h.ts
@@ -32,7 +35,11 @@ min-vue/
 │   └── index.ts
 ├── examples/
 │   ├── basic.html
-│   └── basic.ts
+│   ├── basic.ts
+│   ├── computed.html
+│   ├── computed.ts
+│   ├── watch.html
+│   └── watch.ts
 └── tests/
     └── reactivity.spec.ts
 ```
@@ -123,6 +130,107 @@ flowchart TD
   stateChange[stateChange] --> runRender
 ```
 
+## 阶段 5：computed 和 watch
+
+### computed —— 懒计算的响应式引用
+
+一句话结论：computed 是带缓存的派生值，依赖不变不重复计算，依赖变化则标记 dirty 并通知外层 effect。
+
+```mermaid
+flowchart LR
+  A["读取 comp.value"] --> B{"_dirty?"}
+  B -->|"true"| C["执行 getter 并缓存"]
+  C --> D["_dirty = false"]
+  B -->|"false"| E["返回缓存值"]
+  D --> E
+  F["依赖数据变化"] --> G["scheduler"]
+  G --> H["_dirty = true"]
+  H --> I["触发 dep 中的外层 effect"]
+  I --> A
+```
+
+最小示例：
+
+```ts
+const state = reactive({ count: 1 });
+const double = computed(() => state.count * 2);
+
+console.log(double.value); // 2（首次访问，执行 getter）
+console.log(double.value); // 2（缓存命中）
+```
+
+### watch —— 监听数据变化执行副作用
+
+一句话结论：watch 内部创建 ReactiveEffect 并以 scheduler 处理更新，依赖变化时重新执行 getter 获取新值，驱动回调。
+
+```mermaid
+flowchart TD
+  A["watch(source, cb)"] --> B["构造 getter"]
+  B --> C["new ReactiveEffect(getter, job)"]
+  C --> D["首次 run() 收集依赖"]
+  D --> E["依赖变化 → scheduler → job()"]
+  E --> F["effect.run() → newValue"]
+  F --> G["cleanup()"]
+  G --> H["cb(newValue, oldValue, onCleanup)"]
+```
+
+最小示例：
+
+```ts
+const state = reactive({ count: 0 });
+
+watch(
+  () => state.count,
+  (newVal, oldVal) => {
+    console.log(`${oldVal} → ${newVal}`);
+  }
+);
+
+state.count = 1; // 输出: "0 → 1"
+```
+
+### computed API
+
+| API | 说明 |
+|-----|------|
+| `computed(getter)` | 只读计算属性，返回 `{ value }` 对象 |
+| `computed({ get, set })` | 可写计算属性，返回 `{ value, set }` 对象 |
+
+### watch API
+
+| API | 说明 |
+|-----|------|
+| `watch(source, cb)` | 监听 source 变化，调用 `cb(newVal, oldVal, onCleanup)` |
+| `watch(source, cb, { immediate })` | `immediate: true` 立即执行一次 cb |
+| `watch(source, cb, { deep })` | `deep: true` 深度监听对象内部变化 |
+| `watch([s1, s2], cb)` | 监听多个 source，cb 收到数组 `[newVals, oldVals]` |
+| `stop = watch(...)` | 返回值是 stop 函数，调用后停止监听 |
+
+### 四个核心类的协作关系
+
+```
+watch(source, cb)                computed(getter)
+      │                                │
+      ▼                                ▼
+ReactiveEffect(getter, job)    ComputedRefImpl
+      │                                │
+      │                          ┌─────┴──────┐
+      │                          │ _effect     │ ReactiveEffect(getter, scheduler)
+      │                          │ _dirty      │ boolean
+      │                          │ _value      │ 缓存值
+      │                          │ dep         │ Set<ReactiveEffect>
+      │                          └─────────────┘
+      │
+      ▼
+effect.run() → getter() → 收集依赖(谁→谁)
+      │
+      ▼
+ 依赖变化 → scheduler
+      │
+      ▼
+   job() → newValue → cb(newValue, oldValue)
+```
+
 ## 运行与验证
 
 ```bash
@@ -146,7 +254,7 @@ pnpm test
 
 | 目录 | 核心文件 | 职责 |
 |------|----------|------|
-| `reactivity/` | `effect.ts`, `reactive.ts` | 响应式系统：Proxy 代理 + 依赖收集/触发 |
+| `reactivity/` | `effect.ts`, `reactive.ts`, `computed.ts`, `watch.ts`, `scheduler.ts` | 响应式系统：Proxy 代理 + 依赖收集/触发 + 计算属性 + 侦听器 |
 | `runtime-core/` | `vnode.ts`, `h.ts`, `component.ts`, `renderer.ts` | 平台无关运行时：VNode 定义、组件实例、patch 渲染 |
 | `runtime-dom/` | `index.ts` | 浏览器 DOM 操作 + createApp 入口 |
 | `compiler-core/` | `parse.ts`, `ast.ts`, `codegen.ts`, `compile.ts` | 模板编译器：template → AST → render 函数 |
@@ -621,14 +729,108 @@ sequenceDiagram
     Effect->>Effect: render + patch DOM
 ```
 
+### 9. computed 实现详解
+
+#### 核心字段与函数
+
+| 字段/函数 | 位置 | 作用 |
+|-----------|------|------|
+| `_dirty` | `ComputedRefImpl` | dirty 标记：`true` 表示缓存失效，下次读取需重新计算 |
+| `_value` | `ComputedRefImpl` | 缓存最近一次 getter 的返回值 |
+| `_effect` | `ComputedRefImpl` | 内部 `ReactiveEffect`，执行 getter 并收集 getter 的依赖 |
+| `dep` | `ComputedRefImpl` | `Set<ReactiveEffect>`，依赖此计算属性的外层 effect 集合 |
+| `get value()` | `ComputedRefImpl` | 读取时：① 将当前 `activeEffect` 加入 `dep`  ② 若 `_dirty` 则执行 `_effect.run()` 重新计算  ③ 返回 `_value` |
+| `scheduler` | `ComputedRefImpl._effect` | getter 依赖变化时：标记 `_dirty = true`，遍历 `dep` 触发所有外层 effect 的 `run/scheduler` |
+
+#### 完整工作流程
+
+```mermaid
+sequenceDiagram
+    participant Outer as 外层 effect
+    participant Comp as ComputedRefImpl
+    participant Inner as 内部 ReactiveEffect
+    participant State as 响应式数据
+
+    Note over Outer,State: 首次读取 comp.value
+
+    Outer->>Comp: comp.value
+    Comp->>Comp: activeEffect(Outer) 加入 dep
+    Comp->>Comp: _dirty = true
+    Comp->>Inner: _effect.run()
+    Inner->>Inner: activeEffect = 内部 effect
+    Inner->>State: getter 读取 state.xxx → track
+    State-->>Inner: 返回 value
+    Inner->>Inner: activeEffect = 恢复 (Outer)
+    Inner-->>Comp: 返回计算结果
+    Comp->>Comp: _value = 结果，_dirty = false
+    Comp-->>Outer: 返回 _value
+
+    Note over Outer,State: 依赖数据变化
+
+    State->>Inner: set → trigger → scheduler()
+    Inner->>Comp: 标记 _dirty = true
+    Comp->>Comp: 遍历 dep 触发 effect
+    Comp->>Outer: outer.run() 或 outer.scheduler()
+    Outer->>Comp: comp.value（同上，重新计算 + 缓存）
+```
+
+### 10. watch 实现详解
+
+#### 核心函数
+
+| 函数 | 位置 | 作用 |
+|------|------|------|
+| `watch(source, cb, options?)` | `watch.ts` | 入口：根据 source 类型构造 getter，创建 ReactiveEffect，返回 stop 函数 |
+| `traverse(value, seen)` | `watch.ts` | 深度遍历对象/数组，递归访问所有属性以收集深层依赖 |
+| `job()` | watch 内部的 scheduler | 重新运行 getter → 调用 cleanup → 调用 `cb(newValue, oldValue, onCleanup)` |
+| `onCleanup(fn)` | watch 内部的注册函数 | 注册清理函数，在下次 job 执行前调用 |
+
+#### 完整工作流程
+
+```mermaid
+sequenceDiagram
+    participant User as 用户代码
+    participant Watch as watch()
+    participant Effect as ReactiveEffect
+    participant State as 响应式数据
+
+    Note over User,State: 注册 watch
+
+    User->>Watch: watch(() => state.count, cb)
+    Watch->>Watch: 构造 getter: () => state.count
+    Watch->>Watch: 定义 job scheduler
+    Watch->>Effect: new ReactiveEffect(getter, job)
+    Effect->>Effect: effect.run() 首次执行
+    Effect->>State: getter 读取 state.count → track
+    State-->>Effect: 返回 0
+    Watch->>Watch: oldValue = 0
+
+    Note over User,State: state.count = 1
+
+    State->>State: Proxy set → trigger
+    State->>Effect: scheduler → job()
+    Effect->>Effect: effect.run() 重新执行 getter
+    Effect->>State: getter 读取 state.count（重新 track）
+    State-->>Effect: 返回 1
+    Watch->>Watch: cleanup() 执行上一轮注册的清理函数
+    Watch->>User: cb(1, 0, onCleanup)
+    Watch->>Watch: oldValue = 1
+
+    Note over User,State: stop()
+
+    User->>Watch: stop()
+    Watch->>Effect: effect.stop()
+    Effect->>Effect: active = false，清空所有 deps
+```
+
 ## 当前实现限制
 
 - 仅支持单根模板节点。
 - 仅支持基础元素、文本、`&#123;&#123;变量&#125;&#125;` 插值。
 - children diff 是简化版（按索引更新），未实现 keyed diff。
-- 未实现 `computed`、`watch`。
+- 未实现 `ref`、`shallowReactive`、`readonly` 等响应式 API。
 
 ## 下一步扩展建议
 
-1. 增加 `computed/watch`，完善响应式家族能力。
-2. 实现 keyed diff，补齐列表更新优化。
+1. 实现 keyed diff，补齐列表更新优化能力。
+2. 增加 `ref` / `toRef` / `toRefs`，完善响应式 API。
