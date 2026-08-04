@@ -17,6 +17,7 @@
 ```
 
 当你公司的设计稿和组件库长得不一样时，你有两个选择：
+
 1. **覆盖样式** — 用 CSS 深层次覆盖，脆弱且累
 2. **自己重写** — 键盘导航、focus 管理、WAI-ARIA 从头实现，成本爆炸
 
@@ -72,11 +73,11 @@ const { getTriggerProps, getPanelProps, getItemProps } = useAccordion()
 
 ## 三个主流库
 
-| 库 | 生态 | 特点 |
-|---|---|---|
-| **Radix UI** | React | 最成熟的 Headless 原语库，shadcn/ui 的底层依赖 |
-| **Headless UI** | React / Vue | Tailwind CSS 团队出品，API 极简 |
-| **TanStack Table / Query** | 框架无关 | 表格和数据请求的 Headless 逻辑，不涉及 UI |
+| 库                         | 生态        | 特点                                           |
+| -------------------------- | ----------- | ---------------------------------------------- |
+| **Radix UI**               | React       | 最成熟的 Headless 原语库，shadcn/ui 的底层依赖 |
+| **Headless UI**            | React / Vue | Tailwind CSS 团队出品，API 极简                |
+| **TanStack Table / Query** | 框架无关    | 表格和数据请求的 Headless 逻辑，不涉及 UI      |
 
 ---
 
@@ -86,13 +87,13 @@ const { getTriggerProps, getPanelProps, getItemProps } = useAccordion()
 
 **答：**
 
-| 维度 | Headless（Radix UI） | 传统（Ant Design） |
-|---|---|---|
-| 样式 | 零样式，你必须自己写 | 自带完整样式 |
-| 核心能力 | 状态管理、键盘交互、WAI-ARIA | 同上 + 主题系统 + 设计规范 |
-| 灵活度 | 无约束 | 受限于组件库设计 |
-| 学习成本 | 低（只是 Hook / Compound API） | 取决于库的复杂度 |
-| 典型使用方式 | 作为"砖块"自建设计系统 | 直接使用即可 |
+| 维度         | Headless（Radix UI）           | 传统（Ant Design）         |
+| ------------ | ------------------------------ | -------------------------- |
+| 样式         | 零样式，你必须自己写           | 自带完整样式               |
+| 核心能力     | 状态管理、键盘交互、WAI-ARIA   | 同上 + 主题系统 + 设计规范 |
+| 灵活度       | 无约束                         | 受限于组件库设计           |
+| 学习成本     | 低（只是 Hook / Compound API） | 取决于库的复杂度           |
+| 典型使用方式 | 作为"砖块"自建设计系统         | 直接使用即可               |
 
 ---
 
@@ -122,39 +123,40 @@ shadcn/ui
 
 ```tsx
 interface UseDisclosureProps {
-  defaultOpen?: boolean;
+    defaultOpen?: boolean;
 }
 
 function useDisclosure(props: UseDisclosureProps = {}) {
-  const { defaultOpen = false } = props;
-  const [open, setOpen] = useState(defaultOpen);
+    const { defaultOpen = false } = props;
+    const [open, setOpen] = useState(defaultOpen);
 
-  const onOpen = () => setOpen(true);
-  const onClose = () => setOpen(false);
-  const onToggle = () => setOpen(prev => !prev);
+    const onOpen = () => setOpen(true);
+    const onClose = () => setOpen(false);
+    const onToggle = () => setOpen((prev) => !prev);
 
-  // 返回 "是什么"（状态）+ "能干嘛"（操作方法）
-  // 不返回任何 JSX，调用方决定如何渲染
-  return { open, onOpen, onClose, onToggle };
+    // 返回 "是什么"（状态）+ "能干嘛"（操作方法）
+    // 不返回任何 JSX，调用方决定如何渲染
+    return { open, onOpen, onClose, onToggle };
 }
 
 // 使用：Dialog、Drawer、Popover 都可以基于它
 function MyDialog() {
-  const { open, onOpen, onClose } = useDisclosure();
-  return (
-    <>
-      <button onClick={onOpen}>打开</button>
-      {open && (
-        <div role="dialog" className="my-dialog-styles">
-          <button onClick={onClose}>关闭</button>
-        </div>
-      )}
-    </>
-  );
+    const { open, onOpen, onClose } = useDisclosure();
+    return (
+        <>
+            <button onClick={onOpen}>打开</button>
+            {open && (
+                <div role="dialog" className="my-dialog-styles">
+                    <button onClick={onClose}>关闭</button>
+                </div>
+            )}
+        </>
+    );
 }
 ```
 
 进阶实现要点（面试加分项）：
+
 - 加 `onKeyDown`（Escape 关闭）
 - 加 `useEffect` 处理 `body` 滚动锁定
 - 加 `useRef` 管理焦点陷阱（focus trap）
@@ -220,12 +222,12 @@ shadcn/ui：
 
 **更新的区别：**
 
-| | Ant Design | shadcn/ui |
-|---|---|---|
-| 怎么更新 | `npm update antd`，自动升级 | 重新跑 CLI 命令，覆盖文件 |
-| 升级后行为 | 新版本立即生效（可能 break） | 你不会被强制升级 |
-| 改了组件源码后升级 | 你的 CSS 覆盖可能和新版本冲突 | 手动 diff 新旧版本，合并你需要的 |
-| 哲学 | "我升级，你适应" | "你决定什么时候升级，改了什么自己负责" |
+|                    | Ant Design                    | shadcn/ui                              |
+| ------------------ | ----------------------------- | -------------------------------------- |
+| 怎么更新           | `npm update antd`，自动升级   | 重新跑 CLI 命令，覆盖文件              |
+| 升级后行为         | 新版本立即生效（可能 break）  | 你不会被强制升级                       |
+| 改了组件源码后升级 | 你的 CSS 覆盖可能和新版本冲突 | 手动 diff 新旧版本，合并你需要的       |
+| 哲学               | "我升级，你适应"              | "你决定什么时候升级，改了什么自己负责" |
 
 **一句话记住：**
 
@@ -271,13 +273,13 @@ package.json：
 
 **为什么这套组合成了标准：**
 
-| 层面 | 选什么 | 替代品 | 为什么它赢 |
-|---|---|---|---|
-| 行为原语 | Radix UI | React Aria、Ark UI、Base UI | 组件数量最全、社区最大、shadcn 生态绑定 |
-| 样式引擎 | Tailwind CSS | CSS Modules、Panda CSS | 和 shadcn 深度绑定，复制即用 |
-| 变体管理 | tailwind-variants | CVA | 类型安全、支持复合变体、Tailwind 原生 |
-| 服务端状态 | TanStack Query | SWR、RTK Query | 框架无关、功能最全 |
-| 复杂表格 | TanStack Table | AG Grid（非 headless） | 纯逻辑、不关心渲染 |
+| 层面       | 选什么            | 替代品                      | 为什么它赢                              |
+| ---------- | ----------------- | --------------------------- | --------------------------------------- |
+| 行为原语   | Radix UI          | React Aria、Ark UI、Base UI | 组件数量最全、社区最大、shadcn 生态绑定 |
+| 样式引擎   | Tailwind CSS      | CSS Modules、Panda CSS      | 和 shadcn 深度绑定，复制即用            |
+| 变体管理   | tailwind-variants | CVA                         | 类型安全、支持复合变体、Tailwind 原生   |
+| 服务端状态 | TanStack Query    | SWR、RTK Query              | 框架无关、功能最全                      |
+| 复杂表格   | TanStack Table    | AG Grid（非 headless）      | 纯逻辑、不关心渲染                      |
 
 **Vue 生态的对应方案：**
 
@@ -308,16 +310,22 @@ Tailwind CSS / UnoCSS
 
 **答：** 看场景，不站队。
 
-| 场景 | 推荐 | 原因 |
-|---|---|---|
-| 后台/内部系统 | Ant Design / Element Plus | 效率第一，样式不重要 |
-| 自建 Design System | Radix UI + 自定义样式 | 要完全控制 |
-| C 端产品 / 品牌定制 | Radix UI / Headless UI | 设计师不会接受"改一套组件库样式" |
-| 一人项目 / 快速出活 | shadcn/ui | Headless 的底 + 现成的样式 |
-| 表格/列表复杂交互 | TanStack Table | 不关心你用什么 UI，只管逻辑 |
+| 场景                | 推荐                      | 原因                             |
+| ------------------- | ------------------------- | -------------------------------- |
+| 后台/内部系统       | Ant Design / Element Plus | 效率第一，样式不重要             |
+| 自建 Design System  | Radix UI + 自定义样式     | 要完全控制                       |
+| C 端产品 / 品牌定制 | Radix UI / Headless UI    | 设计师不会接受"改一套组件库样式" |
+| 一人项目 / 快速出活 | shadcn/ui                 | Headless 的底 + 现成的样式       |
+| 表格/列表复杂交互   | TanStack Table            | 不关心你用什么 UI，只管逻辑      |
 
 ---
 
 ## 一句话总结
 
 > **Headless 组件 = 你要一个下拉框的行为，我给你；你要它长什么样，你自己决定。**
+
+主流方案：
+
+- shadcn/ui （底层 radix + taiwind）组件源码直接copy在项目
+- radix: 组件逻辑
+- taiwind 组织样式
