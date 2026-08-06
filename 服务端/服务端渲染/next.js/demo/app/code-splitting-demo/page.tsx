@@ -5,28 +5,28 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
 /**
- * Code Splitting Demo Page
- * Demonstrates dynamic imports and code splitting in Next.js
+ * 代码分割（Code Splitting）演示页面
+ * 演示 Next.js 中的 dynamic import 和代码分割
  */
 
-// Dynamic import with no SSR - component only loads on client
+// dynamic import 且禁用 SSR - 组件只在客户端加载
 const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
     ssr: false,
     loading: () => (
-        <div className="text-center py-8">Loading heavy component...</div>
+        <div className="text-center py-8">正在加载重组件...</div>
     ),
 });
 
-// Dynamic import with custom loading component
+// 带自定义加载组件的 dynamic import
 const ChartComponent = dynamic(() => import('./ChartComponent'), {
     loading: () => (
         <div className="flex items-center justify-center h-64 bg-gray-100 rounded">
-            <div className="text-gray-600">Loading chart...</div>
+            <div className="text-gray-600">正在加载图表...</div>
         </div>
     ),
 });
 
-// Dynamic import that only loads when needed
+// 仅在需要时才加载的 dynamic import
 const ModalComponent = dynamic(() => import('./ModalComponent'), {
     ssr: false,
 });
@@ -39,34 +39,29 @@ export default function CodeSplittingDemoPage() {
     return (
         <div className="max-w-4xl mx-auto p-6">
             <h1 className="text-4xl font-bold mb-4 text-gray-800">
-                Code Splitting Demo
+                代码分割演示
             </h1>
             <p className="text-xl text-gray-600 mb-8">
-                Next.js automatically splits your code, but you can also use
-                dynamic imports to load components on-demand, reducing initial
-                bundle size.
+                Next.js 会自动分割你的代码，但你也可以使用 dynamic
+                import 按需加载组件，从而减小初始包体积。
             </p>
 
             <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-8">
                 <h2 className="font-semibold text-blue-800 mb-2">
-                    Benefits of Code Splitting:
+                    代码分割的好处：
                 </h2>
                 <ul className="list-disc list-inside text-blue-700 space-y-1">
                     <li>
-                        <strong>Smaller Initial Bundle</strong> - Only load
-                        what's needed initially
+                        <strong>更小的初始包</strong> - 初始只加载必需的代码
                     </li>
                     <li>
-                        <strong>Faster Page Load</strong> - Reduce Time to
-                        Interactive (TTI)
+                        <strong>更快的页面加载</strong> - 缩短可交互时间（TTI）
                     </li>
                     <li>
-                        <strong>Better Performance</strong> - Load heavy
-                        components only when needed
+                        <strong>更好的性能</strong> - 重组件仅在需要时才加载
                     </li>
                     <li>
-                        <strong>Improved UX</strong> - Show loading states while
-                        components load
+                        <strong>更好的用户体验</strong> - 组件加载时显示加载状态
                     </li>
                 </ul>
             </div>
@@ -74,18 +69,17 @@ export default function CodeSplittingDemoPage() {
             <div className="space-y-8">
                 <section className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                        1. Conditional Loading (No SSR)
+                        1. 条件加载（禁用 SSR）
                     </h2>
                     <p className="text-gray-600 mb-4">
-                        This component only loads when you click the button.
-                        It's excluded from SSR to reduce server-side bundle
-                        size.
+                        该组件只在你点击按钮时才加载。它被排除在 SSR
+                        之外，以减小服务端包体积。
                     </p>
                     <button
                         onClick={() => setShowHeavy(!showHeavy)}
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mb-4"
                     >
-                        {showHeavy ? 'Hide' : 'Load'} Heavy Component
+                        {showHeavy ? '隐藏' : '加载'}重组件
                     </button>
                     {showHeavy && <HeavyComponent />}
                     <pre className="bg-gray-800 text-gray-100 p-4 rounded overflow-x-auto text-sm mt-4">
@@ -98,24 +92,23 @@ export default function CodeSplittingDemoPage() {
 
                 <section className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                        2. Custom Loading State
+                        2. 自定义加载状态
                     </h2>
                     <p className="text-gray-600 mb-4">
-                        Show a custom loading component while the actual
-                        component loads.
+                        在实际组件加载期间显示自定义的加载组件。
                     </p>
                     <button
                         onClick={() => setShowChart(!showChart)}
                         className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mb-4"
                     >
-                        {showChart ? 'Hide' : 'Load'} Chart Component
+                        {showChart ? '隐藏' : '加载'}图表组件
                     </button>
                     {showChart && <ChartComponent />}
                     <pre className="bg-gray-800 text-gray-100 p-4 rounded overflow-x-auto text-sm mt-4">
                         <code>{`const ChartComponent = dynamic(
   () => import('./ChartComponent'),
   {
-    loading: () => <div>Loading chart...</div>
+    loading: () => <div>正在加载图表...</div>
   }
 );`}</code>
                     </pre>
@@ -123,17 +116,16 @@ export default function CodeSplittingDemoPage() {
 
                 <section className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-                        3. Modal Component (Client-Only)
+                        3. 模态框组件（仅客户端）
                     </h2>
                     <p className="text-gray-600 mb-4">
-                        Modal components often don't need SSR. Load them only on
-                        the client side.
+                        模态框组件通常不需要 SSR，只在客户端加载它们即可。
                     </p>
                     <button
                         onClick={() => setShowModal(true)}
                         className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 mb-4"
                     >
-                        Open Modal
+                        打开模态框
                     </button>
                     {showModal && (
                         <ModalComponent onClose={() => setShowModal(false)} />
@@ -142,18 +134,17 @@ export default function CodeSplittingDemoPage() {
 
                 <section className="bg-gray-50 p-6 rounded-lg">
                     <h2 className="text-xl font-semibold mb-4 text-gray-800">
-                        How to Check Code Splitting
+                        如何查看代码分割效果
                     </h2>
                     <ol className="list-decimal list-inside space-y-2 text-gray-700">
-                        <li>Open DevTools → Network tab → Filter by "JS"</li>
+                        <li>打开 DevTools → Network 标签 → 按 "JS" 过滤</li>
                         <li>
-                            Refresh the page - notice the initial bundle size
+                            刷新页面 - 观察初始包的大小
                         </li>
                         <li>
-                            Click buttons to load components - watch new chunks
-                            load
+                            点击按钮加载组件 - 观察新的 chunk 被加载
                         </li>
-                        <li>Check the "Coverage" tab to see unused code</li>
+                        <li>查看 "Coverage" 标签，了解未使用的代码</li>
                     </ol>
                 </section>
             </div>
@@ -163,7 +154,7 @@ export default function CodeSplittingDemoPage() {
                     href="/"
                     className="text-blue-600 hover:text-blue-800 underline"
                 >
-                    ← Back to Home
+                    ← 返回首页
                 </Link>
             </div>
         </div>

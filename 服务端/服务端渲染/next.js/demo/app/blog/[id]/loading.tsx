@@ -1,4 +1,4 @@
-// Loading UI component - shown while the page is loading
+// Loading UI 组件 - 在页面加载期间显示
 export default function Loading() {
     return (
         <div className="max-w-4xl mx-auto">

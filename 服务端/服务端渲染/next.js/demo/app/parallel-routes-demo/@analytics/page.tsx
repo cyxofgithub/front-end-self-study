@@ -1,15 +1,15 @@
 /**
- * Analytics Slot - Parallel Route
+ * Analytics 插槽 - Parallel Route
  *
- * This is the @analytics slot content that gets rendered in the parallel routes layout.
- * It's loaded independently and can have its own loading and error states.
+ * 这是 @analytics 插槽的内容，会被渲染到 Parallel Routes 布局中。
+ * 它独立加载，可以拥有自己的 loading 和 error 状态。
  */
 export default function AnalyticsSlot() {
     const stats = [
-        { label: 'Page Views', value: '12,345', change: '+12%' },
-        { label: 'Unique Visitors', value: '8,901', change: '+8%' },
-        { label: 'Bounce Rate', value: '32%', change: '-5%' },
-        { label: 'Avg. Session', value: '4m 32s', change: '+15%' },
+        { label: '页面浏览量', value: '12,345', change: '+12%' },
+        { label: '独立访客', value: '8,901', change: '+8%' },
+        { label: '跳出率', value: '32%', change: '-5%' },
+        { label: '平均会话时长', value: '4分32秒', change: '+15%' },
     ];
 
     return (
@@ -39,7 +39,7 @@ export default function AnalyticsSlot() {
                 ))}
             </div>
             <p className="mt-4 text-xs text-gray-500">
-                This analytics section is loaded as a parallel route slot.
+                本 analytics 区块是通过 Parallel Route 插槽加载的。
             </p>
         </div>
     );

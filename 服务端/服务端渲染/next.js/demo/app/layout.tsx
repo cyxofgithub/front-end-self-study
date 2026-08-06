@@ -14,11 +14,10 @@ const inter = Inter({
     variable: '--font-inter',
 });
 
-// Root layout component - wraps all pages
+// 根布局组件 - 包裹所有页面
 export const metadata: Metadata = {
     title: 'Next.js Demo - Day 1-7',
-    description:
-        'A comprehensive demonstration project covering Next.js fundamentals from Day 1 to Day 7',
+    description: '覆盖 Next.js Day 1 到 Day 7 核心知识点的完整演示项目',
 };
 
 export default function RootLayout({
@@ -27,7 +26,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }) {
     return (
-        <html lang="en" className={inter.variable}>
+        <html lang="zh-CN" className={inter.variable}>
             <body className="flex flex-col min-h-screen font-sans">
                 <Navigation />
                 <main className="flex-grow container mx-auto px-4 py-8">

@@ -6,11 +6,11 @@ import { createPost, deletePost, getAllPosts } from '@/lib/actions';
 import type { BlogPost } from '@/lib/mockData';
 
 /**
- * Blog Admin Page - Demonstrates Server Actions
+ * 博客管理页面 - 演示 Server Actions
  *
- * This page shows how to use Server Actions for form submissions
- * Server Actions allow you to mutate data directly from Server Components
- * without needing to create API routes
+ * 本页面展示如何使用 Server Actions 处理表单提交
+ * Server Actions 允许你直接从 Server Components 修改数据
+ * 无需创建 API 路由
  */
 export default function BlogAdminPage() {
     const router = useRouter();
@@ -20,7 +20,7 @@ export default function BlogAdminPage() {
     const [formError, setFormError] = useState<string | null>(null);
     const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
-    // Load posts on mount
+    // 组件挂载时加载文章
     useEffect(() => {
         loadPosts();
     }, []);
@@ -31,7 +31,7 @@ export default function BlogAdminPage() {
             const allPosts = await getAllPosts();
             setPosts(allPosts);
         } catch (error) {
-            console.error('Failed to load posts:', error);
+            console.error('加载文章失败:', error);
         } finally {
             setLoading(false);
         }
@@ -46,11 +46,11 @@ export default function BlogAdminPage() {
         if (result.error) {
             setFormError(result.error);
         } else {
-            setFormSuccess('Post created successfully!');
+            setFormSuccess('文章创建成功！');
             setShowForm(false);
-            // Reload posts to show the new one
+            // 重新加载文章以显示新创建的文章
             await loadPosts();
-            // Reset form
+            // 重置表单
             const form = document.getElementById(
                 'create-post-form'
             ) as HTMLFormElement;
@@ -59,7 +59,7 @@ export default function BlogAdminPage() {
     }
 
     async function handleDelete(id: string) {
-        if (!confirm('Are you sure you want to delete this post?')) {
+        if (!confirm('确定要删除这篇文章吗？')) {
             return;
         }
 
@@ -76,7 +76,7 @@ export default function BlogAdminPage() {
         return (
             <div className="max-w-4xl mx-auto">
                 <div className="text-center py-12">
-                    <p className="text-gray-600">Loading posts...</p>
+                    <p className="text-gray-600">正在加载文章...</p>
                 </div>
             </div>
         );
@@ -86,33 +86,32 @@ export default function BlogAdminPage() {
         <div className="max-w-4xl mx-auto">
             <div className="mb-8">
                 <h1 className="text-4xl font-bold mb-4 text-gray-800">
-                    Blog Admin (Server Actions Demo)
+                    博客管理（Server Actions 演示）
                 </h1>
                 <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
                     <p className="text-sm text-gray-700">
-                        <strong>Day 4: Server Actions</strong>
+                        <strong>第 4 天：Server Actions</strong>
                         <br />
-                        This page demonstrates Server Actions - functions that
-                        run on the server and can be called directly from forms
-                        or client components. They provide a simpler alternative
-                        to API routes for form submissions and data mutations.
+                        本页面演示 Server Actions —— 在服务器上运行的函数，
+                        可以直接从表单或客户端组件中调用。对于表单提交和数据修改，
+                        它们提供了比 API 路由更简单的替代方案。
                     </p>
                 </div>
             </div>
 
-            {/* Create Post Form */}
+            {/* 创建文章表单 */}
             <div className="mb-8">
                 <button
                     onClick={() => setShowForm(!showForm)}
                     className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
-                    {showForm ? 'Cancel' : '+ Create New Post'}
+                    {showForm ? '取消' : '+ 创建新文章'}
                 </button>
 
                 {showForm && (
                     <div className="bg-white p-6 rounded-lg shadow-md">
                         <h2 className="text-2xl font-semibold mb-4">
-                            Create New Post
+                            创建新文章
                         </h2>
 
                         {formError && (
@@ -134,7 +133,7 @@ export default function BlogAdminPage() {
                                         htmlFor="title"
                                         className="block text-sm font-medium text-gray-700 mb-1"
                                     >
-                                        Title
+                                        标题
                                     </label>
                                     <input
                                         type="text"
@@ -150,7 +149,7 @@ export default function BlogAdminPage() {
                                         htmlFor="author"
                                         className="block text-sm font-medium text-gray-700 mb-1"
                                     >
-                                        Author
+                                        作者
                                     </label>
                                     <input
                                         type="text"
@@ -166,7 +165,7 @@ export default function BlogAdminPage() {
                                         htmlFor="content"
                                         className="block text-sm font-medium text-gray-700 mb-1"
                                     >
-                                        Content
+                                        内容
                                     </label>
                                     <textarea
                                         id="content"
@@ -181,7 +180,7 @@ export default function BlogAdminPage() {
                                     type="submit"
                                     className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                                 >
-                                    Create Post
+                                    创建文章
                                 </button>
                             </div>
                         </form>
@@ -189,13 +188,13 @@ export default function BlogAdminPage() {
                 )}
             </div>
 
-            {/* Posts List */}
+            {/* 文章列表 */}
             <div className="space-y-4">
-                <h2 className="text-2xl font-semibold mb-4">All Posts</h2>
+                <h2 className="text-2xl font-semibold mb-4">全部文章</h2>
 
                 {posts.length === 0 ? (
                     <p className="text-gray-600">
-                        No posts yet. Create your first post!
+                        暂无文章，快来创建第一篇文章吧！
                     </p>
                 ) : (
                     posts.map((post) => (
@@ -212,7 +211,7 @@ export default function BlogAdminPage() {
                                         {post.content}
                                     </p>
                                     <div className="text-sm text-gray-500">
-                                        <span>By {post.author}</span>
+                                        <span>作者：{post.author}</span>
                                         <span className="mx-2">•</span>
                                         <span>
                                             {new Date(
@@ -228,13 +227,13 @@ export default function BlogAdminPage() {
                                         }
                                         className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
                                     >
-                                        View
+                                        查看
                                     </button>
                                     <button
                                         onClick={() => handleDelete(post.id)}
                                         className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200"
                                     >
-                                        Delete
+                                        删除
                                     </button>
                                 </div>
                             </div>

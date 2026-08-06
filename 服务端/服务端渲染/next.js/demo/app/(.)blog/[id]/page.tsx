@@ -5,14 +5,13 @@ import { useEffect, useState } from 'react';
 import type { BlogPost } from '@/lib/mockData';
 
 /**
- * Intercepting Route - Blog Detail Modal
+ * Intercepting Route - 博客详情弹窗
  *
- * This route intercepts navigation to /blog/[id] when coming from the same segment level.
- * The (.) prefix means "same level" - intercepts routes at the same level.
+ * 当从同一路由层级导航到 /blog/[id] 时，此路由会进行拦截。
+ * (.) 前缀表示"同一层级"——拦截同一层级的路由。
  *
- * When a user clicks a blog post link from /blog, instead of navigating to /blog/[id],
- * this modal version is shown. If they navigate directly or refresh, they see the
- * normal page.
+ * 当用户从 /blog 点击博客文章链接时，不会直接跳转到 /blog/[id]，
+ * 而是显示这个弹窗版本。如果直接访问或刷新页面，则看到正常页面。
  */
 interface InterceptingBlogPageProps {
     params: {
@@ -30,7 +29,7 @@ export default function InterceptingBlogPage({
     useEffect(() => {
         async function loadPost() {
             try {
-                // Fetch post data from API route (client-side)
+                // 从 API 路由获取文章数据（客户端）
                 const response = await fetch(`/api/posts/${params.id}`);
                 const result = await response.json();
                 if (result.success) {
@@ -39,7 +38,7 @@ export default function InterceptingBlogPage({
                     setPost(null);
                 }
             } catch (error) {
-                console.error('Failed to load post:', error);
+                console.error('加载文章失败:', error);
                 setPost(null);
             } finally {
                 setLoading(false);
@@ -53,7 +52,7 @@ export default function InterceptingBlogPage({
     }
 
     useEffect(() => {
-        // Prevent body scroll when modal is open
+        // 弹窗打开时禁止页面滚动
         document.body.style.overflow = 'hidden';
         return () => {
             document.body.style.overflow = 'unset';
@@ -66,7 +65,7 @@ export default function InterceptingBlogPage({
                 <div className="bg-white rounded-lg shadow-xl p-8">
                     <div className="text-center">
                         <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                        <p className="mt-4 text-gray-600">Loading...</p>
+                        <p className="mt-4 text-gray-600">加载中...</p>
                     </div>
                 </div>
             </div>
@@ -77,12 +76,12 @@ export default function InterceptingBlogPage({
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
                 <div className="bg-white rounded-lg shadow-xl p-8 max-w-md">
-                    <h2 className="text-xl font-bold mb-4">Post Not Found</h2>
+                    <h2 className="text-xl font-bold mb-4">文章不存在</h2>
                     <button
                         onClick={handleClose}
                         className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                        Close
+                        关闭
                     </button>
                 </div>
             </div>
@@ -94,7 +93,7 @@ export default function InterceptingBlogPage({
             <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
                     <h2 className="text-xl font-semibold text-gray-800">
-                        Blog Post Preview
+                        博客文章预览
                     </h2>
                     <button
                         onClick={handleClose}
@@ -107,15 +106,13 @@ export default function InterceptingBlogPage({
                 <div className="p-6">
                     <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded mb-6">
                         <p className="text-sm text-blue-800">
-                            <strong>Intercepting Route Demo</strong>
+                            <strong>Intercepting Route 演示</strong>
                             <br />
-                            This is a modal version of the blog post. It
-                            intercepts navigation from the same route level
-                            using{' '}
+                            这是博客文章的弹窗版本。它通过{' '}
                             <code className="bg-blue-100 px-1 rounded">
                                 (.)blog/[id]
                             </code>
-                            . Click outside or close to go back.
+                            拦截来自同一路由层级的导航。点击外部或关闭即可返回。
                         </p>
                     </div>
 
@@ -124,7 +121,7 @@ export default function InterceptingBlogPage({
                             {post.title}
                         </h1>
                         <div className="flex items-center gap-4 mb-6 text-sm text-gray-600">
-                            <span>By {post.author}</span>
+                            <span>作者：{post.author}</span>
                             <span>•</span>
                             <span>
                                 {new Date(post.createdAt).toLocaleDateString()}
@@ -142,7 +139,7 @@ export default function InterceptingBlogPage({
                             onClick={() => router.push(`/blog/${params.id}`)}
                             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                         >
-                            View Full Page →
+                            查看完整页面 →
                         </button>
                     </div>
                 </div>

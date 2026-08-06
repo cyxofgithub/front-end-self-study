@@ -9,10 +9,10 @@ interface EditPageProps {
 }
 
 /**
- * Edit Post Page - Demonstrates Server Actions with form handling
+ * 编辑文章页面 - 演示带表单处理的 Server Actions
  *
- * This page shows how to use Server Actions to update data
- * The form submission is handled by the updatePost Server Action
+ * 本页面展示如何使用 Server Actions 更新数据
+ * 表单提交由 updatePost 这个 Server Action 处理
  */
 export default async function EditPostPage({ params }: EditPageProps) {
     const post = await getPostById(params.id);
@@ -30,15 +30,14 @@ export default async function EditPostPage({ params }: EditPageProps) {
         <div className="max-w-4xl mx-auto">
             <div className="mb-8">
                 <h1 className="text-4xl font-bold mb-4 text-gray-800">
-                    Edit Post
+                    编辑文章
                 </h1>
                 <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded">
                     <p className="text-sm text-gray-700">
-                        <strong>Day 4: Server Actions - Update</strong>
+                        <strong>第 4 天：Server Actions - 更新</strong>
                         <br />
-                        This form uses a Server Action to update the blog post.
-                        After submission, you'll be redirected to the post
-                        detail page.
+                        本表单使用 Server Action 来更新博客文章。
+                        提交后，你将被重定向到文章详情页。
                     </p>
                 </div>
             </div>

@@ -2,12 +2,12 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getAllPosts } from '@/lib/api';
 
-// SSG (Static Site Generation) - Default rendering mode
-// This page is generated at build time
+// SSG（静态站点生成）- 默认渲染模式
+// 本页面在构建时生成
 export const metadata: Metadata = {
-    title: 'Blog Posts - Next.js Demo',
+    title: '博客文章 - Next.js 演示项目',
     description:
-        'Browse our blog posts - demonstrating SSG (Static Site Generation)',
+        '浏览我们的博客文章 - 演示 SSG（静态站点生成）',
 };
 
 export default async function BlogListPage() {
@@ -17,17 +17,16 @@ export default async function BlogListPage() {
         <div className="max-w-4xl mx-auto">
             <div className="mb-8">
                 <h1 className="text-4xl font-bold mb-4 text-gray-800">
-                    Blog Posts
+                    博客文章
                 </h1>
                 <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
                     <p className="text-sm text-gray-700">
                         <strong>
-                            Rendering Mode: SSG (Static Site Generation)
+                            渲染模式：SSG（静态站点生成）
                         </strong>
                         <br />
-                        This page is pre-rendered at build time. The HTML is
-                        generated once during the build process and served
-                        statically, providing the fastest possible performance.
+                        本页面在构建时预渲染。HTML 在构建过程中生成一次，
+                        之后以静态方式提供服务，从而实现最快的性能。
                     </p>
                 </div>
             </div>
@@ -50,7 +49,7 @@ export default async function BlogListPage() {
                             {post.content}
                         </p>
                         <div className="flex items-center justify-between text-sm text-gray-500">
-                            <span>By {post.author}</span>
+                            <span>作者：{post.author}</span>
                             <span>
                                 {new Date(post.createdAt).toLocaleDateString()}
                             </span>
@@ -60,7 +59,7 @@ export default async function BlogListPage() {
                                 href={`/blog/${post.id}`}
                                 className="text-blue-600 hover:text-blue-800 font-medium inline-flex items-center"
                             >
-                                Read more →
+                                阅读更多 →
                             </Link>
                         </div>
                     </article>

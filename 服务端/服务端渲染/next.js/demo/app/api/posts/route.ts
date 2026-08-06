@@ -7,11 +7,11 @@ import {
 
 /**
  * GET /api/posts
- * Fetch all blog posts
+ * 获取所有博客文章
  */
 export async function GET() {
   try {
-    await delay(300); // Simulate network delay
+    await delay(300); // 模拟网络延迟
     const posts = getMockBlogPosts();
 
     return NextResponse.json({
@@ -22,7 +22,7 @@ export async function GET() {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch posts',
+        error: '获取文章列表失败',
       },
       { status: 500 }
     );
@@ -31,7 +31,7 @@ export async function GET() {
 
 /**
  * POST /api/posts
- * Create a new blog post
+ * 创建一篇新的博客文章
  */
 export async function POST(request: NextRequest) {
   try {
@@ -40,12 +40,12 @@ export async function POST(request: NextRequest) {
 
     const { title, content, author } = body;
 
-    // Validation
+    // 参数校验
     if (!title || !content || !author) {
       return NextResponse.json(
         {
           success: false,
-          error: 'All fields are required',
+          error: '所有字段均为必填项',
         },
         { status: 400 }
       );
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to create post',
+        error: '创建文章失败',
       },
       { status: 500 }
     );

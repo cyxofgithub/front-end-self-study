@@ -1,15 +1,15 @@
 /**
- * Dashboard Slot - Parallel Route
+ * Dashboard 插槽 - Parallel Route
  *
- * This is the @dashboard slot content that gets rendered in the parallel routes layout.
- * It's loaded independently and can have its own loading and error states.
+ * 这是 @dashboard 插槽的内容，会被渲染到 Parallel Routes 布局中。
+ * 它独立加载，可以拥有自己的 loading 和 error 状态。
  */
 export default function DashboardSlot() {
     const tasks = [
-        { id: 1, title: 'Review pull requests', status: 'pending' },
-        { id: 2, title: 'Update documentation', status: 'in-progress' },
-        { id: 3, title: 'Deploy to staging', status: 'completed' },
-        { id: 4, title: 'Team meeting', status: 'pending' },
+        { id: 1, title: '审查 pull requests', status: '待处理' },
+        { id: 2, title: '更新文档', status: '进行中' },
+        { id: 3, title: '部署到预发布环境', status: '已完成' },
+        { id: 4, title: '团队会议', status: '待处理' },
     ];
 
     return (
@@ -19,9 +19,9 @@ export default function DashboardSlot() {
                     <div
                         key={task.id}
                         className={`p-3 rounded-lg border-l-4 ${
-                            task.status === 'completed'
+                            task.status === '已完成'
                                 ? 'bg-green-50 border-green-500'
-                                : task.status === 'in-progress'
+                                : task.status === '进行中'
                                 ? 'bg-yellow-50 border-yellow-500'
                                 : 'bg-gray-50 border-gray-300'
                         }`}
@@ -32,9 +32,9 @@ export default function DashboardSlot() {
                             </span>
                             <span
                                 className={`text-xs px-2 py-1 rounded ${
-                                    task.status === 'completed'
+                                    task.status === '已完成'
                                         ? 'bg-green-200 text-green-800'
-                                        : task.status === 'in-progress'
+                                        : task.status === '进行中'
                                         ? 'bg-yellow-200 text-yellow-800'
                                         : 'bg-gray-200 text-gray-800'
                                 }`}
@@ -46,7 +46,7 @@ export default function DashboardSlot() {
                 ))}
             </div>
             <p className="mt-4 text-xs text-gray-500">
-                This dashboard section is loaded as a parallel route slot.
+                本 dashboard 区块是通过 Parallel Route 插槽加载的。
             </p>
         </div>
     );

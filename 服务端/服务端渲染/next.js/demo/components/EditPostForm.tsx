@@ -10,8 +10,8 @@ interface EditPostFormProps {
 }
 
 /**
- * Edit Post Form Component
- * Demonstrates Server Action form submission with pre-filled data
+ * 编辑文章表单组件
+ * 演示使用预填数据通过 Server Action 提交表单
  */
 export default function EditPostForm({
     post,
@@ -27,12 +27,12 @@ export default function EditPostForm({
 
         try {
             await updateAction(formData);
-            // Redirect happens in the Server Action, but we can also handle it here
+            // 重定向在 Server Action 中发生，但我们也可以在这里处理
             router.push(`/blog/${post.id}`);
             router.refresh();
         } catch (err) {
             setError(
-                err instanceof Error ? err.message : 'Failed to update post'
+                err instanceof Error ? err.message : '文章更新失败'
             );
             setIsSubmitting(false);
         }
@@ -52,7 +52,7 @@ export default function EditPostForm({
                         htmlFor="title"
                         className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                        Title
+                        标题
                     </label>
                     <input
                         type="text"
@@ -69,7 +69,7 @@ export default function EditPostForm({
                         htmlFor="author"
                         className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                        Author
+                        作者
                     </label>
                     <input
                         type="text"
@@ -86,7 +86,7 @@ export default function EditPostForm({
                         htmlFor="content"
                         className="block text-sm font-medium text-gray-700 mb-2"
                     >
-                        Content
+                        内容
                     </label>
                     <textarea
                         id="content"
@@ -104,14 +104,14 @@ export default function EditPostForm({
                         disabled={isSubmitting}
                         className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
                     >
-                        {isSubmitting ? 'Updating...' : 'Update Post'}
+                        {isSubmitting ? '更新中...' : '更新文章'}
                     </button>
                     <button
                         type="button"
                         onClick={() => router.back()}
                         className="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                     >
-                        Cancel
+                        取消
                     </button>
                 </div>
             </form>

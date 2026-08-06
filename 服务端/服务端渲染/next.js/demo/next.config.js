@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // React strict mode for better development experience
+    // React 严格模式，提供更好的开发体验
     reactStrictMode: true,
 
-    // Image optimization configuration
+    // 图片优化配置
     images: {
         remotePatterns: [
             {
@@ -11,33 +11,33 @@ const nextConfig = {
                 hostname: 'picsum.photos',
             },
         ],
-        // Optimize images for better performance
+        // 优化图片以获得更好的性能
         formats: ['image/avif', 'image/webp'],
-        // Device sizes for responsive images
+        // 用于响应式图片的设备尺寸
         deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-        // Image sizes for different breakpoints
+        // 不同断点下的图片尺寸
         imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     },
 
-    // Compress output for better performance
+    // 压缩输出以获得更好的性能
     compress: true,
 
-    // Enable SWC minification (faster than Terser)
+    // 启用 SWC 压缩（比 Terser 更快）
     swcMinify: true,
 
-    // Production source maps (disable in production for security)
+    // 生产环境的 source maps（生产环境中出于安全考虑禁用）
     productionBrowserSourceMaps: false,
 
-    // Optimize fonts
+    // 优化字体
     optimizeFonts: true,
 
-    // Experimental features (if needed)
+    // 实验性特性（按需启用）
     experimental: {
-        // Enable server components external packages if needed
+        // 如有需要，启用 server components 的外部包
         // serverComponentsExternalPackages: [],
     },
 
-    // Headers for security and performance
+    // 用于安全和性能的响应头
     async headers() {
         return [
             {

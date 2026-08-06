@@ -4,13 +4,13 @@ import { useState } from 'react';
 import type { BlogPost } from '@/lib/mockData';
 
 /**
- * API Demo Page - Demonstrates API Routes
+ * API 演示页面 - 演示 API Routes
  *
- * This page shows how to use API Routes (RESTful endpoints)
- * API Routes are useful when you need to:
- * - Provide endpoints for external services
- * - Support non-React clients
- * - Handle complex request/response logic
+ * 本页面展示如何使用 API Routes（RESTful 端点）
+ * 以下场景中 API Routes 很有用：
+ * - 为外部服务提供接口
+ * - 支持非 React 客户端
+ * - 处理复杂的请求/响应逻辑
  */
 export default function ApiDemoPage() {
     const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -22,7 +22,7 @@ export default function ApiDemoPage() {
         author: '',
     });
 
-    // Fetch all posts
+    // 获取所有文章
     async function fetchPosts() {
         setLoading(true);
         setError(null);
@@ -34,22 +34,22 @@ export default function ApiDemoPage() {
             if (result.success) {
                 setPosts(result.data);
             } else {
-                setError(result.error || 'Failed to fetch posts');
+                setError(result.error || '获取文章失败');
             }
         } catch (err) {
             setError(
-                'Network error: ' +
-                    (err instanceof Error ? err.message : 'Unknown error')
+                '网络错误：' +
+                    (err instanceof Error ? err.message : '未知错误')
             );
         } finally {
             setLoading(false);
         }
     }
 
-    // Create a new post
+    // 创建新文章
     async function createPost() {
         if (!formData.title || !formData.content || !formData.author) {
-            setError('All fields are required');
+            setError('所有字段都是必填的');
             return;
         }
 
@@ -69,25 +69,25 @@ export default function ApiDemoPage() {
 
             if (result.success) {
                 setFormData({ title: '', content: '', author: '' });
-                await fetchPosts(); // Reload posts
+                await fetchPosts(); // 重新加载文章列表
             } else {
-                setError(result.error || 'Failed to create post');
+                setError(result.error || '创建文章失败');
             }
         } catch (err) {
             setError(
-                'Network error: ' +
-                    (err instanceof Error ? err.message : 'Unknown error')
+                '网络错误：' +
+                    (err instanceof Error ? err.message : '未知错误')
             );
         } finally {
             setLoading(false);
         }
     }
 
-    // Update a post
+    // 更新文章
     async function updatePost(id: string) {
-        const title = prompt('Enter new title:');
-        const content = prompt('Enter new content:');
-        const author = prompt('Enter new author:');
+        const title = prompt('请输入新标题：');
+        const content = prompt('请输入新内容：');
+        const author = prompt('请输入新作者：');
 
         if (!title || !content || !author) {
             return;
@@ -108,23 +108,23 @@ export default function ApiDemoPage() {
             const result = await response.json();
 
             if (result.success) {
-                await fetchPosts(); // Reload posts
+                await fetchPosts(); // 重新加载文章列表
             } else {
-                setError(result.error || 'Failed to update post');
+                setError(result.error || '更新文章失败');
             }
         } catch (err) {
             setError(
-                'Network error: ' +
-                    (err instanceof Error ? err.message : 'Unknown error')
+                '网络错误：' +
+                    (err instanceof Error ? err.message : '未知错误')
             );
         } finally {
             setLoading(false);
         }
     }
 
-    // Delete a post
+    // 删除文章
     async function deletePost(id: string) {
-        if (!confirm('Are you sure you want to delete this post?')) {
+        if (!confirm('确定要删除这篇文章吗？')) {
             return;
         }
 
@@ -139,14 +139,14 @@ export default function ApiDemoPage() {
             const result = await response.json();
 
             if (result.success) {
-                await fetchPosts(); // Reload posts
+                await fetchPosts(); // 重新加载文章列表
             } else {
-                setError(result.error || 'Failed to delete post');
+                setError(result.error || '删除文章失败');
             }
         } catch (err) {
             setError(
-                'Network error: ' +
-                    (err instanceof Error ? err.message : 'Unknown error')
+                '网络错误：' +
+                    (err instanceof Error ? err.message : '未知错误')
             );
         } finally {
             setLoading(false);
@@ -157,29 +157,27 @@ export default function ApiDemoPage() {
         <div className="max-w-4xl mx-auto">
             <div className="mb-8">
                 <h1 className="text-4xl font-bold mb-4 text-gray-800">
-                    API Routes Demo
+                    API Routes 演示
                 </h1>
                 <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded">
                     <p className="text-sm text-gray-700">
-                        <strong>Day 4: API Routes</strong>
+                        <strong>Day 4：API Routes</strong>
                         <br />
-                        This page demonstrates API Routes - RESTful endpoints
-                        that can be accessed via HTTP requests. API Routes are
-                        useful for providing endpoints to external services,
-                        mobile apps, or when you need more control over
-                        request/response handling.
+                        本页面演示 API Routes —— 可以通过 HTTP
+                        请求访问的 RESTful 端点。API Routes
+                        适用于为外部服务、移动应用提供接口，或需要对请求/响应处理有更多控制的场景。
                     </p>
                 </div>
             </div>
 
-            {/* Error Display */}
+            {/* 错误提示 */}
             {error && (
                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded">
                     {error}
                 </div>
             )}
 
-            {/* Actions */}
+            {/* 操作区 */}
             <div className="mb-8 space-y-4">
                 <button
                     onClick={fetchPosts}
@@ -187,18 +185,18 @@ export default function ApiDemoPage() {
                     className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400"
                 >
                     {loading
-                        ? 'Loading...'
-                        : 'Fetch All Posts (GET /api/posts)'}
+                        ? '加载中...'
+                        : '获取所有文章（GET /api/posts）'}
                 </button>
 
                 <div className="bg-white p-6 rounded-lg shadow-md">
                     <h2 className="text-xl font-semibold mb-4">
-                        Create Post (POST /api/posts)
+                        创建文章（POST /api/posts）
                     </h2>
                     <div className="space-y-4">
                         <input
                             type="text"
-                            placeholder="Title"
+                            placeholder="标题"
                             value={formData.title}
                             onChange={(e) =>
                                 setFormData({
@@ -210,7 +208,7 @@ export default function ApiDemoPage() {
                         />
                         <input
                             type="text"
-                            placeholder="Author"
+                            placeholder="作者"
                             value={formData.author}
                             onChange={(e) =>
                                 setFormData({
@@ -221,7 +219,7 @@ export default function ApiDemoPage() {
                             className="w-full px-3 py-2 border border-gray-300 rounded-md"
                         />
                         <textarea
-                            placeholder="Content"
+                            placeholder="内容"
                             value={formData.content}
                             onChange={(e) =>
                                 setFormData({
@@ -237,16 +235,16 @@ export default function ApiDemoPage() {
                             disabled={loading}
                             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400"
                         >
-                            Create Post
+                            创建文章
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* Posts List */}
+            {/* 文章列表 */}
             {posts.length > 0 && (
                 <div className="space-y-4">
-                    <h2 className="text-2xl font-semibold mb-4">Posts</h2>
+                    <h2 className="text-2xl font-semibold mb-4">文章列表</h2>
                     {posts.map((post) => (
                         <div
                             key={post.id}
@@ -257,7 +255,7 @@ export default function ApiDemoPage() {
                             </h3>
                             <p className="text-gray-600 mb-2">{post.content}</p>
                             <div className="text-sm text-gray-500 mb-4">
-                                By {post.author} •{' '}
+                                作者：{post.author} •{' '}
                                 {new Date(post.createdAt).toLocaleDateString()}
                             </div>
                             <div className="flex gap-2">
@@ -266,14 +264,14 @@ export default function ApiDemoPage() {
                                     disabled={loading}
                                     className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 disabled:bg-gray-200"
                                 >
-                                    Update (PUT)
+                                    更新（PUT）
                                 </button>
                                 <button
                                     onClick={() => deletePost(post.id)}
                                     disabled={loading}
                                     className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:bg-gray-200"
                                 >
-                                    Delete (DELETE)
+                                    删除（DELETE）
                                 </button>
                             </div>
                         </div>
@@ -281,31 +279,31 @@ export default function ApiDemoPage() {
                 </div>
             )}
 
-            {/* API Endpoints Reference */}
+            {/* API 端点参考 */}
             <div className="mt-8 bg-gray-50 p-6 rounded-lg">
                 <h2 className="text-xl font-semibold mb-4">
-                    Available API Endpoints
+                    可用的 API 端点
                 </h2>
                 <div className="space-y-2 text-sm font-mono">
                     <div>
                         <span className="text-green-600 font-bold">GET</span>{' '}
-                        <span>/api/posts</span> - Fetch all posts
+                        <span>/api/posts</span> - 获取所有文章
                     </div>
                     <div>
                         <span className="text-green-600 font-bold">GET</span>{' '}
-                        <span>/api/posts/[id]</span> - Fetch a single post
+                        <span>/api/posts/[id]</span> - 获取单篇文章
                     </div>
                     <div>
                         <span className="text-blue-600 font-bold">POST</span>{' '}
-                        <span>/api/posts</span> - Create a new post
+                        <span>/api/posts</span> - 创建新文章
                     </div>
                     <div>
                         <span className="text-yellow-600 font-bold">PUT</span>{' '}
-                        <span>/api/posts/[id]</span> - Update a post
+                        <span>/api/posts/[id]</span> - 更新文章
                     </div>
                     <div>
                         <span className="text-red-600 font-bold">DELETE</span>{' '}
-                        <span>/api/posts/[id]</span> - Delete a post
+                        <span>/api/posts/[id]</span> - 删除文章
                     </div>
                 </div>
             </div>

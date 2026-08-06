@@ -13,26 +13,26 @@ import {
 } from './mockData';
 
 /**
- * Server Action: Create a new blog post
+ * Server Action：创建新博客文章
  */
 export async function createPost(formData: FormData) {
-  await delay(500); // Simulate network delay
+  await delay(500); // 模拟网络延迟
 
   const title = formData.get('title') as string;
   const content = formData.get('content') as string;
   const author = formData.get('author') as string;
 
-  // Validation
+  // 校验
   if (!title || !content || !author) {
     return {
-      error: 'All fields are required',
+      error: '所有字段均为必填项',
     };
   }
 
   try {
     const newPost = createMockPost({ title, content, author });
 
-    // Revalidate the blog list page to show the new post
+    // 重新验证博客列表页缓存，让新文章立即可见
     revalidatePath('/blog');
     revalidatePath('/blog-admin');
 
@@ -42,13 +42,13 @@ export async function createPost(formData: FormData) {
     };
   } catch (error) {
     return {
-      error: 'Failed to create post',
+      error: '创建文章失败',
     };
   }
 }
 
 /**
- * Server Action: Update an existing blog post
+ * Server Action：更新已有博客文章
  */
 export async function updatePost(id: string, formData: FormData) {
   await delay(500);
@@ -59,7 +59,7 @@ export async function updatePost(id: string, formData: FormData) {
 
   if (!title || !content || !author) {
     return {
-      error: 'All fields are required',
+      error: '所有字段均为必填项',
     };
   }
 
@@ -68,25 +68,27 @@ export async function updatePost(id: string, formData: FormData) {
 
     if (!updatedPost) {
       return {
-        error: 'Post not found',
+        error: '文章不存在',
       };
     }
 
-    // Revalidate affected pages
+    // 重新验证受影响的页面缓存
     revalidatePath('/blog');
     revalidatePath(`/blog/${id}`);
     revalidatePath('/blog-admin');
-
-    redirect(`/blog/${id}`);
   } catch (error) {
     return {
-      error: 'Failed to update post',
+      error: '更新文章失败',
     };
   }
+
+  // 注意：redirect 必须放在 try/catch 外面，
+  // 因为它内部通过抛出 NEXT_REDIRECT 异常工作，放在 try 里会被 catch 吞掉
+  redirect(`/blog/${id}`);
 }
 
 /**
- * Server Action: Delete a blog post
+ * Server Action：删除博客文章
  */
 export async function deletePost(id: string) {
   await delay(500);
@@ -96,11 +98,11 @@ export async function deletePost(id: string) {
 
     if (!success) {
       return {
-        error: 'Post not found',
+        error: '文章不存在',
       };
     }
 
-    // Revalidate affected pages
+    // 重新验证受影响的页面缓存
     revalidatePath('/blog');
     revalidatePath('/blog-admin');
 
@@ -109,13 +111,13 @@ export async function deletePost(id: string) {
     };
   } catch (error) {
     return {
-      error: 'Failed to delete post',
+      error: '删除文章失败',
     };
   }
 }
 
 /**
- * Server Action: Get all posts (for Server Components)
+ * Server Action：获取所有文章（供 Server Component 使用）
  */
 export async function getAllPosts(): Promise<BlogPost[]> {
   await delay(300);
@@ -123,7 +125,7 @@ export async function getAllPosts(): Promise<BlogPost[]> {
 }
 
 /**
- * Server Action: Get post by ID (for Server Components)
+ * Server Action：按 ID 获取文章（供 Server Component 使用）
  */
 export async function getPostById(id: string): Promise<BlogPost | null> {
   await delay(300);
@@ -131,11 +133,11 @@ export async function getPostById(id: string): Promise<BlogPost | null> {
 }
 
 /**
- * Server Action: Revalidate by tag
- * Demonstrates revalidateTag for granular cache control
+ * Server Action：按标签重新验证缓存
+ * 演示 revalidateTag 的精细化缓存控制
  */
 export async function revalidateBlogCache() {
-  // 这里实现了“缓存重新验证”功能，结合 revalidateTag 和 revalidatePath：
+  // 这里实现了"缓存重新验证"功能，结合 revalidateTag 和 revalidatePath：
   // 1. 通过 revalidateTag('blog-posts')，强制刷新所有标记为 'blog-posts' 的缓存内容，适用于数据源变更时快速让相关页面读取最新数据。
   // 2. 通过 revalidatePath('/blog') 和 revalidatePath('/blog-admin')，手动指定刷新博客列表页和后台管理页的页面缓存，确保用户看到最新内容。
   revalidateTag('blog-posts');
@@ -144,24 +146,24 @@ export async function revalidateBlogCache() {
 
   return {
     success: true,
-    message: 'Blog cache revalidated successfully',
+    message: '博客缓存已重新验证',
   };
 }
 
 /**
- * Server Action: Revalidate cache by tag
- * Demonstrates revalidateTag usage for tag-based cache invalidation
+ * Server Action：按指定标签重新验证缓存
+ * 演示 revalidateTag 按标签批量失效的用法
  */
 export async function revalidateCacheByTag(tag: string) {
   try {
     revalidateTag(tag);
     return {
       success: true,
-      message: `Cache with tag "${tag}" has been revalidated`,
+      message: `标签为 "${tag}" 的缓存已重新验证`,
     };
   } catch (error) {
     return {
-      error: 'Failed to revalidate cache',
+      error: '缓存重新验证失败',
     };
   }
 }

@@ -14,7 +14,7 @@ interface RouteParams {
 
 /**
  * GET /api/posts/[id]
- * Fetch a single blog post by ID
+ * 根据 ID 获取单篇博客文章
  */
 export async function GET(
   request: NextRequest,
@@ -28,7 +28,7 @@ export async function GET(
       return NextResponse.json(
         {
           success: false,
-          error: 'Post not found',
+          error: '文章不存在',
         },
         { status: 404 }
       );
@@ -42,7 +42,7 @@ export async function GET(
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to fetch post',
+        error: '获取文章失败',
       },
       { status: 500 }
     );
@@ -51,7 +51,7 @@ export async function GET(
 
 /**
  * PUT /api/posts/[id]
- * Update an existing blog post
+ * 更新已有的博客文章
  */
 export async function PUT(
   request: NextRequest,
@@ -67,7 +67,7 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          error: 'All fields are required',
+          error: '所有字段均为必填项',
         },
         { status: 400 }
       );
@@ -79,7 +79,7 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          error: 'Post not found',
+          error: '文章不存在',
         },
         { status: 404 }
       );
@@ -93,7 +93,7 @@ export async function PUT(
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to update post',
+        error: '更新文章失败',
       },
       { status: 500 }
     );
@@ -102,7 +102,7 @@ export async function PUT(
 
 /**
  * DELETE /api/posts/[id]
- * Delete a blog post
+ * 删除一篇博客文章
  */
 export async function DELETE(
   request: NextRequest,
@@ -116,7 +116,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: 'Post not found',
+          error: '文章不存在',
         },
         { status: 404 }
       );
@@ -124,13 +124,13 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Post deleted successfully',
+      message: '文章删除成功',
     });
   } catch (error) {
     return NextResponse.json(
       {
         success: false,
-        error: 'Failed to delete post',
+        error: '删除文章失败',
       },
       { status: 500 }
     );

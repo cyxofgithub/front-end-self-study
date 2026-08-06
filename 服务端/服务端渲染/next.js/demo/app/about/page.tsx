@@ -1,98 +1,93 @@
 import type { Metadata } from 'next';
 
-// Basic route example: /about
-// This is a Server Component (default in App Router)
+// 基础路由示例：/about
+// 这是一个 Server Component（App Router 中的默认形式）
 export const metadata: Metadata = {
-    title: 'About - Next.js Demo',
+    title: '关于 - Next.js 演示项目',
     description:
-        'Learn about this Next.js demonstration project covering Day 1-7 concepts',
+        '了解这个覆盖第 1-7 天概念的 Next.js 演示项目',
 };
 
 export default function AboutPage() {
     return (
         <div className="max-w-3xl mx-auto">
             <h1 className="text-4xl font-bold mb-6 text-gray-800">
-                About This Demo
+                关于本演示项目
             </h1>
 
             <div className="prose prose-lg">
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4 text-blue-600">
-                        What is This Project?
+                        这个项目是什么？
                     </h2>
                     <p className="text-gray-700 mb-4">
-                        This is a comprehensive Next.js demonstration project
-                        designed to help you master the fundamentals covered in
-                        Day 1-3 of the Next.js learning path.
+                        这是一个内容全面的 Next.js 演示项目，旨在帮助你掌握
+                        Next.js 学习路线中第 1-3 天的基础知识。
                     </p>
                 </section>
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4 text-green-600">
-                        Day 1: Project Setup
+                        第 1 天：项目搭建
                     </h2>
                     <p className="text-gray-700 mb-4">
-                        Learn how to initialize a Next.js project with
-                        TypeScript and the App Router. Understand the core file
-                        structure including:
+                        学习如何使用 TypeScript 和 App Router 初始化一个
+                        Next.js 项目。理解核心文件结构，包括：
                     </p>
                     <ul className="list-disc list-inside text-gray-700 space-y-2">
                         <li>
                             <code className="bg-gray-100 px-2 py-1 rounded">
                                 app/layout.tsx
                             </code>{' '}
-                            - Root layout component
+                            - 根布局组件
                         </li>
                         <li>
                             <code className="bg-gray-100 px-2 py-1 rounded">
                                 app/page.tsx
                             </code>{' '}
-                            - Home page component
+                            - 首页组件
                         </li>
-                        <li>File-based routing system</li>
+                        <li>基于文件的路由系统</li>
                     </ul>
                 </section>
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4 text-purple-600">
-                        Day 2: Routing System
+                        第 2 天：路由系统
                     </h2>
                     <p className="text-gray-700 mb-4">
-                        Explore Next.js routing capabilities including:
+                        探索 Next.js 的路由能力，包括：
                     </p>
                     <ul className="list-disc list-inside text-gray-700 space-y-2">
-                        <li>Basic routes (like this /about page)</li>
-                        <li>Dynamic routes (/blog/[id])</li>
+                        <li>基础路由（如本 /about 页面）</li>
+                        <li>动态路由（/blog/[id]）</li>
                         <li>
-                            Navigation components (Link, useRouter, usePathname)
+                            导航组件（Link、useRouter、usePathname）
                         </li>
-                        <li>Route states (loading.tsx, error.tsx)</li>
+                        <li>路由状态（loading.tsx、error.tsx）</li>
                     </ul>
                 </section>
 
                 <section className="mb-8">
                     <h2 className="text-2xl font-semibold mb-4 text-orange-600">
-                        Day 3: Rendering Modes
+                        第 3 天：渲染模式
                     </h2>
                     <p className="text-gray-700 mb-4">
-                        Understand different rendering strategies:
+                        理解不同的渲染策略：
                     </p>
                     <ul className="list-disc list-inside text-gray-700 space-y-2">
                         <li>
-                            <strong>SSR</strong> - Server-Side Rendering (blog
-                            detail pages)
+                            <strong>SSR</strong> - 服务端渲染（博客详情页）
                         </li>
                         <li>
-                            <strong>SSG</strong> - Static Site Generation (blog
-                            list page)
+                            <strong>SSG</strong> - 静态站点生成（博客列表页）
                         </li>
                         <li>
-                            <strong>ISR</strong> - Incremental Static
-                            Regeneration (isr-demo page)
+                            <strong>ISR</strong> - 增量静态再生成（isr-demo
+                            页面）
                         </li>
                         <li>
-                            <strong>CSR</strong> - Client-Side Rendering
-                            (csr-demo page)
+                            <strong>CSR</strong> - 客户端渲染（csr-demo 页面）
                         </li>
                     </ul>
                 </section>

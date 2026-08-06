@@ -1,15 +1,17 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
 /**
- * Login Page - Demonstrates Middleware Authentication
+ * 登录页 - 演示 Middleware 鉴权
  *
- * This page is used by the middleware to authenticate users
- * before accessing protected routes like /blog-admin
+ * 访问 /blog-admin 等受保护路由时，middleware 会把未登录用户重定向到这里
+ *
+ * 注意：useSearchParams() 必须包在 <Suspense> 边界里，
+ * 否则构建时该页的静态预渲染会直接报错。
  */
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const redirect = searchParams.get('redirect') || '/blog-admin';
@@ -23,34 +25,33 @@ export default function LoginPage() {
         const username = formData.get('username') as string;
         const password = formData.get('password') as string;
 
-        // Simple demo authentication (in production, use proper auth)
+        // 简化的演示鉴权（生产环境请使用正式的认证方案）
         if (username === 'admin' && password === 'password') {
-            // Set authentication cookie
+            // 设置认证 cookie
             document.cookie = 'isAuthenticated=true; path=/; max-age=3600';
             router.push(redirect);
         } else {
-            setError('Invalid username or password. Try: admin / password');
+            setError('用户名或密码错误，试试：admin / password');
         }
     }
 
     return (
         <div className="max-w-md mx-auto mt-16">
             <div className="bg-white p-8 rounded-lg shadow-md">
-                <h1 className="text-3xl font-bold mb-6 text-gray-800">Login</h1>
+                <h1 className="text-3xl font-bold mb-6 text-gray-800">登录</h1>
 
                 <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded mb-6">
                     <p className="text-sm text-gray-700">
-                        <strong>Day 4: Middleware Demo</strong>
+                        <strong>Day 4：Middleware 演示</strong>
                         <br />
-                        This login page is protected by middleware. Try
-                        accessing{' '}
+                        本页配合 middleware 做路由保护。试试不登录直接访问{' '}
                         <code className="bg-gray-100 px-1 rounded">
                             /blog-admin
-                        </code>{' '}
-                        without logging in - you'll be redirected here.
+                        </code>
+                        ，会被重定向到这里。
                         <br />
                         <br />
-                        <strong>Demo credentials:</strong> admin / password
+                        <strong>演示账号：</strong>admin / password
                     </p>
                 </div>
 
@@ -66,7 +67,7 @@ export default function LoginPage() {
                             htmlFor="username"
                             className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            Username
+                            用户名
                         </label>
                         <input
                             type="text"
@@ -82,7 +83,7 @@ export default function LoginPage() {
                             htmlFor="password"
                             className="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            Password
+                            密码
                         </label>
                         <input
                             type="password"
@@ -97,13 +98,13 @@ export default function LoginPage() {
                         type="submit"
                         className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
-                        Login
+                        登录
                     </button>
                 </form>
 
                 <div className="mt-6 text-sm text-gray-600">
                     <p>
-                        After logging in, you'll be redirected to:{' '}
+                        登录成功后将跳转到：{' '}
                         <code className="bg-gray-100 px-1 rounded">
                             {redirect}
                         </code>
@@ -111,5 +112,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginForm />
+        </Suspense>
     );
 }

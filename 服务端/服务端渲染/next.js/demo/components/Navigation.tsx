@@ -3,18 +3,18 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-// Client Component for navigation with active state
+// 带激活状态的导航 Client Component
 export default function Navigation() {
     const pathname = usePathname();
 
     const navItems = [
-        { href: '/', label: 'Home' },
-        { href: '/about', label: 'About' },
-        { href: '/blog', label: 'Blog' },
-        { href: '/isr-demo', label: 'ISR Demo' },
-        { href: '/csr-demo', label: 'CSR Demo' },
-        { href: '/blog-admin', label: 'Blog Admin' },
-        { href: '/api-demo', label: 'API Demo' },
+        { href: '/', label: '首页' },
+        { href: '/about', label: '关于' },
+        { href: '/blog', label: '博客' },
+        { href: '/isr-demo', label: 'ISR 演示' },
+        { href: '/csr-demo', label: 'CSR 演示' },
+        { href: '/blog-admin', label: '博客管理' },
+        { href: '/api-demo', label: 'API 演示' },
     ];
 
     return (
@@ -22,7 +22,7 @@ export default function Navigation() {
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     <Link href="/" className="text-xl font-bold">
-                        Next.js Demo
+                        Next.js 演示
                     </Link>
                     <ul className="flex space-x-6">
                         {navItems.map((item) => {

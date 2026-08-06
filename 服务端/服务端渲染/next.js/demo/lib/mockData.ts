@@ -1,4 +1,4 @@
-// Mock blog data for demonstration
+// 用于演示的 Mock 博客数据
 export interface BlogPost {
   id: string;
   title: string;
@@ -8,45 +8,45 @@ export interface BlogPost {
   updatedAt: string;
 }
 
-// In-memory storage for demo purposes (in production, use a database)
+// 演示用的内存存储（生产环境中请使用数据库）
 let mockBlogPosts: BlogPost[] = [
   {
     id: '1',
-    title: 'Getting Started with Next.js',
-    content: 'Next.js is a React framework that enables server-side rendering and static site generation. It provides a great developer experience with features like automatic code splitting, optimized performance, and built-in CSS support.',
-    author: 'John Doe',
+    title: 'Next.js 入门指南',
+    content: 'Next.js 是一个支持服务端渲染和静态站点生成的 React 框架。它提供了出色的开发体验，具备自动代码分割、性能优化和内置 CSS 支持等特性。',
+    author: '张三',
     createdAt: '2024-01-15T10:00:00Z',
     updatedAt: '2024-01-15T10:00:00Z',
   },
   {
     id: '2',
-    title: 'Understanding Server Components',
-    content: 'Server Components allow you to write components that run on the server, reducing the amount of JavaScript sent to the client. This improves performance and enables direct access to backend resources like databases.',
-    author: 'Jane Smith',
+    title: '理解 Server Components',
+    content: 'Server Components 允许你编写在服务器上运行的组件，减少发送到客户端的 JavaScript 体积。这不仅提升了性能，还能直接访问数据库等后端资源。',
+    author: '李四',
     createdAt: '2024-01-16T14:30:00Z',
     updatedAt: '2024-01-16T14:30:00Z',
   },
   {
     id: '3',
-    title: 'Rendering Modes Explained',
-    content: 'Next.js supports multiple rendering modes: SSR (Server-Side Rendering), SSG (Static Site Generation), ISR (Incremental Static Regeneration), and CSR (Client-Side Rendering). Each has its own use cases and benefits.',
-    author: 'Bob Johnson',
+    title: '渲染模式详解',
+    content: 'Next.js 支持多种渲染模式：SSR（服务端渲染）、SSG（静态站点生成）、ISR（增量静态再生）和 CSR（客户端渲染）。每种模式都有各自的适用场景和优势。',
+    author: '王五',
     createdAt: '2024-01-17T09:15:00Z',
     updatedAt: '2024-01-17T09:15:00Z',
   },
 ];
 
-// Get all posts
+// 获取所有文章
 export function getMockBlogPosts(): BlogPost[] {
   return mockBlogPosts;
 }
 
-// Get post by ID
+// 根据 ID 获取文章
 export function getMockPostById(id: string): BlogPost | null {
   return mockBlogPosts.find((p) => p.id === id) || null;
 }
 
-// Create a new post
+// 创建新文章
 export function createMockPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'updatedAt'>): BlogPost {
   const newPost: BlogPost = {
     ...post,
@@ -58,7 +58,7 @@ export function createMockPost(post: Omit<BlogPost, 'id' | 'createdAt' | 'update
   return newPost;
 }
 
-// Update a post
+// 更新文章
 export function updateMockPost(id: string, updates: Partial<Omit<BlogPost, 'id' | 'createdAt'>>): BlogPost | null {
   const index = mockBlogPosts.findIndex((p) => p.id === id);
   if (index === -1) return null;
@@ -71,7 +71,7 @@ export function updateMockPost(id: string, updates: Partial<Omit<BlogPost, 'id' 
   return mockBlogPosts[index];
 }
 
-// Delete a post
+// 删除文章
 export function deleteMockPost(id: string): boolean {
   const index = mockBlogPosts.findIndex((p) => p.id === id);
   if (index === -1) return false;
@@ -80,7 +80,7 @@ export function deleteMockPost(id: string): boolean {
   return true;
 }
 
-// Simulate API delay
+// 模拟 API 延迟
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
