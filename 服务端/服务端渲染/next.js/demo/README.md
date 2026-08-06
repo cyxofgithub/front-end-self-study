@@ -63,6 +63,11 @@
 -   **概念**: 静态生成 + 定期重新生成，平衡性能和内容新鲜度
 -   **Demo**: `app/isr-demo/page.tsx`（使用 `export const revalidate = 3600`）
 
+### Fetch 缓存策略
+
+-   **概念**: 请求粒度的缓存控制——`fetch(url)` 默认缓存、`cache: 'no-store'` 不缓存、`next: { revalidate: N }` 定时缓存，可与路由级渲染模式混用
+-   **Demo**: `app/fetch-cache-demo/page.tsx`、`app/api/time/route.ts`
+
 ### CSR (客户端渲染)
 
 -   **概念**: 在浏览器中渲染，使用 `'use client'` 和 `useEffect` 获取数据

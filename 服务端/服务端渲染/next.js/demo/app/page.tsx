@@ -69,6 +69,12 @@ export default function Home() {
                             → ISR 演示
                         </Link>
                         <Link
+                            href="/fetch-cache-demo"
+                            className="block text-blue-600 hover:text-blue-800 underline"
+                        >
+                            → Fetch 缓存对比
+                        </Link>
+                        <Link
                             href="/csr-demo"
                             className="block text-blue-600 hover:text-blue-800 underline"
                         >

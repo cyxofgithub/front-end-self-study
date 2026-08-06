@@ -12,6 +12,7 @@ export default function Navigation() {
         { href: '/about', label: '关于' },
         { href: '/blog', label: '博客' },
         { href: '/isr-demo', label: 'ISR 演示' },
+        { href: '/fetch-cache-demo', label: 'Fetch 缓存' },
         { href: '/csr-demo', label: 'CSR 演示' },
         { href: '/blog-admin', label: '博客管理' },
         { href: '/api-demo', label: 'API 演示' },

@@ -322,7 +322,7 @@ flowchart TD
 
 ### 常见踩坑
 
-1. **fetch 默认被缓存**（Next 14）：组件里 `fetch` 没加 `cache` 选项，数据"改了不生效"。Next 15 起默认不缓存，行为相反——面试时说明版本差异。
+1. **fetch 默认缓存行为分场景**（Next 14）：静态路由中 `fetch` 默认缓存（force-cache），动态路由中默认不缓存（no-store）——同一个 `fetch(url)` 写在不同路由行为相反，"数据改了不生效/每次都回源"都先想这条。Next 15 起一律默认不缓存。真实可运行的三种策略对比见 [`demo/app/fetch-cache-demo/page.tsx`](./demo/app/fetch-cache-demo/page.tsx)。
 2. **hydration mismatch**：时间戳、`Math.random()` 直接写在渲染输出里，开发环境报红。
 3. **`useSearchParams` 未包 Suspense**：构建期预渲染直接报错（本 demo 的 `/login` 页就踩过，修法见 [`demo/app/login/page.tsx`](./demo/app/login/page.tsx)）。
 4. **自托管多实例 ISR 各自再生**：缓存不共享，需要配置共享 cache handler。

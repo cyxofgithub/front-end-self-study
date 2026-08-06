@@ -4,7 +4,10 @@ import type { Metadata } from 'next';
 import { getPostById } from '@/lib/api';
 
 // SSR（服务端渲染）- 每次请求时渲染
-// 使用 cache: 'no-store' 禁用缓存并强制 SSR
+// SSR（服务端渲染）- 每次请求都在服务端实时渲染
+// 本页用路由级的 force-dynamic 强制动态渲染；
+// 另一种等价做法是请求级控制：fetch(url, { cache: 'no-store' })
+// 两者的真实对比见 /fetch-cache-demo 页面
 export const dynamic = 'force-dynamic';
 
 interface BlogDetailPageProps {
