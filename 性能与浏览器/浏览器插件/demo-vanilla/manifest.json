@@ -1,0 +1,55 @@
+{
+  "manifest_version": 3,
+  "name": "划词笔记 · MV3 学习 Demo",
+  "version": "1.0.0",
+  "description": "覆盖面试高频考点的全能学习 Demo：popup / content script / service worker / 消息通信 / storage / 右键菜单 / 快捷键",
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "划词笔记",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    }
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/content.js"],
+      "css": ["content/content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "options_page": "options/options.html",
+
+  "permissions": [
+    "storage",
+    "contextMenus",
+    "alarms",
+    "notifications",
+    "scripting",
+    "activeTab"
+  ],
+
+  "commands": {
+    "toggle-highlight": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+H",
+        "mac": "Command+Shift+H"
+      },
+      "description": "切换页面高亮模式"
+    }
+  }
+}

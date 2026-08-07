@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "划词笔记 · 企业版",
+    "description": "扩展名称"
+  },
+  "contextMenuSaveNote": {
+    "message": "保存笔记：\"%s\"",
+    "description": "右键菜单-保存选中文字"
+  },
+  "cmdToggleHighlight": {
+    "message": "切换页面高亮模式",
+    "description": "快捷键命令描述"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Highlight Notes · Enterprise",
+    "description": "Extension name"
+  },
+  "contextMenuSaveNote": {
+    "message": "Save note: \"%s\"",
+    "description": "Context menu - save selected text"
+  },
+  "cmdToggleHighlight": {
+    "message": "Toggle page highlight mode",
+    "description": "Command description"
+  }
+}

@@ -1,0 +1,77 @@
+/**
+ * content.css —— 注入到页面的样式
+ *
+ * 【考点】content script 的 CSS 与页面 CSS 共处同一份级联：
+ *  - 页面的全局样式（如 body { font-size }、通用选择器）会影响我们注入的节点
+ *  - 我们写的通用选择器也会污染页面
+ *  - vanilla 隔离方案：唯一前缀 crx- + all: initial 重置 + 高 z-index
+ *  - 彻底隔离方案：Shadow DOM（见 demo-enterprise）或 iframe
+ */
+
+/* 高亮选区的 <mark>，颜色来自 options 页配置（通过 CSS 变量注入） */
+.crx-note-highlight {
+  background-color: var(--crx-highlight-color, #ffe58f) !important;
+  color: inherit !important;
+  padding: 0 1px;
+  border-radius: 2px;
+}
+
+/* 高亮模式下鼠标变成十字，提示可以划词 */
+body.crx-highlight-mode {
+  cursor: crosshair !important;
+}
+body.crx-highlight-mode ::selection {
+  background-color: var(--crx-highlight-color, #ffe58f) !important;
+}
+
+/* 右下角浮动面板 */
+#crx-note-panel {
+  /* all: initial 重置继承样式，防止页面全局样式污染面板 */
+  all: initial;
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2147483647; /* z-index 最大值，确保不被页面盖住 */
+  width: 200px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  font-family: -apple-system, "PingFang SC", sans-serif;
+  font-size: 13px;
+  color: #333;
+}
+
+#crx-note-panel .crx-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+#crx-note-panel .crx-panel-tip {
+  color: #999;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* 保存成功的轻提示 */
+.crx-toast {
+  all: initial;
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2147483647;
+  padding: 8px 20px;
+  border-radius: 20px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-family: -apple-system, "PingFang SC", sans-serif;
+  font-size: 13px;
+  animation: crx-toast-in 0.2s ease-out;
+}
+
+@keyframes crx-toast-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}

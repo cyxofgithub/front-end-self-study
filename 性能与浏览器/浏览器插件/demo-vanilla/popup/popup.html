@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <!--
+    【考点】MV3 的 CSP：扩展页面默认
+      script-src 'self';
+    禁止内联脚本（<script>alert(1)</script>、onclick="..." 一律不执行），
+    禁止加载远程脚本（CDN 的 js 不行），必须引本地文件。
+  -->
+  <link rel="stylesheet" href="popup.css" />
+  <title>划词笔记</title>
+</head>
+<body>
+  <header class="header">
+    <h1>📝 划词笔记</h1>
+    <span id="note-count" class="count">0</span>
+  </header>
+
+  <section class="section">
+    <h2>当前页面</h2>
+    <div id="tab-info" class="tab-info">加载中…</div>
+    <button id="btn-extract" type="button">提取页面信息</button>
+    <pre id="page-info" class="page-info"></pre>
+  </section>
+
+  <section class="section">
+    <h2>我的笔记</h2>
+    <ul id="note-list" class="note-list"></ul>
+  </section>
+
+  <section class="section">
+    <h2>长连接演示</h2>
+    <button id="btn-ping" type="button">PING background</button>
+    <span id="pong-result"></span>
+  </section>
+
+  <footer class="footer">
+    <button id="btn-options" type="button">⚙ 设置</button>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
