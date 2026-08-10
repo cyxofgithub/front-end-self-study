@@ -1,7 +1,7 @@
 ## sse中断连接
 
 1. 标准的 eventSource: SSE 的核心是EventSource对象，它内置了close()方法，这是关闭 SSE 连接的标准方式。
-2. fetch 自定义：利用 abortController 提供中断信号，跟连接绑定 [参考](./sse自定义.md)
+2. fetch 自定义：利用 abortController 提供中断信号，跟连接绑定 [参考](./sse原生vs自定义.md)
 3. XHR 实现：核心是调用xhr.abort()终止请求
 
 **如何确保中断通知到服务端？**
