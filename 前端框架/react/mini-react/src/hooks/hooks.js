@@ -23,6 +23,10 @@ export function setCurrentlyRenderingFiber(fiber) {
     currentlyRenderingFiber = fiber;
     workInProgressHook = fiber.memoizedState;
     lastHookInWorkInProgress = null;
+
+    // 重置本帧的 effect 调度列表，避免跨渲染累积
+    fiber.effectCallbacks = [];
+    fiber.cleanups = [];
 }
 
 /**
@@ -104,22 +108,20 @@ export function useEffect(effect, deps) {
             // 依赖变化，需要执行 effect
             // 清理函数会在 beforeMutation 阶段执行
             if (currentHook.cleanup) {
-                currentlyRenderingFiber.cleanup = currentHook.cleanup;
+                currentlyRenderingFiber.cleanups.push(currentHook.cleanup);
             }
 
             // effect 回调会在 layout 阶段执行
-            currentlyRenderingFiber.effectCallback = () => {
+            currentlyRenderingFiber.effectCallbacks.push(() => {
                 const cleanup = effect();
                 if (cleanup) {
                     currentHook.cleanup = cleanup;
                 }
-            };
+            });
 
             currentHook.deps = deps;
-        } else {
-            // 依赖未变化，清除 effectCallback 避免在 commit 阶段执行
-            currentlyRenderingFiber.effectCallback = null;
         }
+        // 依赖未变化：什么都不用做（不再像之前那样置空，避免清掉其他 effect）
     } else {
         // 首次渲染：创建新的 Hook 节点
         currentHook = {
@@ -139,13 +141,13 @@ export function useEffect(effect, deps) {
         lastHookInWorkInProgress = currentHook;
 
         // 首次渲染，执行 effect
-        // 目前这里只支持一个effect 实际一个fiber 可以对应多个 effect
-        currentlyRenderingFiber.effectCallback = () => {
+        // 每个 effect 各自 push 到数组，一个 fiber 可对应多个 effect
+        currentlyRenderingFiber.effectCallbacks.push(() => {
             const cleanup = effect();
             if (cleanup) {
                 currentHook.cleanup = cleanup;
             }
-        };
+        });
 
         currentHook.deps = deps;
     }

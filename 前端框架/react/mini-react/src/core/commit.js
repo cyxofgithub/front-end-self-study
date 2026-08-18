@@ -44,8 +44,8 @@ function commitBeforeMutationEffects(fiber) {
     // 遍历 effects 链表
     if (fiber.effects) {
         fiber.effects.forEach((effect) => {
-            if (effect.tag === TAG.FUNCTION_COMPONENT && effect.cleanup) {
-                effect.cleanup();
+            if (effect.tag === TAG.FUNCTION_COMPONENT && effect.cleanups) {
+                effect.cleanups.forEach((cleanup) => cleanup());
             }
         });
     }
@@ -173,9 +173,9 @@ function commitLayoutEffects(fiber) {
         fiber.effects.forEach((effect) => {
             if (
                 effect.tag === TAG.FUNCTION_COMPONENT &&
-                effect.effectCallback
+                effect.effectCallbacks
             ) {
-                effect.effectCallback();
+                effect.effectCallbacks.forEach((callback) => callback());
             }
         });
     }
