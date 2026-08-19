@@ -3,6 +3,9 @@ node_modules
 *.env
 .idea
 
+# mini-next 构建产物
+.mini-next/
+
 
 工程化/babel/*
 
@@ -22,3 +25,8 @@ run/
 dist/
 
 *.log
+
+openspec/
+
+.cursor/skills/openspec-*
+.cursor/commands/opsx*

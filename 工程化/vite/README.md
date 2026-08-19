@@ -59,6 +59,10 @@ flowchart TB
 - **启动**：Webpack 要先从入口建整棵依赖图并打包；Vite 只起静态服务 + 跑一次预构建（仅 node_modules），业务代码按请求再算。  
 - **热更新**：Webpack 改一个文件可能触发一串模块重算和 chunk 更新；Vite 只重算改动的单文件，再让浏览器重新请求该模块 URL。
 
+完整对比（范式差异、esbuild/Rollup 双引擎取舍、Vite 的代价与选型）见 [Vite 与 Webpack 核心区别](面试题/vite与webpack核心区别.md)，该文逐段对照本仓库两个实现的代码。
+
+对照实现：[mini-webpack](../webpack/mini-webpack/README.md) —— bundle 范式，demo 结构与本项目一致，可两边同时起服务对比日志与网络请求。
+
 ## 请求流（与本仓库 mini-vite 对应）
 
 ```mermaid

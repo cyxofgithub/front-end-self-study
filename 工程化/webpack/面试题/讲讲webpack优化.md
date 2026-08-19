@@ -1,5 +1,9 @@
 ## 讲讲 webpack 优化
 
+> 前置原理见 [webpack 打包原理](./webpack打包原理.md)：下面每条优化都是针对「递归建依赖图 → loader 转换 → 生成 bundle」这三段工作量下手——要么少做（缩小范围、externals、Tree Shaking），要么复用（持久化缓存、DllPlugin），要么并行（thread-loader）。
+>
+> 延伸阅读：[splitChunks 中 all、async 的使用场景](./splitChunk中all、async的使用场景.md)、[webpack 热更新](./webpack%20热更新.md)、[Vite 与 Webpack 核心区别](../../vite/面试题/vite与webpack核心区别.md)。
+
 Webpack 是一个强大的模块打包工具，但在大型项目中，构建速度和打包后的性能可能会成为瓶颈。通过一些优化策略，可以显著提升 Webpack 的构建速度和打包后的性能。以下是一些常见的 Webpack 优化方法：
 
 ### 1. 优化构建速度

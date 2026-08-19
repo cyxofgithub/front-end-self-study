@@ -1,4 +1,9 @@
 # webpack打包原理
+
+> 最小可运行实现见 [mini-webpack](../mini-webpack/)：[graph.ts](../mini-webpack/src/graph.ts) 从 entry 递归建依赖图、[loader.ts](../mini-webpack/src/loader.ts) 实现 loader 链（从右到左）、[resolve.ts](../mini-webpack/src/resolve.ts) 对应 enhanced-resolve、[bundle.ts](../mini-webpack/src/bundle.ts) 拼出 runtime + 模块 map。
+>
+> 延伸阅读：[讲讲 webpack 优化](./讲讲webpack优化.md)、[Loader 和 Plugin 区别](./loader和plugin区别.md)、[深入理解 loader](./深入理解loader.md)、[webpack 热更新](./webpack%20热更新.md)、[Vite 与 Webpack 核心区别](../../vite/面试题/vite与webpack核心区别.md)。
+
 ### 一、Webpack 打包核心认知
 
 首先要明确：webpack 本质是一个**模块打包器**，它会把项目中所有依赖的模块（JS、CSS、图片等），从指定的**入口文件**开始，构建一个**依赖图 (Dependency Graph)**，然后将所有模块按照规则处理后，打包成一个或多个**输出文件 (bundle)**。
