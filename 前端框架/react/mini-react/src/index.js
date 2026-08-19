@@ -7,6 +7,7 @@
 import { createElement } from './core/createElement.js';
 import { createRootFiber, TAG } from './core/fiber.js';
 import { updateContainer } from './core/reconciler.js';
+import { initEventSystem } from './events/eventSystem.js';
 
 /**
  * render - 渲染函数
@@ -21,6 +22,9 @@ import { updateContainer } from './core/reconciler.js';
  * render(createElement(App), document.getElementById('root'));
  */
 export function render(element, container) {
+    // 初始化事件系统：在根容器上为每种支持的事件绑定一个监听器（幂等）
+    initEventSystem(container);
+
     // 创建根 Fiber 节点
     const rootFiber = createRootFiber(container);
 

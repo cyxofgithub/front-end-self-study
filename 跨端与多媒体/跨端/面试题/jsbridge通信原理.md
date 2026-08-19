@@ -172,9 +172,9 @@ window.handleNativeCall = function (method, params) {
 
 **注意**：
 
--   API 19 以下使用 `loadUrl("javascript:xxx")`，但无法获取返回值
--   需要确保 WebView 已加载完成（在 `onPageFinished` 中调用）
--   JS 代码中的字符串需要正确转义
+- API 19 以下使用 `loadUrl("javascript:xxx")`，但无法获取返回值
+- 需要确保 WebView 已加载完成（在 `onPageFinished` 中调用）
+- JS 代码中的字符串需要正确转义
 
 ### iOS：evaluateJavaScript
 
@@ -229,9 +229,9 @@ window.handleNativeCall = function (method, params) {
 
 **注意**：
 
--   需要在主线程调用
--   JS 代码执行是异步的，通过 completionHandler 获取结果
--   字符串参数需要正确转义，避免注入攻击
+- 需要在主线程调用
+- JS 代码执行是异步的，通过 completionHandler 获取结果
+- 字符串参数需要正确转义，避免注入攻击
 
 ### 回调机制
 

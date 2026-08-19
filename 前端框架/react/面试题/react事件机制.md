@@ -1,6 +1,23 @@
 ## react 事件机制
 
-### 原声的事件流
+> 一句话结论：React 事件 = **合成事件（SyntheticEvent）+ 事件委托**。JSX 里写的 `onClick` 并不绑定在真实 DOM 上，而是统一委托到根容器节点；触发时 React 沿虚拟 DOM 树收集同类型 handler 并依次执行，从而抹平浏览器差异、减少内存占用。
+
+```mermaid
+flowchart TD
+    subgraph 注册阶段["注册阶段（应用挂载时，只做一次）"]
+        A["createRoot(container)"] --> B["在 container 上批量 addEventListener<br/>所有支持的事件类型各绑一个"]
+    end
+    subgraph 触发阶段["触发阶段（每次点击）"]
+        C["用户点击 button"] --> D["原生事件冒泡到 container"]
+        D --> E["React 拦截，找到目标 Fiber 节点"]
+        E --> F["沿 Fiber 向上遍历收集<br/>同类型 handler 形成执行路径"]
+        F --> G["构造合成事件对象 SyntheticEvent"]
+        G --> H["按捕获→冒泡顺序批量执行 handler"]
+    end
+    注册阶段 -.事件真正触发.-> 触发阶段
+```
+
+### 原生的事件流
 
 ![Alt text](image.png)
 
@@ -98,6 +115,42 @@ export { App };
 ```
 
 总结: react 的事件都会被绑定在 document(react16)/根节点(react17) 上，在冒泡阶段触发
+
+### 合成事件与原生事件的区别
+
+| 维度 | 原生 DOM 事件 | React 合成事件 |
+| --- | --- | --- |
+| 绑定位置 | 每个真实 DOM 节点各自 `addEventListener` | 统一委托在根节点（`#root`）上 |
+| 事件对象 | 浏览器原生 `Event`，各浏览器实现有差异 | `SyntheticEvent` 包装原生事件，**跨浏览器 API 统一** |
+| 事件对象生命周期 | 常驻，可异步访问 | 默认用后回收（React 17 前有事件池复用），异步读取需 `e.persist()` 或取 `e.nativeEvent` |
+| 阻止默认行为 | `e.preventDefault()` | 相同，但必须显式调用，`return false` 无效 |
+| 与渲染的关系 | 手动绑定/解绑，易漏 | handler 存在 Fiber 的 props 上，组件卸载随 Fiber 一起销毁，**天然防止内存泄漏** |
+| 命名 | 全小写 `onclick` | 驼峰 `onClick` |
+
+> React 17 之后移除了事件池机制（合成事件对象不再被回收复用），`e.persist()` 变成了空操作。
+
+### 事件委托的实现细节
+
+1. `onClick` 等 props 只是普通属性，保存在 Fiber 节点的 `memoizedProps` 上，**真实 DOM 上没有任何监听器**（`capture` 类事件除外，会绑到真实节点）。
+2. `createRoot(container)` 挂载时，React 在 `container` 上为每种支持的事件调用一次原生 `addEventListener` —— 整个应用只有这几十个监听器。
+3. 事件触发时，原生事件冒泡到根节点，React 通过 `e.target` 找到目标 Fiber，再沿 `return` 指针向上收集所有同名 handler，形成一条执行路径。
+4. 按路径顺序（先捕获后冒泡）依次调用，并把原生事件包装成 SyntheticEvent 传入 —— 所以 `e.stopPropagation()` 能同时阻断合成与原生的继续传播。
+
+```jsx
+// 验证：真实 DOM 上没有 onClick 监听器，监听器在 #root 上
+function App() {
+  return <button onClick={() => console.log("clicked")}>click</button>;
+}
+// DevTools → Elements → button：Event Listeners 面板为空
+// #root 上：click 监听器（由 React 注册）
+```
+
+为什么委托到根节点而不是 document？
+
+- React 16 绑在 `document` 上，多个 React 应用共存（如微前端、弹窗挂 body 下）会互相干扰，且 `document` 上难以正确区分捕获/冒泡语义。
+- React 17 起改为绑在各自渲染容器的根节点，实现应用间事件隔离，这也是 17 的 breaking change 之一。
+
+> 想看这套机制的可运行实现，见 [mini-react 事件系统](../../mini-react/docs/events.md)：根容器注册派发器 + DOM→Fiber 映射表 + 沿 `return` 指针收集捕获/冒泡双路径，附可打开验证的示例页。
 
 ### 想要阻止冒泡同时阻止绑定在同个元素后面的事件继续执行
 

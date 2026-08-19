@@ -12,6 +12,7 @@ import { TAG, EFFECT_TAG, createFiber } from './fiber.js';
 import { scheduleWork } from './scheduler.js';
 import { commitRoot } from './commit.js';
 import { setCurrentlyRenderingFiber } from '../hooks/hooks.js';
+import { isEventName, precacheFiberNode, updateFiberProps } from '../events/eventSystem.js';
 
 // 当前正在工作的根 Fiber
 let workInProgressRoot = null;
@@ -308,6 +309,9 @@ function createFiberFromElement(element) {
 /**
  * createDOMNode - 创建 DOM 节点
  *
+ * 对应源码 createInstance：创建时一次性登记 Fiber 指针与 props（事件派发的反查依据）。
+ * 之后插入 DOM（appendChild）不再有任何登记 —— 与源码一致：插入是纯 DOM 操作。
+ *
  * @param {object} fiber - Fiber 节点
  * @returns {HTMLElement|Text} DOM 节点
  */
@@ -317,12 +321,18 @@ function createDOMNode(fiber) {
     }
 
     const dom = document.createElement(fiber.type);
+    // 登记 expando：DOM→Fiber 与 DOM→props（源码在 createInstance 里做同样两步）
+    precacheFiberNode(fiber, dom);
+    updateFiberProps(dom, fiber.props);
     updateDOMProperties(dom, {}, fiber.props || {});
     return dom;
 }
 
 /**
  * updateDOMProperties - 更新 DOM 属性
+ *
+ * 事件 props（onXxx）不在此处理：handler 只存在 Fiber 的 props 上，
+ * 派发时由 eventSystem 从 Fiber 读取最新的 —— 这也是「换 handler 不需要重绑监听器」的原因。
  *
  * @param {HTMLElement} dom - DOM 元素
  * @param {object} prevProps - 旧属性
@@ -331,27 +341,15 @@ function createDOMNode(fiber) {
 function updateDOMProperties(dom, prevProps, nextProps) {
     // 移除旧属性
     Object.keys(prevProps).forEach((name) => {
-        if (name !== 'children' && name !== 'nodeValue') {
-            if (name.startsWith('on')) {
-                // 事件处理函数
-                const eventType = name.toLowerCase().substring(2);
-                dom.removeEventListener(eventType, prevProps[name]);
-            } else {
-                dom.removeAttribute(name);
-            }
+        if (name !== 'children' && name !== 'nodeValue' && !isEventName(name)) {
+            dom.removeAttribute(name);
         }
     });
 
     // 添加新属性
     Object.keys(nextProps).forEach((name) => {
-        if (name !== 'children' && name !== 'nodeValue') {
-            if (name.startsWith('on')) {
-                // 事件处理函数
-                const eventType = name.toLowerCase().substring(2);
-                dom.addEventListener(eventType, nextProps[name]);
-            } else {
-                dom[name] = nextProps[name];
-            }
+        if (name !== 'children' && name !== 'nodeValue' && !isEventName(name)) {
+            dom[name] = nextProps[name];
         }
     });
 }

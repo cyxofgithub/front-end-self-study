@@ -9,6 +9,7 @@
  */
 
 import { EFFECT_TAG, TAG } from './fiber.js';
+import { isEventName, updateFiberProps } from '../events/eventSystem.js';
 
 /**
  * commitRoot - 提交根节点
@@ -108,6 +109,7 @@ function commitPlacement(fiber, parentFiber) {
     const dom = fiber.stateNode;
 
     if (parentDOM && dom) {
+        // 纯 DOM 操作，零登记 —— Fiber/props expando 已在 createDOMNode（createInstance）登记
         parentDOM.appendChild(dom);
     }
 }
@@ -122,6 +124,10 @@ function commitUpdate(fiber) {
         const dom = fiber.stateNode;
         const oldProps = fiber.alternate?.props || {};
         const newProps = fiber.props;
+
+        // 先刷新 props expando 再改 DOM（源码 commitUpdate 顺序）：
+        // 保证事件派发读到的永远是已提交的最新 handler
+        updateFiberProps(dom, newProps);
 
         // 文本节点需要特殊处理 nodeValue
         if (fiber.type === 'TEXT_ELEMENT') {
@@ -207,6 +213,9 @@ function getParentDOM(fiber) {
 /**
  * updateDOMProperties - 更新 DOM 属性
  *
+ * 事件 props 不在此处理：委托方案下 handler 只存于 Fiber props，
+ * 派发时实时读取，无需对 DOM 做增删监听。
+ *
  * @param {HTMLElement} dom - DOM 元素
  * @param {object} prevProps - 旧属性
  * @param {object} nextProps - 新属性
@@ -214,27 +223,15 @@ function getParentDOM(fiber) {
 function updateDOMProperties(dom, prevProps, nextProps) {
     // 移除旧属性
     Object.keys(prevProps).forEach((name) => {
-        if (name !== 'children' && name !== 'nodeValue') {
-            if (name.startsWith('on')) {
-                // 事件处理函数
-                const eventType = name.toLowerCase().substring(2);
-                dom.removeEventListener(eventType, prevProps[name]);
-            } else {
-                dom.removeAttribute(name);
-            }
+        if (name !== 'children' && name !== 'nodeValue' && !isEventName(name)) {
+            dom.removeAttribute(name);
         }
     });
 
     // 添加新属性
     Object.keys(nextProps).forEach((name) => {
-        if (name !== 'children' && name !== 'nodeValue') {
-            if (name.startsWith('on')) {
-                // 事件处理函数
-                const eventType = name.toLowerCase().substring(2);
-                dom.addEventListener(eventType, nextProps[name]);
-            } else {
-                dom[name] = nextProps[name];
-            }
+        if (name !== 'children' && name !== 'nodeValue' && !isEventName(name)) {
+            dom[name] = nextProps[name];
         }
     });
 }
