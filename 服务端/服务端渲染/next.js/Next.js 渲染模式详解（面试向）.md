@@ -44,13 +44,24 @@ flowchart LR
 ```mermaid
 sequenceDiagram
     participant B as 浏览器
-    participant C as CDN
-    participant S as 源服务器
-    Note over S: next build 时预渲染 HTML
-    B->>C: GET /blog
-    C->>B: 静态 HTML（直接命中，TTFB 极短）
+    participant E as 边缘节点（CDN）
+    participant O as 源站（Origin）
+    Note over O: next build 预渲染出纯静态文件，推送至 CDN
+    B->>E: GET /blog
+    E->>B: 命中缓存，直接返回 HTML（TTFB 极短）
+    Note over E,O: 仅缓存未命中时才回源 O 拉取并缓存
+    Note over B,E: 响应带 Cache-Control: immutable，源站未参与
     B->>B: 下载 JS → 水合 → 可交互
 ```
+
+**SSG 如何结合 CDN**：SSG 的产物是「确定性的纯静态文件」——同一 URL 永远返回同一份 HTML/CSS/JS，不含依赖运行时或会话的动态内容，因此能被 CDN 永久缓存、就近分发：
+
+1. **构建即静态**：`next build` 把每个路由预渲染成 `.html`，和图片、JS、CSS 一样是普通静态资源，可直接托管。
+2. **边缘就近**：CDN 把文件缓存在全球边缘节点，用户经 DNS 解析到最近节点返回，不再回源。
+3. **命中即不回源**：响应带长 `Cache-Control`（如 `public, max-age=31536000, immutable`），缓存命中率接近 100%，源站只在首次/未命中时被访问——所以「源站挂了，页面仍可访问」。
+4. **对比 SSR**：SSR 每次请求都回源实时渲染、产物随请求变化，无法被 CDN 全量缓存，拿不到这份全球分发红利。
+
+部署与上线（产物结构、CDN 上传、混合应用分层）见下文「部署最优解」。
 
 **Next.js App Router 实现**：Server Component 默认就是 SSG，不加任何动态标记即构建时预渲染。
 
@@ -211,7 +222,178 @@ flowchart TD
 
 ---
 
+## 部署最优解：纯静态 vs Node + CDN 分层
+
+**一句话**：部署方式由「构建产物里是否含动态路由」决定——全站 SSG 走 `output: 'export'` 纯静态托管；混合 SSG/SSR/CSR 走 `next start`（Node）+ 前置 CDN 分层缓存。
+
+### 方案一：纯静态导出（全站 SSG）
+
+`output: 'export'` 后，`next build` 产出纯静态目录 `./out`：
+
+```text
+out/
+├── index.html              # 首页（/）
+├── blog.html               # /blog 路由
+├── 404.html
+├── favicon.ico             # public/ 原样拷贝
+└── _next/
+    └── static/
+        ├── chunks/         # 各页 JS chunk（文件名带内容 hash）
+        ├── css/            # 样式
+        └── media/          # 图片、字体
+```
+
+每个 `.html` 通过 `<script src="/_next/static/chunks/xxx.js">` 引用资源，整个 `./out` 就是一个可独立托管的站点。
+
+**部署流程**（对象存储 + CDN）：
+
+```mermaid
+flowchart LR
+    A["next build<br/>(output: 'export')"] --> B["产出 ./out"]
+    B --> C["上传对象存储<br/>S3 / OSS / COS / R2"]
+    C --> D["CDN 回源指向对象存储"]
+    D --> E["用户访问就近命中边缘节点"]
+```
+
+```bash
+# 1. 构建纯静态站点
+next build                          # 产出 ./out
+
+# 2. 上传对象存储（AWS S3 为例；阿里云 OSS 用 ossutil cp）
+aws s3 sync ./out s3://my-blog --delete \
+  --cache-control "public,max-age=31536000,immutable"
+
+# 3. CDN（CloudFront）源站指向 bucket，默认首页回源 index.html
+```
+
+一键托管：Vercel / Netlify / Cloudflare Pages 直接 `git push` 自动构建 + 分发到边缘网络，免手动配 CDN。
+
+**缓存策略**：
+
+- `_next/static/` 文件名带内容 hash，可 `immutable` 永久缓存。
+- 入口 HTML（`index.html`/`blog.html`）不带 hash，需短 TTL 或部署后主动 invalidate，否则用户一直拿旧页面。
+
+**限制**：`output: 'export'` 只能纯静态，不支持 SSR / ISR / Server Actions / API Routes / 动态路由运行时生成（动态路由需 `generateStaticParams` 预生成）；`next/image` 需 `images.unoptimized = true` 或改用 CDN 图片服务。
+
+### 方案二：Node + CDN 分层（混合应用）
+
+真实项目很少全站 SSG——渲染模式是**路由级**的，一个应用里 `○`（SSG）、`ƒ`（SSR）、`'use client'` 的 CSR 壳往往并存。此时 `output: 'export'` 会因动态路由**构建失败**，正确做法是 **Node 服务器（`next start`）+ 前置 CDN**，产物在 `.next/`（而非纯静态的 `./out`）。
+
+**部署拓扑（先分清谁在前谁在后）**：Node **不是**部署在 CDN 上——Node 是**源站（Origin）**，跑在云主机 / 容器 / K8s 上，真正执行 `next start` 和渲染代码；CDN 是**前置的缓存层**，部署在全球边缘节点，配置「回源地址 = Node 域名」。请求先打到 CDN：命中缓存直接返回；未命中（SSR 路由 / 缓存过期）才**回源** Node。
+
+**为什么请求会先到 CDN？——靠 DNS 接管流量**：CDN 不是「配置在 Node 里」的转发规则，而是**在 DNS 层就把流量引到了边缘节点**：
+
+1. 你的域名 `www.example.com` 原本解析到 Node 源站 IP；
+2. 接入 CDN 后，DNS 里改成 `www.example.com` → CNAME → CDN 厂商给的接入域名（如 `xxx.cdn.example.com`）；
+3. CDN 的智能 DNS 按用户地理位置，把域名解析到**离用户最近的边缘节点 IP**——于是浏览器连的是 CDN，不是源站；
+4. Node 的真实地址（`origin.example.com` 或内网 IP）只在 CDN 控制台填作「源站 / 回源地址」，不暴露给用户。
+
+```mermaid
+flowchart TD
+    A["用户访问 www.example.com"] --> B["DNS 解析<br/>CNAME 指向 CDN"]
+    B --> C["返回就近边缘节点 IP"]
+    C --> D["CDN 边缘节点"]
+    D -->|"缓存命中"| E["直接返回"]
+    D -->|"未命中，回源"| F["Node 源站<br/>origin.example.com"]
+    F --> G["实时渲染 / 查数据"]
+```
+
+一句话：**请求优先进 CDN 是 DNS 决定的，不是 Node 决定的**——域名 CNAME 到 CDN，解析结果就是边缘节点，Node 只作为 CDN 的「回源地址」躲在后面。
+
+```mermaid
+sequenceDiagram
+    participant U as 用户浏览器
+    participant E as CDN 边缘节点
+    participant N as Node 源站（next start）
+    participant D as 数据源
+    U->>E: GET 静态资源 / SSG 页
+    E->>U: 命中缓存，直接返回（不回源）
+    U->>E: GET SSR 页（/blog/1）
+    E->>N: 缓存未命中，回源
+    N->>D: 查询数据
+    D->>N: 返回数据
+    N->>E: 实时渲染的 HTML
+    E->>U: 返回给用户
+```
+
+CDN 不必「知道」每个路由是静态还是动态——只看响应头 `Cache-Control`：
+
+| 资源 | 缓存依据 | CDN 处理 |
+|---|---|---|
+| `/_next/static/*` | 文件名带 hash，可 `immutable` | 永久缓存 |
+| SSG 路由（○） | 长缓存 / `revalidate`（ISR） | 命中边缘缓存，过期后台再生 |
+| SSR 路由（ƒ） | `private, no-cache, no-store` | 每次回源，不缓存 |
+
+**先分清两处「配置」，别混为一谈**：
+
+- **接入 CDN**（域名 CNAME、回源地址）——在 **DNS 服务商 + CDN 控制台**配置，**不在 Next 代码里**；
+- **告诉 CDN 怎么缓存**——才和代码有关，但也只是让 Next **产出 `Cache-Control` 响应头**，CDN 读到后自动决定缓存多久。
+
+下面 `next.config.js` 里的 `source` 是 Next 的**路径匹配规则**（给匹配到的请求加响应头），**不是 CDN 的「源站」**：
+
+```js
+// next.config.js —— 用 headers() 让 Next 给不同路径产出不同的 Cache-Control
+module.exports = {
+  async headers() {
+    return [
+      { source: '/_next/static/:path*', headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }] },
+      { source: '/blog/:path*',          headers: [{ key: 'Cache-Control', value: 'public, s-maxage=3600, stale-while-revalidate=3600' }] }, // SSG/ISR
+      // SSR 路由不配，走 Next 默认 no-store，CDN 不缓存
+    ];
+  },
+};
+```
+
+### 怎么选（决策）
+
+```mermaid
+flowchart TD
+    A{"构建产物含动态路由吗？<br/>（ƒ / Server Action / API Route）"} -->|"否，全站 ○"| B["output: 'export'<br/>对象存储 + CDN"]
+    A -->|"是，○ 与 ƒ 混合"| C["next start + 前置 CDN<br/>Cache-Control 分层"]
+```
+
+**总结**：纯 SSG → `output: 'export'` 全静态托管（成本最低、CDN 全缓存）；混合 → Node + CDN，让静态路由走边缘、动态路由回源，兼顾性能与实时性。
+
+---
+
 ## 高频题 2：ISR 原理与 revalidate 机制（重点）
+
+### 缓存原理：靠什么字段实现（SSG / ISR）
+
+**一句话**：SSG 和 ISR 的缓存本质都是「用 `Cache-Control` 响应头告诉 CDN / 浏览器缓存多久」，区别只在过期时间——SSG 基本永久，ISR 带保质期（`revalidate`）。
+
+```mermaid
+sequenceDiagram
+    participant B as 浏览器
+    participant E as CDN / 缓存
+    participant N as Next 服务器
+    Note over N: 构建时预渲染 HTML（SSG）<br/>或过期后后台再生（ISR）
+    B->>E: GET /page
+    alt 缓存未过期
+        E->>B: 返回缓存 HTML
+    else 缓存过期（ISR）
+        E->>B: 先返回旧 HTML（stale）
+        E->>N: 后台触发再生
+        N->>E: 写入新 HTML
+    end
+```
+
+**关键字段对照**：
+
+| 字段 | 写在哪 | 作用 | 对应模式 |
+|---|---|---|---|
+| `revalidate` | 代码 `export const revalidate = N` | 设定「保质期」秒数 | ISR |
+| `s-maxage` | 响应头（Next 自动生成） | CDN / 共享缓存缓存多久 | SSG / ISR |
+| `max-age` | 响应头 | 浏览器本地缓存多久 | SSG / ISR |
+| `stale-while-revalidate` | 响应头 | 过期后先用旧缓存、后台刷新 | ISR |
+| `immutable` | 响应头（配合 hash 文件名） | 内容永不变化，永久缓存 | `_next/static` 资源 |
+
+**SSG vs ISR 的实现差异**：
+
+- **SSG**：不写 `revalidate`，页面被视为「永久静态」，响应带长期 `s-maxage`（Vercel 上默认约 `31536000` 即一年），CDN 长期缓存；要更新只能重新构建部署。
+- **ISR**：写 `export const revalidate = N`，Next 把 N 翻译成 `Cache-Control: s-maxage=N, stale-while-revalidate`。缓存超 N 秒后，下一请求**先返回旧 HTML、后台再生**，再下一请求拿到新内容——即 stale-while-revalidate（SWR）语义。
+
+**`revalidate` 到底转译成什么**：`revalidate = 60` 最终落到响应头约等于 `Cache-Control: s-maxage=60, stale-while-revalidate`（共享缓存 60 秒；浏览器端另走 `max-age`）。所以「ISR 靠什么实现」一句话：**`revalidate` 字段 → `Cache-Control` 的 `s-maxage` + `stale-while-revalidate`**。
 
 ### 时间触发 vs 按需触发
 
