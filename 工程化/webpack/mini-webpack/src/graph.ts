@@ -16,13 +16,17 @@ export interface ModuleInfo {
   id: string; // 相对 root 的路径，作为模块 ID（对应 webpack 的 moduleId）
   filePath: string;
   code: string; // 经过 loader + import 改写后的代码
-  deps: Record<string, string>; // specifier -> 依赖模块 id
+  deps: Record<string, string>; // 静态 import：specifier -> 依赖模块 id
+  asyncDeps: Record<string, string>; // 动态 import()：specifier -> 依赖模块 id
 }
 
 export type ModuleGraph = Map<string, ModuleInfo>;
 
-/** 匹配 import 语句，捕获 specifier */
+/** 匹配静态 import 语句，捕获 specifier */
 const IMPORT_RE = /import\s+(?:([\w*{}\s,]+)\s+from\s+)?['"]([^'"]+)['"]/g;
+
+/** 匹配动态 import()（注意：不带空格的 `import(` 不会被上面的 IMPORT_RE 命中） */
+const DYNAMIC_IMPORT_RE = /import\(\s*['"]([^'"]+)['"]\s*\)/g;
 
 function toId(filePath: string, root: string): string {
   return './' + path.relative(root, filePath).replace(/\\/g, '/');
@@ -31,6 +35,7 @@ function toId(filePath: string, root: string): string {
 /**
  * 把 ESM 语法改写成 webpack runtime 能执行的 CJS 风格调用。
  * 真实 webpack 用 AST（acorn）精确改写，这里用正则做最小演示。
+ * 只改写静态 import/export；动态 import() 留到 chunk 划分之后（见 transformAsyncImports）。
  */
 function transformToRuntime(code: string, deps: Record<string, string>): string {
   let out = code.replace(IMPORT_RE, (_full, binding: string | undefined, spec: string) => {
@@ -87,8 +92,10 @@ export function buildModuleGraph(entryFile: string, root: string): { graph: Modu
     // 2. 过 loader 链（CSS 等非 JS 在此变成 JS）
     const loaded = runLoaders(raw, filePath);
 
-    // 3. 收集依赖并解析路径
+    // 3. 收集依赖并解析路径（静态 import 与动态 import 分开记录）
     const deps: Record<string, string> = {};
+    const asyncDeps: Record<string, string> = {};
+
     IMPORT_RE.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = IMPORT_RE.exec(loaded)) !== null) {
@@ -102,10 +109,39 @@ export function buildModuleGraph(entryFile: string, root: string): { graph: Modu
       queue.push(resolved);
     }
 
-    // 4. 改写成 runtime 可执行的代码
+    DYNAMIC_IMPORT_RE.lastIndex = 0;
+    while ((m = DYNAMIC_IMPORT_RE.exec(loaded)) !== null) {
+      const spec = m[1];
+      const resolved = resolveModule(spec, filePath, root);
+      if (!resolved) {
+        console.warn(`[mini-webpack] 无法解析动态 import "${spec}"（来自 ${id}）`);
+        continue;
+      }
+      asyncDeps[spec] = toId(resolved, root);
+      queue.push(resolved);
+    }
+
+    // 4. 改写成 runtime 可执行的代码（静态部分；动态 import 之后由 transformAsyncImports 改）
     const code = transformToRuntime(loaded, deps);
-    graph.set(id, { id, filePath, code, deps });
+    graph.set(id, { id, filePath, code, deps, asyncDeps });
   }
 
   return { graph, entryId };
+}
+
+/**
+ * 动态 import 改写 —— 必须在 chunk 划分之后，因为需要知道目标模块落在哪个 chunk。
+ * import('./lazy.js')  →  __webpack_require__.e("src_lazy").then(() => __webpack_require__("./src/lazy.js"))
+ * 对应真实 webpack 的 import() 异步加载 + __webpack_require__.e 拉 chunk。
+ */
+export function transformAsyncImports(graph: ModuleGraph, asyncChunkIds: Record<string, string>): void {
+  for (const mod of graph.values()) {
+    DYNAMIC_IMPORT_RE.lastIndex = 0;
+    mod.code = mod.code.replace(DYNAMIC_IMPORT_RE, (_full, spec: string) => {
+      const moduleId = mod.asyncDeps[spec];
+      const chunkId = moduleId ? asyncChunkIds[moduleId] : undefined;
+      if (!chunkId) return _full;
+      return `__webpack_require__.e(${JSON.stringify(chunkId)}).then(function () { return __webpack_require__(${JSON.stringify(moduleId)}); })`;
+    });
+  }
 }

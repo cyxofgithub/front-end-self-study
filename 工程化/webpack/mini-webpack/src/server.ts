@@ -6,33 +6,39 @@
  * 2. HMR ：文件变更后重建依赖图，但只把**变更的模块**（hot-update 增量）推给浏览器，
  *          浏览器在运行时替换模块工厂并重跑入口，不整包重取、不刷新页面
  *          （mini-vite 只推变更文件的 URL，浏览器 import 单个文件）
+ *
+ * splitChunks 之后产物是多个文件（bundle.js + 各 chunk），dev server 把它们都放内存，
+ * 按文件名 serve，等价 webpack-dev-server 的「内存文件系统」。
  */
 import { createServer, type IncomingMessage, type ServerResponse } from 'http';
 import { readFileSync } from 'fs';
 import path from 'path';
 import chokidar from 'chokidar';
 import { WebSocketServer, type WebSocket } from 'ws';
-import { buildModuleGraph, type ModuleGraph } from './graph.js';
-import { generateBundle } from './bundle.js';
+import { buildModuleGraph, transformAsyncImports, type ModuleGraph } from './graph.js';
+import { splitIntoChunks } from './chunk.js';
+import { generateAssets } from './bundle.js';
 import { getRootDir } from './paths.js';
 
 const PORT = 5175;
 const root = getRootDir();
 const entry = path.join(root, 'src', 'main.js');
 
-/** 内存里的 bundle + 模块图缓存 —— 对应 webpack-dev-server 把产物放内存不落盘 */
-let cachedBundle = '';
+/** 内存里的产物（多文件）+ 模块图缓存 —— 对应 webpack-dev-server 把产物放内存不落盘 */
+let cachedAssets = new Map<string, string>();
 let cachedGraph: ModuleGraph = new Map();
 let buildCount = 0;
 
 function rebuild(reason: string): void {
   const start = performance.now();
   const { graph, entryId } = buildModuleGraph(entry, root);
-  cachedBundle = generateBundle(graph, entryId);
+  const { chunks, asyncChunkIds } = splitIntoChunks(graph, entryId);
+  transformAsyncImports(graph, asyncChunkIds);
+  cachedAssets = generateAssets(chunks, graph, entryId);
   buildCount++;
   const cost = performance.now() - start;
   console.log(
-    `[mini-webpack] 第 ${buildCount} 次构建（${reason}）：${graph.size} 个模块，${cost.toFixed(1)}ms`
+    `[mini-webpack] 第 ${buildCount} 次构建（${reason}）：${graph.size} 个模块 / ${chunks.length} 个 chunk，${cost.toFixed(1)}ms`
   );
   cachedGraph = graph;
 }
@@ -91,10 +97,13 @@ function handleRequest(req: IncomingMessage, res: ServerResponse): void {
     return;
   }
 
-  // 浏览器只会请求这一个 JS —— 与 Vite 的「N 个模块请求」形成对比
-  if (urlPath === '/bundle.js') {
+  // 按文件名 serve 产物：/bundle.js、/shared.js、/src_lazy.js …
+  // 与 Vite 的「N 个模块按需转换」不同，这里 serve 的是预先打好包的 chunk。
+  const fileName = urlPath.slice(1);
+  const content = cachedAssets.get(fileName);
+  if (content) {
     res.setHeader('Content-Type', 'application/javascript');
-    res.end(cachedBundle);
+    res.end(content);
     return;
   }
 

@@ -7,7 +7,9 @@
 </head>
 <body>
   <div id="app"></div>
-  <!-- 与 mini-vite 对比：这里只有一个打包产物，不是原生 ESM 入口 -->
+  <!-- splitChunks 把 util.js 抽成了共享 chunk（shared.js），必须先于 bundle.js 加载，
+       这样 bundle.js 的 runtime 启动时能在队列里拿到 util.js 的工厂 -->
+  <script src="/shared.js"></script>
   <script src="/bundle.js"></script>
 </body>
 </html>
