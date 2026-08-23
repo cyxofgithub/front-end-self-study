@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CUI + GUI 混合交互 Demo — Agent Chat 前端</title>
+<style>
+  /* ========== 基础 ========== */
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #0f1117; color: #d7dce5; display: flex; flex-direction: column;
+  }
+  code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+  /* ========== 顶部 ========== */
+  header { padding: 14px 20px; border-bottom: 1px solid #232838; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  header h1 { font-size: 16px; color: #fff; }
+  header .sub { font-size: 12px; color: #7a8299; }
+
+  /* ========== 主布局：左 CUI / 右 GUI 画布 ========== */
+  .layout { flex: 1; display: grid; grid-template-columns: minmax(420px, 7fr) minmax(320px, 5fr); gap: 14px; padding: 14px 20px; min-height: 0; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; grid-auto-rows: minmax(360px, auto); } }
+
+  .panel { background: #171a21; border: 1px solid #232838; border-radius: 12px; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+  .panel-title { padding: 10px 14px; font-size: 12px; color: #9aa3b8; border-bottom: 1px solid #232838; display: flex; justify-content: space-between; align-items: center; }
+  .panel-title .tag { font-size: 10px; padding: 2px 8px; border-radius: 999px; border: 1px solid #2f3650; color: #8b95ad; }
+
+  /* ========== 聊天区（CUI） ========== */
+  .chat-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  #messages { flex: 1; overflow-y: auto; padding: 16px 14px; display: flex; flex-direction: column; gap: 14px; }
+  #messages::-webkit-scrollbar { width: 6px; }
+  #messages::-webkit-scrollbar-thumb { background: #2a3044; border-radius: 3px; }
+
+  .msg { display: flex; gap: 10px; max-width: 92%; }
+  .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+  .avatar { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .msg.assistant .avatar { background: #1f2f4d; color: #7ea6ff; }
+  .msg.user .avatar { background: #24402e; color: #6fe09a; }
+  .bubble { padding: 9px 12px; border-radius: 10px; font-size: 13.5px; line-height: 1.65; white-space: pre-wrap; word-break: break-word; }
+  .msg.user .bubble { background: #244a7c; color: #e8eefc; border-top-right-radius: 3px; }
+  .msg.assistant .bubble { background: #1d222e; border: 1px solid #2a3044; border-top-left-radius: 3px; flex: 1; min-width: 0; }
+
+  /* 流式光标 */
+  .cursor { display: inline-block; width: 7px; height: 15px; background: #7ea6ff; margin-left: 2px; vertical-align: -2px; animation: blink 0.9s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .stopped-flag { color: #f0b45c; font-size: 12px; margin-top: 6px; }
+  .stopped-flag::before { content: "⏹ "; }
+
+  /* 工具调用卡片（Agent 过程呈现） */
+  .tool-card { border: 1px solid #2c3448; border-left: 3px solid #5b6785; background: #191d28; border-radius: 8px; padding: 8px 10px; margin: 8px 0 4px; font-size: 12.5px; }
+  .tool-card.success { border-left-color: #3fb950; }
+  .tool-card.error { border-left-color: #f85149; }
+  .tool-card.running { border-left-color: #7ea6ff; }
+  .tool-head { display: flex; align-items: center; gap: 8px; }
+  .tool-name { color: #a9c1ff; font-weight: 600; }
+  .tool-status { margin-left: auto; font-size: 11px; color: #8b95ad; }
+  .tool-args { color: #6f7a93; font-size: 11.5px; margin-top: 4px; }
+  .tool-result { color: #9fd8ae; font-size: 11.5px; margin-top: 4px; }
+  .spinner { width: 12px; height: 12px; border: 2px solid #39415c; border-top-color: #7ea6ff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* 输入区 */
+  .chips { display: flex; gap: 8px; padding: 10px 14px 0; flex-wrap: wrap; }
+  .chip { font-size: 11.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid #2f3650; color: #9db1e0; cursor: pointer; background: none; }
+  .chip:hover { background: #20273c; }
+  .input-row { display: flex; gap: 8px; padding: 10px 14px 14px; }
+  .input-row input { flex: 1; background: #10131c; border: 1px solid #2a3044; border-radius: 8px; padding: 9px 12px; color: #d7dce5; font-size: 13px; outline: none; }
+  .input-row input:focus { border-color: #40507e; }
+  .btn { border: none; border-radius: 8px; padding: 0 16px; font-size: 13px; cursor: pointer; }
+  .btn-send { background: #3560b0; color: #fff; }
+  .btn-send:disabled { background: #2a3350; color: #6b7590; cursor: not-allowed; }
+  .btn-stop { background: #4a3320; color: #f0b45c; display: none; }
+
+  /* 回到底部 */
+  #toBottom { position: absolute; right: 34px; bottom: 120px; background: #2a3044; color: #c6cede; border: 1px solid #3a4360; border-radius: 999px; font-size: 11px; padding: 5px 10px; cursor: pointer; display: none; z-index: 5; }
+
+  /* ========== GUI 画布 ========== */
+  #canvas { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  #canvas::-webkit-scrollbar { width: 6px; }
+  #canvas::-webkit-scrollbar-thumb { background: #2a3044; border-radius: 3px; }
+  .canvas-empty { color: #5d6678; font-size: 12.5px; text-align: center; margin: auto; line-height: 2; }
+
+  .gui-card { background: #1b202c; border: 1px solid #2c3448; border-radius: 10px; padding: 12px 14px; animation: rise 0.35s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .gui-card h3 { font-size: 13px; color: #e6ebf5; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .gui-card h3 .schema-tag { font-size: 10px; color: #7a6bd0; border: 1px dashed #4b4390; padding: 1px 6px; border-radius: 4px; font-weight: 400; }
+
+  .field-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 12.5px; }
+  .field-row label { width: 52px; color: #8b95ad; flex-shrink: 0; }
+  .field-row input, .field-row select { flex: 1; background: #12151f; border: 1px solid #2a3044; border-radius: 6px; color: #d7dce5; padding: 5px 8px; font-size: 12.5px; }
+
+  .badge { font-size: 10.5px; padding: 2px 8px; border-radius: 999px; }
+  .badge.pending { background: #3a3218; color: #f0b45c; }
+  .badge.scheduled { background: #16351f; color: #6fe09a; }
+
+  .btn-primary { background: #2f7d4f; color: #fff; width: 100%; padding: 8px; margin-top: 6px; font-size: 13px; border: none; border-radius: 7px; cursor: pointer; }
+  .btn-primary:hover { background: #359059; }
+  .btn-primary:disabled { background: #24402e; color: #6fae85; cursor: default; }
+
+  /* 纯 CSS 柱状图 */
+  .chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding: 8px 4px 0; }
+  .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; background: linear-gradient(180deg, #4d7bd6, #35507e); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .bar-val { font-size: 9.5px; color: #8b95ad; }
+  .bar-label { font-size: 10px; color: #6f7a93; }
+
+  table.data { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.data th { text-align: left; color: #8b95ad; font-weight: 500; padding: 5px 6px; border-bottom: 1px solid #2a3044; }
+  table.data td { padding: 6px; border-bottom: 1px solid #20263a; color: #c6cede; }
+  table.data tr:last-child td { border-bottom: none; }
+
+  /* ========== 事件流检查器 ========== */
+  .inspector { border-top: 1px solid #232838; background: #10131c; }
+  .inspector-head { padding: 6px 14px; font-size: 11px; color: #7a8299; cursor: pointer; user-select: none; display: flex; gap: 10px; align-items: center; }
+  .inspector-head .legend { margin-left: auto; color: #59627a; }
+  #eventLog { max-height: 120px; overflow-y: auto; padding: 4px 14px 10px; font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 10.5px; line-height: 1.7; }
+  #eventLog .dir-out { color: #6fae85; }
+  #eventLog .dir-in { color: #7ea6ff; }
+  #eventLog .dim { color: #59627a; }
+
+  footer { padding: 8px 20px; font-size: 11px; color: #59627a; border-top: 1px solid #232838; display: flex; gap: 14px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CUI + GUI 混合交互 Demo</h1>
+  <span class="sub">对话（CUI）驱动结构化画布（GUI）· GUI 操作回流对话上下文 · Agent 工具调用呈现 — 岗位要求 ①② 对应演示</span>
+</header>
+
+<div class="layout">
+  <!-- 左：对话 CUI -->
+  <section class="panel chat-wrap" style="position: relative">
+    <div class="panel-title">
+      <span>💬 对话（CUI）</span>
+      <span class="tag">流式输出 · tool_call · abort</span>
+    </div>
+    <div id="messages"></div>
+    <button id="toBottom">↓ 回到最新</button>
+    <div class="chips">
+      <button class="chip" data-scene="plan">🎬 生成下周抖音带货脚本</button>
+      <button class="chip" data-scene="data">📊 分析上周带货数据</button>
+    </div>
+    <div class="input-row">
+      <input id="input" type="text" placeholder="输入消息，或点上方示例…" />
+      <button class="btn btn-send" id="send">发送</button>
+      <button class="btn btn-stop" id="stop">停止</button>
+    </div>
+    <div class="inspector">
+      <div class="inspector-head" id="inspectorToggle">
+        <span>▸ 事件流检查器（生产环境 = SSE 下行帧）</span>
+        <span class="legend">◄ 下行 &nbsp; ► 上行</span>
+      </div>
+      <div id="eventLog" style="display: none"></div>
+    </div>
+  </section>
+
+  <!-- 右：GUI 画布 -->
+  <section class="panel">
+    <div class="panel-title">
+      <span>🖼 画布（GUI）</span>
+      <span class="tag">type → 组件注册表 渲染</span>
+    </div>
+    <div id="canvas">
+      <div class="canvas-empty" id="canvasEmpty">
+        画布为空<br />Agent 生成的结构化内容（ui 事件）<br />会按 <span class="mono">{ component, props }</span> 渲染到这里
+      </div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <span>💡 无依赖单文件，浏览器直接打开；流式与工具调用为本地 mock，事件帧格式与生产 SSE 一致</span>
+  <span>对应文档：一面准备.md §1 CUI+GUI / §3 Agent 前端</span>
+</footer>
+
+<script>
+/* =====================================================================
+ * CUI + GUI 混合交互 Demo（vanilla JS，无依赖）
+ *
+ * 核心概念映射（面试讲点）：
+ * 1. 会话是结构化事件流：text_delta / tool_call / tool_result / ui / done
+ *    —— 生产环境这些帧由 SSE 下行（见 ../sse/ demo），这里用本地 mock。
+ * 2. ui 帧带 { component, props }，前端维护「组件注册表」按 type 渲染 GUI 卡片
+ *    —— 与低代码 schema 驱动渲染同构。
+ * 3. GUI 卡片上的操作（确认执行）→ 转写为一条 user message + gui_action 上行事件
+ *    —— 保证会话上下文是唯一 source of truth（GUI 操作回流 CUI）。
+ * 4. 流式输出支持 abort（停止按钮 = AbortController.abort() 的 mock）。
+ * ===================================================================== */
+
+/* ---------- 基础工具 ---------- */
+const $ = (sel) => document.querySelector(sel);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** 可取消令牌：模拟 AbortController 的 signal */
+class CancelToken {
+  constructor() { this.cancelled = false; }
+  abort() { this.cancelled = true; }
+  throwIfCancelled() { if (this.cancelled) throw new Error("ABORTED"); }
+}
+
+/* ---------- DOM 工具 ---------- */
+function el(tag, cls, text) {
+  const node = document.createElement(tag);
+  if (cls) node.className = cls;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+/* ---------- 事件流检查器：模拟网络帧日志 ---------- */
+const eventLog = $("#eventLog");
+let lastDeltaEntry = null; // text_delta 帧滚动合并，模拟真实网络面板
+
+function logFrame(direction, data, isDelta = false) {
+  if (eventLog.style.display === "none") toggleInspector(true);
+  const line = el("div");
+  const dir = el("span", direction === "in" ? "dir-in" : "dir-out",
+    direction === "in" ? "◄ " : "► ");
+  const payload = el("span", "mono",
+    typeof data === "string" ? data : JSON.stringify(data));
+  line.append(dir, payload);
+  if (isDelta && lastDeltaEntry) {
+    // 同一条消息的连续 delta 合并到上一行，避免刷屏
+    lastDeltaEntry.textContent += data.delta;
+    eventLog.scrollTop = eventLog.scrollHeight;
+    return;
+  }
+  lastDeltaEntry = isDelta ? payload : null;
+  eventLog.append(line);
+  // 控制日志条数
+  while (eventLog.children.length > 300) eventLog.firstChild.remove();
+  eventLog.scrollTop = eventLog.scrollHeight;
+}
+
+function toggleInspector(forceOpen) {
+  const open = forceOpen !== undefined ? forceOpen : eventLog.style.display === "none";
+  eventLog.style.display = open ? "block" : "none";
+  $("#inspectorToggle").firstElementChild.textContent =
+    (open ? "▾" : "▸") + " 事件流检查器（生产环境 = SSE 下行帧）";
+}
+$("#inspectorToggle").addEventListener("click", () => toggleInspector());
+
+/* ---------- 消息渲染（CUI） ---------- */
+const messagesBox = $("#messages");
+let stickToBottom = true;
+
+messagesBox.addEventListener("scroll", () => {
+  const atBottom = messagesBox.scrollHeight - messagesBox.scrollTop - messagesBox.clientHeight < 60;
+  stickToBottom = atBottom;
+  $("#toBottom").style.display = atBottom ? "none" : "block";
+});
+$("#toBottom").addEventListener("click", () => {
+  stickToBottom = true;
+  messagesBox.scrollTop = messagesBox.scrollHeight;
+  $("#toBottom").style.display = "none";
+});
+
+function scrollFollow() {
+  if (stickToBottom) messagesBox.scrollTop = messagesBox.scrollHeight;
+}
+
+function addUserMessage(text) {
+  const msg = el("div", "msg user");
+  msg.append(el("div", "avatar", "我"), el("div", "bubble", text));
+  messagesBox.append(msg);
+  stickToBottom = true;
+  scrollFollow();
+}
+
+function createAssistantMessage() {
+  const msg = el("div", "msg assistant");
+  msg.append(el("div", "avatar", "AI"));
+  const bubble = el("div", "bubble");
+  const textSpan = el("span"); // 流式文本
+  const cursor = el("span", "cursor");
+  bubble.append(textSpan, cursor);
+  msg.append(bubble);
+  messagesBox.append(msg);
+  scrollFollow();
+  return { root: msg, bubble, textSpan, cursor };
+}
+
+/**
+ * 流式输出一段文本：按 1~2 字符一帧追加，模拟 text_delta。
+ * token: CancelToken —— 停止按钮触发 abort 后停止追加并标记「已停止」。
+ */
+async function streamText(message, text, token) {
+  let i = 0;
+  while (i < text.length) {
+    token.throwIfCancelled();
+    const size = 1 + Math.floor(Math.random() * 2);
+    const chunk = text.slice(i, i + size);
+    i += size;
+    message.textSpan.textContent += chunk;
+    logFrame("in", { type: "text_delta", delta: chunk }, true);
+    scrollFollow();
+    await sleep(24 + Math.random() * 40);
+  }
+}
+
+function finishMessage(message, stopped) {
+  message.cursor.remove();
+  if (stopped) {
+    message.bubble.append(el("div", "stopped-flag", "已停止生成（AbortController.abort()）"));
+  }
+}
+
+/* ---------- 工具调用卡片（Agent 过程呈现） ---------- */
+function addToolCard(message, { name, args }) {
+  const card = el("div", "tool-card running");
+  const head = el("div", "tool-head");
+  const spinner = el("span", "spinner");
+  head.append(el("span", "tool-name", "🔧 " + name), spinner, el("span", "tool-status", "running…"));
+  const argsEl = el("div", "tool-args mono", "args: " + JSON.stringify(args));
+  const resultEl = el("div", "tool-result");
+  resultEl.style.display = "none";
+  card.append(head, argsEl, resultEl);
+  message.bubble.append(card);
+  scrollFollow();
+  return {
+    success(summary, ms) {
+      card.className = "tool-card success";
+      spinner.replaceWith(el("span", "", "✓"));
+      card.querySelector(".tool-status").textContent = ms + "ms";
+      resultEl.textContent = "→ " + summary;
+      resultEl.style.display = "block";
+      scrollFollow();
+    },
+  };
+}
+
+/* ---------- GUI 画布：组件注册表（type → 组件） ----------
+ * 与低代码「schema 驱动渲染」同构：后端/模型只下发 component 名 + props，
+ * 前端注册表负责把 schema 变成真实交互组件。
+ */
+const canvas = $("#canvas");
+const componentRegistry = {};
+
+function renderGui(schema) {
+  $("#canvasEmpty") && $("#canvasEmpty").remove();
+  const factory = componentRegistry[schema.component];
+  if (!factory) {
+    canvas.append(el("div", "gui-card", "未知组件: " + schema.component));
+    return;
+  }
+  const card = factory(schema.props);
+  canvas.append(card);
+  logFrame("in", { type: "ui", component: schema.component, props: schema.props });
+  scrollFollow();
+}
+
+/* 组件 1：执行计划卡（含表单 + 确认操作 → 回流 CUI） */
+componentRegistry.PlanCard = function (props) {
+  const card = el("div", "gui-card");
+  const h3 = el("h3");
+  h3.append(el("span", "", "📋 " + props.title),
+    el("span", "schema-tag", '{ component: "PlanCard" }'));
+  const badge = el("span", "badge pending", "待确认");
+  badge.style.marginLeft = "auto";
+  h3.append(badge);
+
+  const fields = el("div");
+  const mkRow = (label, value, editable) => {
+    const row = el("div", "field-row");
+    row.append(el("label", "", label));
+    const input = el("input");
+    input.value = value;
+    if (!editable) input.disabled = true;
+    row.append(input);
+    fields.append(row);
+    return input;
+  };
+  const budgetInput = mkRow("预算", props.budget, true);
+  const platformInput = mkRow("平台", props.platform, true);
+  const dateInput = mkRow("排期", props.date, true);
+
+  const btn = el("button", "btn-primary", "确认执行");
+  btn.addEventListener("click", () => {
+    badge.textContent = "已排期";
+    badge.className = "badge scheduled";
+    btn.disabled = true;
+    btn.textContent = "已确认 ✓";
+    // ★ GUI 操作回流 CUI：转写成 user message + 上行 gui_action 事件
+    onGuiAction({
+      action: "confirm_plan",
+      plan_id: props.planId,
+      budget: budgetInput.value,
+      platform: platformInput.value,
+      date: dateInput.value,
+    });
+  });
+
+  card.append(h3, fields, btn);
+  return card;
+};
+
+/* 组件 2：数据图表卡（纯 CSS 柱状图） */
+componentRegistry.DataChart = function (props) {
+  const card = el("div", "gui-card");
+  const h3 = el("h3");
+  h3.append(el("span", "", "📈 " + props.title),
+    el("span", "schema-tag", '{ component: "DataChart" }'));
+  const chart = el("div", "chart");
+  const max = Math.max(...props.data.map((d) => d.value));
+  props.data.forEach((d) => {
+    const wrap = el("div", "bar-wrap");
+    wrap.append(el("span", "bar-val", d.value));
+    const bar = el("div", "bar");
+    bar.style.height = Math.max(4, Math.round((d.value / max) * 84)) + "px";
+    wrap.append(bar, el("span", "bar-label", d.label));
+    chart.append(wrap);
+  });
+  card.append(h3, chart);
+  return card;
+};
+
+/* 组件 3：数据表格卡 */
+componentRegistry.DataTable = function (props) {
+  const card = el("div", "gui-card");
+  const h3 = el("h3");
+  h3.append(el("span", "", "🗒 " + props.title),
+    el("span", "schema-tag", '{ component: "DataTable" }'));
+  const table = el("table", "data");
+  const thead = el("thead");
+  const headRow = el("tr");
+  props.columns.forEach((c) => headRow.append(el("th", "", c)));
+  thead.append(headRow);
+  const tbody = el("tbody");
+  props.rows.forEach((r) => {
+    const tr = el("tr");
+    r.forEach((cell) => tr.append(el("td", "", String(cell))));
+    tbody.append(tr);
+  });
+  table.append(thead, tbody);
+  card.append(h3, table);
+  return card;
+};
+
+/* ---------- 运行状态 ---------- */
+let currentToken = null;
+const sendBtn = $("#send");
+const stopBtn = $("#stop");
+
+function setRunning(running) {
+  sendBtn.disabled = running;
+  stopBtn.style.display = running ? "block" : "none";
+}
+
+stopBtn.addEventListener("click", () => {
+  if (currentToken) {
+    currentToken.abort();
+    logFrame("out", { type: "abort", via: "AbortController.abort()" });
+  }
+});
+
+/* ---------- GUI 操作回流 CUI 的入口 ---------- */
+async function onGuiAction(action) {
+  // 若当前还有流式输出未结束（例如模型还在补最后一段说明），等它结束后再回流，
+  // 保证同一时刻只有一条流（真实项目里等价于串行化会话内的 SSE 请求）
+  while (currentToken) await sleep(120);
+  logFrame("out", { type: "gui_action", ...action });
+  const readable = `已确认执行计划 ${action.plan_id}（预算 ¥${action.budget} · ${action.platform} · ${action.date}）`;
+  addUserMessage(readable);
+  await runAssistant(async (msg, token) => {
+    await streamText(msg, "收到！计划已排期，", token);
+    const tool = addToolCard(msg, { name: "schedule_task", args: { plan_id: action.plan_id, date: action.date } });
+    logFrame("in", { type: "tool_call", name: "schedule_task", status: "running" });
+    await sleep(900);
+    token.throwIfCancelled();
+    tool.success("任务已创建，将于 " + action.date + " 09:00 自动执行", 900);
+    logFrame("in", { type: "tool_result", name: "schedule_task", status: "success" });
+    await streamText(msg, "执行当天我会自动拉取最新素材并生成脚本，结果会推送到画布。", token);
+  });
+}
+
+/* ---------- 助手回复统一入口（含 abort 处理） ---------- */
+async function runAssistant(steps) {
+  const token = new CancelToken();
+  currentToken = token;
+  setRunning(true);
+  lastDeltaEntry = null;
+  logFrame("in", { type: "role", role: "assistant" });
+  const msg = createAssistantMessage();
+  let stopped = false;
+  try {
+    await steps(msg, token);
+  } catch (e) {
+    if (e.message === "ABORTED") stopped = true;
+    else throw e;
+  } finally {
+    finishMessage(msg, stopped);
+    logFrame("in", { type: stopped ? "aborted" : "done", conversation_id: CONV_ID });
+    currentToken = null;
+    setRunning(false);
+  }
+}
+
+const CONV_ID = "c-" + Math.floor(1000 + Math.random() * 9000);
+
+/* ---------- 场景一：生成带货脚本（CUI → GUI → 回流 全链路） ---------- */
+async function scenePlan() {
+  logFrame("out", { type: "user_input", via: "POST /api/chat (SSE)" });
+  await runAssistant(async (msg, token) => {
+    await streamText(msg, "好的，我先查询一下近期热销的商品数据：", token);
+
+    const tool = addToolCard(msg, { name: "query_products", args: { top: 3, category: "数码" } });
+    logFrame("in", { type: "tool_call", name: "query_products", status: "running" });
+    await sleep(900);
+    token.throwIfCancelled();
+    tool.success("找到 3 个热销商品：迷你投影仪 / 桌面吸尘器 / 磁吸充电宝", 900);
+    logFrame("in", { type: "tool_result", name: "query_products", status: "success" });
+
+    await streamText(msg, "根据数据我制定了带货计划，已经把计划卡片生成到右侧画布，你可以直接在卡片上调整预算、平台和排期，确认后我会自动排期执行。", token);
+    renderGui({
+      component: "PlanCard",
+      props: { title: "执行计划 P-1024", planId: "P-1024", budget: 5000, platform: "抖音", date: "09-01" },
+    });
+    await streamText(msg, "（卡片上的「确认执行」会作为一条消息回流到对话里，保证会话上下文完整）", token);
+  });
+}
+
+/* ---------- 场景二：分析数据（工具调用 + 图表/表格渲染） ---------- */
+async function sceneData() {
+  logFrame("out", { type: "user_input", via: "POST /api/chat (SSE)" });
+  await runAssistant(async (msg, token) => {
+    await streamText(msg, "正在拉取上周的带货数据…", token);
+
+    const tool = addToolCard(msg, { name: "query_analytics", args: { range: "last_week" } });
+    logFrame("in", { type: "tool_call", name: "query_analytics", status: "running" });
+    await sleep(1000);
+    token.throwIfCancelled();
+    tool.success("GMV 合计 ¥42,600，环比 +18%", 1000);
+    logFrame("in", { type: "tool_result", name: "query_analytics", status: "success" });
+
+    renderGui({
+      component: "DataChart",
+      props: {
+        title: "上周 GMV 趋势（元）",
+        data: [
+          { label: "一", value: 4200 }, { label: "二", value: 5100 }, { label: "三", value: 6800 },
+          { label: "四", value: 5900 }, { label: "五", value: 7300 }, { label: "六", value: 8800 },
+          { label: "日", value: 4500 },
+        ],
+      },
+    });
+    renderGui({
+      component: "DataTable",
+      props: {
+        title: "热销商品 TOP3",
+        columns: ["商品", "销量", "GMV"],
+        rows: [["迷你投影仪", 312, "¥18,600"], ["桌面吸尘器", 254, "¥13,200"], ["磁吸充电宝", 187, "¥10,800"]],
+      },
+    });
+
+    await streamText(msg, "上周 GMV ¥42,600、环比 +18%，其中周六达到峰值 ¥8,800；迷你投影仪贡献最大（¥18,600）。建议本周加大对投影仪的投流预算。", token);
+  });
+}
+
+/* ---------- 兜底场景：自由输入 ---------- */
+async function sceneGeneric(text) {
+  logFrame("out", { type: "user_input", via: "POST /api/chat (SSE)" });
+  await runAssistant(async (msg, token) => {
+    await streamText(msg, "（mock 回复）你刚才说的是：「" + text + "」。生产环境中这一步会 POST /api/chat 并以 SSE 下行 text_delta 帧流式返回；如果模型决定渲染结构化内容，会下发 ui 帧由右侧画布渲染。可以试试上方的两个示例场景查看完整链路。", token);
+  });
+}
+
+/* ---------- 发送路由 ---------- */
+function send(text) {
+  if (!text.trim() || currentToken) return;
+  addUserMessage(text.trim());
+  if (/带货|脚本|计划|生成/.test(text)) scenePlan();
+  else if (/数据|分析|报表/.test(text)) sceneData();
+  else sceneGeneric(text.trim());
+}
+
+sendBtn.addEventListener("click", () => { send($("#input").value); $("#input").value = ""; });
+$("#input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.isComposing) { send($("#input").value); $("#input").value = ""; }
+});
+document.querySelectorAll(".chip").forEach((chip) =>
+  chip.addEventListener("click", () => {
+    if (currentToken) return;
+    chip.textContent.includes("数据") ? sceneData() : scenePlan();
+  })
+);
+
+/* ---------- 开场引导 ---------- */
+addUserMessage("帮我生成下周的抖音带货脚本，预算 5000");
+(async function intro() {
+  await runAssistant(async (msg, token) => {
+    await streamText(msg, "你好！这是一个 CUI + GUI 混合交互的演示。点下方示例或直接输入，我会流式回复、展示工具调用过程，并把结构化内容渲染到右侧画布。试试「🎬 生成下周抖音带货脚本」看完整链路，流式过程中随时可以点「停止」。", token);
+  });
+})();
+</script>
+</body>
+</html>

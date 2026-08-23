@@ -38,7 +38,7 @@
         "react-dom": "^18.2.0",
         "streamdown": "^1.0.0",
         "@chatscope/chat-ui-kit-react": "^2.1.1",
-        "@chatscope/chat-ui-kit-styles": "^2.1.1"
+        "@chatscope/chat-ui-kit-styles": "^1.4.0"
     },
     "devDependencies": {
         "concurrently": "^8.2.2",
