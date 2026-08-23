@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>真实高德 SDK：DOM / Canvas / WebGL 三层渲染切换</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC", sans-serif; background: #f6f8fa; padding: 16px; color: #24292f; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: #57606a; margin-bottom: 12px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 10px; margin-bottom: 10px; font-size: 13px; }
+  .bar input { padding: 5px 8px; border: 1px solid #d0d7de; border-radius: 6px; width: 220px; }
+  button { padding: 5px 14px; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; }
+  button.primary { background: #1a73e8; color: #fff; }
+  button.mode.active { background: #1a73e8; color: #fff; }
+  select { padding: 5px 8px; border: 1px solid #d0d7de; border-radius: 6px; }
+  #map { height: 430px; border-radius: 8px; border: 1px solid #d0d7de; display: none; }
+  #modeInfo { background: #fff8e6; border: 1px solid #eae0b0; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #6b5d1f; margin-bottom: 10px; display: none; line-height: 1.8; }
+  .stats { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .stat { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 6px 12px; font-size: 12px; }
+  .stat b { color: #1a73e8; font-size: 15px; }
+  #log { margin-top: 8px; background: #0d1117; color: #7ee787; font: 12px/1.7 Menlo, monospace; border-radius: 8px; padding: 10px 12px; height: 100px; overflow-y: auto; white-space: pre-wrap; }
+  .tip { font-size: 12px; color: #57606a; margin-bottom: 10px; }
+  .tip a { color: #1a73e8; }
+</style>
+</head>
+<body>
+<h1>真实 SDK 三层渲染：同一张高德地图，切换 Marker / MassMarks / Loca</h1>
+<div class="sub">车辆数拉到 2000，先在 ① 里感受卡，再切 ② ③ 看救回来——这就是「渲染层升级」在真实 SDK 里长什么样。</div>
+
+<div class="tip">
+  需要高德 Key（Web端 JS API）+ 安全密钥：<a href="https://console.amap.com/dev/key/app" target="_blank">控制台获取</a>。
+  建议先跑 <a href="./第一个地图与Marker.html">第一个地图与Marker.html</a> 有体感再来。原理与面试问答 → <a href="../地图与渲染面试体系.md">地图与渲染面试体系.md</a>（Q4 选型 / Q8 区别 / Q9 十万级）
+</div>
+
+<div class="bar">
+  <input id="key" placeholder="粘贴你的 Key">
+  <input id="jscode" placeholder="安全密钥 securityJsCode">
+  <button class="primary" onclick="boot()">加载地图</button>
+</div>
+
+<div class="bar" id="ctrl" style="display:none">
+  <label>车辆数
+    <select id="carCount" onchange="rebuild()">
+      <option>100</option><option>500</option><option selected>2000</option><option>5000</option>
+    </select>
+  </label>
+  <button class="mode" data-mode="dom" onclick="setMode('dom')">① DOM Marker</button>
+  <button class="mode" data-mode="mass" onclick="setMode('mass')">② MassMarks·Canvas</button>
+  <button class="mode" data-mode="loca" onclick="setMode('loca')">③ Loca·WebGL</button>
+  <button id="run" onclick="toggleRun()">暂停上报</button>
+</div>
+
+<div id="modeInfo"></div>
+<div id="map"></div>
+
+<div class="stats">
+  <div class="stat">消息 <b id="stMsg">0</b> 条/s</div>
+  <div class="stat">最近一次提交 <b id="stCost">0</b> ms</div>
+  <div class="stat">DOM 节点 <b id="stDom">-</b></div>
+  <div class="stat">提交频率 <b id="stFreq">-</b></div>
+</div>
+<div id="log">（等待加载）</div>
+
+<script>
+'use strict';
+let AMap = null, Loca = null, map = null, locaContainer = null;
+let mode = 'dom', cars = [], markers = [], massMarks = null, pointLayer = null;
+let running = true;
+
+const CENTER = [114.05, 22.55];
+// MassMarks 图标：SVG data URL 蓝点（不依赖任何图片资源）
+const DOT = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(
+  "<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20'><circle cx='10' cy='10' r='8' fill='#1a73e8' stroke='#fff' stroke-width='2'/></svg>");
+
+const MODE_INFO = {
+  dom: '① <b>DOM Marker</b>：每车一个 AMap.Marker（DOM 元素）。更新姿势：上报写缓冲，rAF 每帧批量 setPosition + 指数平滑插值。成本随车数线性涨（每帧 N 次样式计算），<b>建议 &lt; ~200 车</b>——切到 2000 车看看耗时。',
+  mass: '② <b>MassMarks（Canvas）</b>：一张 Canvas 一次绘制所有点，万级点静态展示 OK。但更新 = <b>setData 全量重设</b>（这就是它高频更新弱的原因），所以本 demo 降频到每 500ms 提交一次。',
+  loca: '③ <b>Loca 2.0（WebGL）</b>：高德官方 WebGL 可视化容器（对标 deck.gl）。CPU 每 500ms setSource 交一次数据，<b>位置插值由 GPU 完成</b>（animate: true，450ms 平滑过渡）——十万级点、CPU 近乎无感。',
+};
+const MODE_COMMIT = { dom: 'rAF 每帧（60/s）', mass: 'setData 降频（2/s）', loca: 'setSource 降频（2/s）+ GPU 插值' };
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.textContent;
+}
+function cost(ms) { document.getElementById('stCost').textContent = ms.toFixed(1); }
+
+// ================== 加载真实 SDK ==================
+async function boot() {
+  const key = document.getElementById('key').value.trim();
+  const jscode = document.getElementById('jscode').value.trim();
+  if (!key) { log('请先填写 Key'); return; }
+  if (jscode) window._AMapSecurityConfig = { securityJsCode: jscode };
+  await new Promise((ok, err) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@amap/amap-jsapi-loader@1.0.1/dist/index.js';
+    s.onload = ok; s.onerror = () => err(new Error('loader 加载失败：检查网络'));
+    document.head.appendChild(s);
+  });
+  try {
+    // 注意：load() 直接返回 AMap 命名空间本身（不是 {AMap, Loca} 对象）
+    AMap = await AMapLoader.load({ key, version: '2.0', plugins: [] });
+    document.getElementById('map').style.display = 'block';
+    // Loca 需要 3D 视图模式（pitch 0 看起来仍和 2D 一样），始终用 3D 保持三模式可比
+    map = new AMap.Map('map', { center: CENTER, zoom: 13, viewMode: '3D', pitch: 0 });
+    document.getElementById('ctrl').style.display = 'flex';
+    document.getElementById('modeInfo').style.display = 'block';
+    seedCars(+document.getElementById('carCount').value);
+    setMode('dom');
+    log('SDK 就绪。默认 2000 车跑 DOM 模式——先感受一下卡，再切②③（Loca 正在后台加载）');
+    startSim();
+    requestAnimationFrame(domTick);
+    loadLoca(key); // 后台加载 Loca，成功前模式③不可用，不阻塞 ①②
+  } catch (e) {
+    log('加载失败：' + (e.message || e) + ' —— 检查 Key 类型/密钥/白名单，file:// 打不开就用 Live Server');
+  }
+}
+
+// Loca 2.0 官方引入方式：直接插脚本（挂全局 window.Loca）。不走 loader 的 Loca 选项，
+// 因为它内部加载失败时不可见、难排查；这里 onload/onerror 都有明确日志
+function loadLoca(key) {
+  const s = document.createElement('script');
+  s.src = 'https://webapi.amap.com/loca?v=2.0.0&key=' + encodeURIComponent(key);
+  s.onload = () => {
+    Loca = window.Loca || null;
+    log(Loca ? '✅ Loca 就绪：模式③可以用了' : '⚠️ Loca 脚本已执行但 window.Loca 未定义（版本参数异常）');
+  };
+  s.onerror = () => log('⚠️ Loca 脚本加载失败（网络或域名拦截）：模式③不可用，①②不受影响');
+  document.head.appendChild(s);
+}
+
+// ================== 车辆模拟（真实上报 = 每 Hz 一次位置消息） ==================
+function seedCars(n) {
+  cars = Array.from({ length: n }, (_, id) => {
+    const lng = CENTER[0] + (Math.random() - 0.5) * 0.05, lat = CENTER[1] + (Math.random() - 0.5) * 0.03;
+    return { id, lng, lat, curLng: lng, curLat: lat, heading: Math.random() * 360, due: 0 };
+  });
+}
+let msgCount = 0;
+setInterval(() => { document.getElementById('stMsg').textContent = msgCount; msgCount = 0; }, 1000);
+
+function startSim() {
+  setInterval(() => {
+    if (!running || !map) return;
+    const HZ = 5, now = performance.now();
+    for (const c of cars) {
+      if (!c.due) c.due = now + Math.random() * (1000 / HZ);
+      if (now < c.due) continue;
+      c.due = now + 1000 / HZ + Math.random() * 30;
+      c.heading += (Math.random() - 0.5) * 60;                       // 随机转向
+      c.lng += Math.cos((c.heading * Math.PI) / 180) * 0.00012;      // 走一步（≈13 米，GCJ-02 度）
+      c.lat += Math.sin((c.heading * Math.PI) / 180) * 0.00012;
+      msgCount++;
+      // 模式 ① 走缓冲；模式 ② ③ 的数据对象原地更新，由提交节拍统一 set
+    }
+  }, 50);
+}
+
+// ================== 模式 ① DOM：缓冲 + rAF 批量 setPosition + 插值 ==================
+function domTick() {
+  requestAnimationFrame(domTick);
+  if (mode !== 'dom' || !markers.length) return;
+  const t0 = performance.now();
+  for (let i = 0; i < cars.length; i++) {
+    const c = cars[i];
+    c.curLng += (c.lng - c.curLng) * 0.2;                           // 指数平滑：向目标位置移 20%/帧
+    c.curLat += (c.lat - c.curLat) * 0.2;
+    markers[i].setPosition([c.curLng, c.curLat]);                   // N 次 DOM 更新——卡的就是这行
+    markers[i].setAngle(c.heading);
+  }
+  cost(performance.now() - t0);
+}
+
+// ================== 模式 ② MassMarks（Canvas） / ③ Loca（WebGL）的提交节拍 ==================
+function massData() { return cars.map((c) => ({ lnglat: [c.lng, c.lat], id: c.id })); }
+function locaSource() {
+  return new Loca.GeoJSONSource({
+    data: { type: 'FeatureCollection', features: cars.map((c) => ({
+      type: 'Feature', geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+    })) },
+  });
+}
+setInterval(() => {
+  if (!map || !running) return;
+  const t0 = performance.now();
+  try {
+    if (mode === 'mass' && massMarks) massMarks.setData(massData());       // 全量重设（弱点的根源）
+    if (mode === 'loca' && pointLayer) pointLayer.setSource(locaSource()); // 只交数据，插值 GPU 做
+  } catch (e) { log('提交异常：' + e); }
+  cost(performance.now() - t0);
+}, 500);
+
+// ================== 三层切换 ==================
+function ensureLoca() {           // 延迟初始化：只在第一次切模式③时创建容器
+  if (!Loca) return false;
+  if (!locaContainer) {
+    try { locaContainer = new Loca.Container({ map }); }
+    catch (e) { log('Loca 初始化失败：' + (e.message || e)); return false; }
+  }
+  return true;
+}
+function clearLayer() {
+  if (markers.length) { map.remove(markers); markers = []; }
+  if (massMarks) { massMarks.setMap(null); massMarks = null; }
+  if (pointLayer) { locaContainer.remove(pointLayer); pointLayer = null; }
+}
+function rebuild() { seedCars(+document.getElementById('carCount').value); buildLayer(); }
+function setMode(m) {
+  if (m === 'loca' && !ensureLoca()) { log('Loca 未就绪，无法切换模式③（①②不受影响）'); return; }
+  mode = m;
+  document.querySelectorAll('.mode').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
+  buildLayer();
+  document.getElementById('modeInfo').innerHTML = MODE_INFO[m] + '<br>提交频率：<b>' + MODE_COMMIT[m] + '</b>';
+  document.getElementById('stFreq').textContent = MODE_COMMIT[m];
+  document.getElementById('stDom').textContent = m === 'dom' ? markers.length + ' 个' : '2 个（地图画布）';
+  log(`切换到 ${{ dom: '① DOM Marker（注意上方「最近一次提交」耗时随车数线性涨）', mass: '② MassMarks：Canvas 一次绘制，setData 全量重设', loca: '③ Loca：WebGL，GPU 插值平滑移动' }[m]}`);
+}
+function buildLayer() {
+  clearLayer();
+  if (mode === 'dom') {
+    markers = cars.map((c) => new AMap.Marker({ position: [c.curLng, c.curLat], angle: c.heading }));
+    map.add(markers);
+  } else if (mode === 'mass') {
+    massMarks = new AMap.MassMarks(massData(), { zooms: [3, 20], cursor: 'pointer',
+      style: { url: DOT, anchor: 'center', size: [20, 20] } });
+    massMarks.setMap(map);
+  } else {
+    pointLayer = new Loca.PointLayer({ zooms: [3, 20], zIndex: 10, animate: true, duration: 450 });
+    pointLayer.setSource(locaSource());
+    pointLayer.setStyle({ radius: 3.5, unit: 'px', color: '#1a73e8', borderColor: '#fff', borderWidth: 1 });
+    locaContainer.add(pointLayer);
+  }
+}
+function toggleRun() {
+  running = !running;
+  document.getElementById('run').textContent = running ? '暂停上报' : '继续上报';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>高频更新渲染对比：逐条更新 vs rAF 合帧</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", sans-serif; background: #0f1419; color: #e6edf3; padding: 16px; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { color: #8b949e; font-size: 12px; margin-bottom: 12px; }
+  .controls { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 13px; }
+  .controls label { display: flex; align-items: center; gap: 6px; }
+  .controls input[type="range"] { width: 120px; }
+  .controls .val { color: #58a6ff; min-width: 52px; display: inline-block; }
+  button { background: #21262d; color: #e6edf3; border: 1px solid #30363d; border-radius: 6px; padding: 4px 14px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #30363d; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 900px) { .panels { grid-template-columns: 1fr; } }
+  .panel { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 10px; }
+  .panel h2 { font-size: 14px; margin-bottom: 6px; }
+  .panel.a h2 { color: #f85149; }
+  .panel.b h2 { color: #3fb950; }
+  canvas { width: 100%; border-radius: 6px; display: block; background: #dfe7ee; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+  .stat { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 6px 8px; }
+  .stat .k { font-size: 11px; color: #8b949e; }
+  .stat .v { font-size: 16px; font-weight: 600; color: #58a6ff; }
+  .banner { margin-top: 12px; font-size: 12px; color: #8b949e; background: #161b22; border: 1px dashed #30363d; border-radius: 8px; padding: 8px 12px; }
+</style>
+</head>
+<body>
+<h1>高频位置更新：逐条更新 vs rAF 合帧</h1>
+<div class="sub">模拟 100 台车 × 8Hz 上报（≈800 条/秒）。左：每条消息立即整幅重绘；右：消息只写缓冲，rAF 每帧消费一次（插值 + 视野裁剪）。</div>
+
+<div class="controls">
+  <label>车辆数 <input id="carCount" type="range" min="20" max="500" step="10" value="120"> <span class="val" id="carCountVal">120</span></label>
+  <label>上报频率 <input id="hz" type="range" min="1" max="20" value="8"> <span class="val" id="hzVal">8 Hz</span></label>
+  <label><input id="cull" type="checkbox" checked> B：视野裁剪</label>
+  <label><input id="lerp" type="checkbox" checked> B：插值平滑</label>
+  <button id="toggle">暂停</button>
+  <button id="reset">重置</button>
+  <span class="val" id="msgRate">消息 0 条/s</span>
+</div>
+
+<div class="panels">
+  <div class="panel a">
+    <h2>策略 A：逐条更新（消息驱动重绘）</h2>
+    <canvas id="cvA"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="k">页面帧率</div><div class="v" id="fpsA">0</div></div>
+      <div class="stat"><div class="k">重绘次数/s</div><div class="v" id="redrawA">0</div></div>
+      <div class="stat"><div class="k">单次重绘耗时</div><div class="v" id="costA">0 ms</div></div>
+      <div class="stat"><div class="k">绘制车辆数</div><div class="v" id="drawnA">0</div></div>
+    </div>
+  </div>
+  <div class="panel b">
+    <h2>策略 B：rAF 合帧（缓冲最新值 + 每帧一次）</h2>
+    <canvas id="cvB"></canvas>
+    <div class="stats">
+      <div class="stat"><div class="k">页面帧率</div><div class="v" id="fpsB">0</div></div>
+      <div class="stat"><div class="k">重绘次数/s</div><div class="v" id="redrawB">0</div></div>
+      <div class="stat"><div class="k">单次重绘耗时</div><div class="v" id="costB">0 ms</div></div>
+      <div class="stat"><div class="k">同帧合并消息</div><div class="v" id="merged">0 条/s</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="banner">
+  ⚠️ 模拟边界：底图网格/道路与车辆标记均为本地 Canvas 模拟，消息源为本地定时模拟（等价于 MQTT 上报），未接入高德 SDK。本 demo 只对比「消息消费策略」的帧率差异，渲染成本模型 ≈ DOM Marker 的每点样式计算。
+</div>
+
+<script>
+'use strict';
+// ---------- 世界与视口 ----------
+const WORLD_W = 1280, WORLD_H = 840;            // 世界坐标范围（车辆可活动区）
+const VIEW = { x: 320, y: 210, w: 640, h: 420 }; // 视口窗口（只看到世界的一部分，用于演示视野裁剪）
+
+const cvA = document.getElementById('cvA'), cvB = document.getElementById('cvB');
+function setupCanvas(cv) {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  cv.width = VIEW.w * dpr; cv.height = VIEW.h * dpr;
+  const ctx = cv.getContext('2d'); ctx.scale(dpr, dpr);
+  return ctx;
+}
+const ctxA = setupCanvas(cvA), ctxB = setupCanvas(cvB);
+
+// ---------- 模拟底图（预渲染到离屏 canvas，重绘时一次 drawImage） ----------
+const bg = document.createElement('canvas');
+bg.width = WORLD_W; bg.height = WORLD_H;
+(function paintBg() {
+  const c = bg.getContext('2d');
+  c.fillStyle = '#eef3f8'; c.fillRect(0, 0, WORLD_W, WORLD_H);
+  c.strokeStyle = '#dbe3ea'; c.lineWidth = 1;
+  for (let x = 0; x <= WORLD_W; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, WORLD_H); c.stroke(); }
+  for (let y = 0; y <= WORLD_H; y += 64) { c.beginPath(); c.moveTo(0, y); c.lineTo(WORLD_W, y); c.stroke(); }
+  c.strokeStyle = '#c3ccd6'; c.lineWidth = 10; c.lineCap = 'round';
+  [[0, 120, WORLD_W, 160], [0, 620, WORLD_W, 700], [140, 0, 200, WORLD_H], [1020, 0, 1120, WORLD_H]].forEach(([x1, y1, x2, y2]) => {
+    c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+  });
+  // 视口外区域压暗，直观展示「视野内/外」
+  c.fillStyle = 'rgba(15, 20, 25, 0.08)';
+  c.fillRect(0, 0, WORLD_W, VIEW.y);
+  c.fillRect(0, VIEW.y + VIEW.h, WORLD_W, WORLD_H - VIEW.y - VIEW.h);
+  c.fillRect(0, VIEW.y, VIEW.x, VIEW.h);
+  c.fillRect(VIEW.x + VIEW.w, VIEW.y, WORLD_W - VIEW.x - VIEW.w, VIEW.h);
+})();
+
+// ---------- 车辆模型 ----------
+let vehicles = [];
+function seedVehicles(n) {
+  vehicles = Array.from({ length: n }, (_, i) => ({
+    id: i, x: Math.random() * WORLD_W, y: Math.random() * WORLD_H,
+    heading: Math.random() * Math.PI * 2, speed: 0.6 + Math.random() * 1.2,
+    alarm: Math.random() < 0.1, nextReportAt: 0,
+    ax: 0, ay: 0,   // 策略 A 已知的最新位置
+    bx: 0, by: 0,   // 策略 B 的渲染位置（插值用）
+    tx: 0, ty: 0,   // 策略 B 的目标位置（缓冲最新值）
+    hasB: false,
+  }));
+  vehicles.forEach(v => { v.ax = v.x; v.ay = v.y; v.tx = v.x; v.ty = v.y; });
+}
+
+// ---------- 统计 ----------
+const stats = {
+  msg: 0, merged: 0, aRedraw: 0, bRedraw: 0, aCostSum: 0, aCostN: 0, bCostSum: 0, bCostN: 0,
+  fpsFrames: 0, drawnA: 0,
+};
+setInterval(() => {
+  document.getElementById('msgRate').textContent = `消息 ${stats.msg} 条/s`;
+  document.getElementById('merged').textContent = `${stats.merged} 条/s`;
+  document.getElementById('redrawA').textContent = stats.aRedraw;
+  document.getElementById('redrawB').textContent = stats.bRedraw;
+  document.getElementById('costA').textContent = stats.aCostN ? `${(stats.aCostSum / stats.aCostN).toFixed(2)} ms` : '0 ms';
+  document.getElementById('costB').textContent = stats.bCostN ? `${(stats.bCostSum / stats.bCostN).toFixed(2)} ms` : '0 ms';
+  document.getElementById('fpsA').textContent = stats.fpsFrames;
+  document.getElementById('fpsB').textContent = stats.fpsFrames;
+  document.getElementById('drawnA').textContent = stats.drawnA;
+  stats.msg = stats.merged = stats.aRedraw = stats.bRedraw = 0;
+  stats.aCostSum = stats.aCostN = stats.bCostSum = stats.bCostN = 0; stats.fpsFrames = 0;
+}, 1000);
+
+// ---------- 通用绘制 ----------
+function drawVehicles(ctx, list, useCull) {
+  const t0 = performance.now();
+  ctx.drawImage(bg, VIEW.x, VIEW.y, VIEW.w, VIEW.h, 0, 0, VIEW.w, VIEW.h);
+  let drawn = 0;
+  for (const v of list) {
+    const x = v.px - VIEW.x, y = v.py - VIEW.y; // 世界 → 视口
+    if (x < -10 || y < -10 || x > VIEW.w + 10 || y > VIEW.h + 10) continue; // 视野裁剪
+    drawn++;
+    ctx.save(); ctx.translate(x, y); ctx.rotate(v.heading);
+    ctx.fillStyle = v.alarm ? '#e5484d' : '#1a73e8';
+    ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-5, 4.5); ctx.lineTo(-5, -4.5); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+  return { ms: performance.now() - t0, drawn };
+}
+
+// ---------- 策略 A：每条消息立即整幅重绘 ----------
+function onMessageA(v) {
+  v.ax = v.x; v.ay = v.y; // 「已知位置」推进到上报值
+  const list = vehicles.map(o => ({ px: o.ax, py: o.ay, heading: o.heading, alarm: o.alarm }));
+  const { ms, drawn } = drawVehicles(ctxA, list, false);
+  stats.aRedraw++; stats.aCostSum += ms; stats.aCostN++; stats.drawnA = drawn;
+}
+
+// ---------- 策略 B：缓冲 + rAF 每帧消费 ----------
+const pending = new Map(); // 车辆 id → 最新消息（同车多条自动合并）
+function onMessageB(v) {
+  if (pending.has(v.id)) stats.merged++;
+  pending.set(v.id, v);
+}
+function tickB() {
+  requestAnimationFrame(tickB);
+  stats.fpsFrames++;
+  for (const [, v] of pending) { v.tx = v.x; v.ty = v.y; v.hasB = true; }
+  pending.clear();
+  const doLerp = document.getElementById('lerp').checked;
+  const list = [];
+  for (const v of vehicles) {
+    if (!v.hasB) continue;
+    if (doLerp) { v.bx += (v.tx - v.bx) * 0.2; v.by += (v.ty - v.by) * 0.2; } // 指数平滑
+    else { v.bx = v.tx; v.by = v.ty; }
+    list.push({ px: v.bx, py: v.by, heading: v.heading, alarm: v.alarm });
+  }
+  const { ms } = drawVehicles(ctxB, list, document.getElementById('cull').checked);
+  stats.bRedraw++; stats.bCostSum += ms; stats.bCostN++;
+}
+requestAnimationFrame(tickB);
+
+// ---------- 模拟消息源（等价 MQTT 上报：每车固定 Hz + 抖动） ----------
+let running = true;
+setInterval(() => {
+  if (!running) return;
+  const now = performance.now();
+  const hz = +document.getElementById('hz').value;
+  for (const v of vehicles) {
+    // 车辆持续运动
+    v.heading += (Math.random() - 0.5) * 0.2;
+    v.x += Math.cos(v.heading) * v.speed * 1.6; v.y += Math.sin(v.heading) * v.speed * 1.6;
+    if (v.x < 0 || v.x > WORLD_W) { v.heading = Math.PI - v.heading; v.x = Math.max(0, Math.min(WORLD_W, v.x)); }
+    if (v.y < 0 || v.y > WORLD_H) { v.heading = -v.heading; v.y = Math.max(0, Math.min(WORLD_H, v.y)); }
+    // 到达上报时刻 → 同一条消息分发给两个策略
+    if (v.nextReportAt === 0) v.nextReportAt = now + Math.random() * (1000 / hz);
+    if (now >= v.nextReportAt) {
+      v.nextReportAt = now + 1000 / hz + (Math.random() - 0.5) * 40;
+      stats.msg++;
+      onMessageA(v); onMessageB(v);
+    }
+  }
+}, 16);
+
+// ---------- 控件 ----------
+const carCount = document.getElementById('carCount');
+carCount.oninput = () => {
+  document.getElementById('carCountVal').textContent = carCount.value;
+  seedVehicles(+carCount.value);
+};
+document.getElementById('hz').oninput = () =>
+  (document.getElementById('hzVal').textContent = document.getElementById('hz').value + ' Hz');
+document.getElementById('toggle').onclick = (e) => {
+  running = !running; e.target.textContent = running ? '暂停' : '继续';
+};
+document.getElementById('reset').onclick = () => seedVehicles(+carCount.value);
+
+seedVehicles(+carCount.value);
+</script>
+</body>
+</html>

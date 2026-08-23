@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>第一个地图与 Marker（高德 JSAPI 2.0）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "PingFang SC", sans-serif; background: #f6f8fa; padding: 16px; color: #24292f; }
+  h1 { font-size: 18px; margin-bottom: 4px; }
+  .sub { font-size: 12px; color: #57606a; margin-bottom: 12px; }
+  .keybar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: 13px; }
+  .keybar input { padding: 5px 8px; border: 1px solid #d0d7de; border-radius: 6px; width: 260px; font-size: 13px; }
+  .keybar button { padding: 6px 16px; border: 1px solid #d0d7de; border-radius: 6px; background: #1a73e8; color: #fff; cursor: pointer; font-size: 13px; }
+  #map { height: 420px; border-radius: 8px; border: 1px solid #d0d7de; display: none; }
+  .tip { background: #fff; border: 1px dashed #d0d7de; border-radius: 8px; padding: 10px 12px; font-size: 12px; color: #57606a; margin-bottom: 12px; }
+  .tip a { color: #1a73e8; }
+  #log { margin-top: 8px; background: #0d1117; color: #7ee787; font: 12px/1.7 Menlo, monospace; border-radius: 8px; padding: 10px 12px; height: 110px; overflow-y: auto; white-space: pre-wrap; }
+  .actions { margin-top: 8px; display: flex; gap: 8px; }
+  .actions button { padding: 4px 14px; border: 1px solid #d0d7de; border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; }
+</style>
+</head>
+<body>
+<h1>第一个地图与 Marker</h1>
+<div class="sub">目标：加载底图 → 放一个图钉 → 点地图移动它 → 模拟「车在动」。这就是地图前端的 Hello World。</div>
+
+<div class="tip">
+  还没有 Key？→ <a href="https://console.amap.com/dev/key/app" target="_blank">高德开放平台控制台</a> → 创建应用 → 添加 Key（平台选 <b>Web端(JS API)</b>），Key 和安全密钥一起复制到下面。
+  若直接双击打开加载失败（file:// 限制），换 VSCode Live Server 或 <code>npx serve</code> 打开。
+  下一课 → <a href="./真实SDK渲染优化.html">真实SDK渲染优化.html</a>：2000 辆车在真实地图上切换 DOM/Canvas/WebGL 三层渲染。
+</div>
+
+<div class="keybar">
+  <input id="key" placeholder="粘贴你的 Key">
+  <input id="jscode" placeholder="安全密钥 securityJsCode（同批下发）">
+  <button onclick="boot()">加载地图</button>
+</div>
+
+<div id="map"></div>
+<div class="actions">
+  <button onclick="moveOnce()">让车动一下（setPosition）</button>
+  <button onclick="startDrive()">开始/停止巡航（模拟上报）</button>
+  <button onclick="addLine()">画出轨迹（Polyline）</button>
+</div>
+<div id="log">（等待加载）</div>
+
+<script>
+'use strict';
+let AMap = null, map = null, marker = null, timer = 0, pos = [114.05, 22.55], trail = [];
+
+function log(msg) {
+  const el = document.getElementById('log');
+  el.textContent = `[${new Date().toLocaleTimeString()}] ${msg}\n` + el.textContent;
+}
+
+async function boot() {
+  const key = document.getElementById('key').value.trim();
+  const jscode = document.getElementById('jscode').value.trim();
+  if (!key) { log('请先填写 Key'); return; }
+  // JSAPI 2.0：2021-12 之后申请的 key 必须配安全密钥
+  if (jscode) window._AMapSecurityConfig = { securityJsCode: jscode };
+
+  // 动态注入官方 loader（UMD，暴露全局 AMapLoader）
+  await new Promise((ok, err) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@amap/amap-jsapi-loader@1.0.1/dist/index.js';
+    s.onload = ok; s.onerror = () => err(new Error('loader 加载失败：检查网络'));
+    document.head.appendChild(s);
+  });
+
+  try {
+    AMap = await AMapLoader.load({ key, version: '2.0' });
+    document.getElementById('map').style.display = 'block';
+    map = new AMap.Map('map', { center: pos, zoom: 15 });      // ① 底图：中心点 + 缩放级别
+    marker = new AMap.Marker({ position: pos, angle: 0 });     // ② Marker：一个图钉（DOM 元素）
+    map.add(marker);
+    log('地图 + Marker 就绪。试着：点击地图任意处移动图钉');
+
+    map.on('click', (e) => {                                    // ③ 事件：拿到点击处的经纬度
+      pos = [e.lnglat.getLng(), e.lnglat.getLat()];
+      marker.setPosition(pos);                                  // ④ 更新位置：车更新就是调它
+      log(`map.on('click') → setPosition(${pos.map(v => v.toFixed(5))})`);
+    });
+    marker.on('click', () => log("marker.on('click') → 点了车（真实项目里这里弹 InfoWindow 详情卡）"));
+  } catch (e) {
+    log('加载失败：' + (e.message || e) + ' —— 检查 Key 是否为「Web端(JS API)」类型、密钥是否配套、域名白名单是否放行');
+  }
+}
+
+function step() {
+  const angle = Math.random() * Math.PI * 2;
+  pos = [pos[0] + Math.cos(angle) * 0.0008, pos[1] + Math.sin(angle) * 0.0008];
+  marker.setPosition(pos);                                      // 每次上报 = 一次 setPosition
+  marker.setAngle((angle * 180) / Math.PI);                     // 车头方向
+  trail.push(pos);
+}
+
+function moveOnce() { if (marker) { step(); log('setPosition → 随机走了一步'); } }
+
+function startDrive() {
+  if (timer) { clearInterval(timer); timer = 0; log('巡航停止'); return; }
+  timer = setInterval(step, 500); // 模拟 2Hz 上报
+  log('开始巡航：每 500ms 一次 setPosition（真实项目里消息来自 MQTT，且要 rAF 合帧，见另一 demo）');
+}
+
+function addLine() {
+  if (!map || trail.length < 2) { log('先「动几下」攒出至少 2 个点'); return; }
+  map.add(new AMap.Polyline({ path: trail, strokeWeight: 6, strokeColor: '#1a73e8' }));
+  map.setFitView();
+  log(`Polyline：把 ${trail.length} 个点连成轨迹线，setFitView 自动框住`);
+}
+</script>
+</body>
+</html>
