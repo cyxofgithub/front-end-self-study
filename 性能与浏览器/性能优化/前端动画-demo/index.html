@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>前端动画性能 Demo</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #171a21; --border: #262b36;
+    --text: #e6e8ee; --muted: #8a93a5;
+    --accent: #4f8cff; --accent2: #31c48d; --danger: #f56c6c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+  header { padding: 24px 32px 8px; }
+  header h1 { font-size: 20px; margin: 0; }
+  header p { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+  main { padding: 8px 32px 56px; max-width: 920px; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 20px; }
+  .panel h2 { font-size: 15px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 12px; margin: 0 0 14px; }
+  .row { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; font-size: 13px; cursor: pointer; }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  button.danger { background: var(--danger); }
+  .track { position: relative; width: 320px; height: 40px; background: #0b0d12; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .box { position: absolute; top: 6px; left: 0; width: 40px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
+  .box.transform { background: var(--accent2); animation: slide 2.4s ease-in-out infinite alternate; }
+  .box.left { background: var(--accent); }
+  @keyframes slide { from { transform: translateX(0); } to { transform: translateX(272px); } }
+  .fps { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .fps b { color: var(--text); font-size: 16px; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .card { background: #1d222c; border: 1px solid var(--border); border-radius: 8px; padding: 16px; min-height: 80px; display: flex; align-items: center; justify-content: center; opacity: 0; transform: translateY(20px); transition: opacity .5s, transform .5s; }
+  .card.animate-in { opacity: 1; transform: translateY(0); }
+  .thrash-box { width: 100%; height: 2px; background: var(--accent); margin-bottom: 2px; }
+  .result { font-size: 13px; margin-top: 10px; }
+  .result b { color: var(--accent2); }
+  code { background: #0b0d12; padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  label { font-size: 13px; cursor: pointer; }
+  #willchange-box { width: 60px; height: 60px; background: var(--accent); border-radius: 8px; margin-top: 16px; transition: transform .3s; }
+</style>
+</head>
+<body>
+<header>
+  <h1>前端动画性能 Demo</h1>
+  <p>单文件，浏览器直接打开。四个面板对应 <a href="../前端动画.md" style="color:var(--accent)">前端动画.md</a> 的高频题。</p>
+</header>
+<main>
+
+  <!-- ① transform vs left -->
+  <section class="panel">
+    <h2>① transform vs left：主线程阻塞时谁还在动？</h2>
+    <p class="sub">绿盒 = CSS <code>transform</code> 动画（合成器线程）；蓝盒 = rAF 驱动 <code>left</code>（主线程）。点「阻塞主线程 2s」观察差异。</p>
+    <div class="row">
+      <div>
+        <div class="track"><div class="box transform">T</div></div>
+        <div class="fps">合成器线程动画（肉眼观察流畅度）</div>
+      </div>
+      <div>
+        <div class="track"><div class="box left" id="box-left">L</div></div>
+        <div class="fps">主线程 rAF FPS <b id="fps">–</b></div>
+      </div>
+      <button class="danger" id="btn-block">阻塞主线程 2s</button>
+    </div>
+    <p class="meta">预期：阻塞期间绿盒继续平滑移动（合成器线程不受影响），蓝盒冻结（rAF 回调跑在主线程被卡死）。这就是「CSS 动画为什么比 JS 动画性能好」的底层原因——线程分离。</p>
+  </section>
+
+  <!-- ② Layout Thrashing -->
+  <section class="panel">
+    <h2>② 强制同步布局（Layout Thrashing）</h2>
+    <p class="sub">对 300 个盒子做「读写交替」vs「批量读→批量写」，真实 <code>performance.now()</code> 测量耗时。</p>
+    <div class="row">
+      <button class="danger" id="btn-thrash-bad">读写交替（强制同步布局）</button>
+      <button id="btn-thrash-good">批量读 → 批量写</button>
+    </div>
+    <div class="result">交错 <b id="r-bad">–</b> ms　|　批量 <b id="r-good">–</b> ms　|　加速比 <b id="r-ratio">–</b></div>
+    <div id="thrash-container" style="margin-top:12px; overflow:hidden;"></div>
+  </section>
+
+  <!-- ③ will-change -->
+  <section class="panel">
+    <h2>③ will-change / 合成层</h2>
+    <p class="sub">给缩放动画的元素加 <code>will-change: transform</code> 提前建合成层。合成层本身不可见，需开 DevTools 验证。</p>
+    <div class="row">
+      <label><input type="checkbox" id="chk-willchange"> 开启 will-change: transform</label>
+      <button class="ghost" id="btn-layer">怎么看合成层？</button>
+    </div>
+    <div id="willchange-box"></div>
+    <p class="meta">hover 放大盒子，肉眼无明显差异；收益在「预热合成层避免首帧卡顿」和「动画全程只走合成阶段」。验证见 README。</p>
+  </section>
+
+  <!-- ④ IntersectionObserver -->
+  <section class="panel">
+    <h2>④ IntersectionObserver：进入视口才播放</h2>
+    <p class="sub">下方卡片滚动进视口时触发 <code>animate-in</code>，只触发一次。</p>
+    <div class="grid" id="card-grid"></div>
+  </section>
+
+</main>
+<script>
+  // ===== ① left 动画（rAF，主线程）+ 主线程 FPS 计数 =====
+  const boxLeft = document.getElementById('box-left');
+  let lx = 0, ldir = 1;
+  function animateLeft() {
+    lx += ldir * 2.2;
+    if (lx > 272 || lx < 0) ldir *= -1;
+    boxLeft.style.left = lx + 'px';
+    requestAnimationFrame(animateLeft);
+  }
+  requestAnimationFrame(animateLeft);
+
+  let frames = 0, lastT = performance.now();
+  function fpsLoop() {
+    frames++;
+    const now = performance.now();
+    if (now - lastT >= 1000) {
+      document.getElementById('fps').textContent = Math.round(frames * 1000 / (now - lastT));
+      frames = 0; lastT = now;
+    }
+    requestAnimationFrame(fpsLoop);
+  }
+  requestAnimationFrame(fpsLoop);
+
+  // 阻塞主线程（同步忙循环，模拟主线程被长任务卡死）
+  document.getElementById('btn-block').addEventListener('click', () => {
+    const end = Date.now() + 2000;
+    while (Date.now() < end) {}
+  });
+
+  // ===== ② 强制同步布局 =====
+  const thrashContainer = document.getElementById('thrash-container');
+  for (let i = 0; i < 300; i++) {
+    const d = document.createElement('div');
+    d.className = 'thrash-box';
+    thrashContainer.appendChild(d);
+  }
+  const boxes = thrashContainer.querySelectorAll('.thrash-box');
+  function runThrash(interleaved) {
+    const t0 = performance.now();
+    if (interleaved) {
+      boxes.forEach(box => {
+        const w = box.offsetWidth;         // 读 → 强制同步布局
+        box.style.width = (w + 1) + 'px';  // 写 → 再次触发
+      });
+    } else {
+      const widths = [...boxes].map(b => b.offsetWidth);                 // 批量读（一次）
+      boxes.forEach((box, i) => box.style.width = (widths[i] + 1) + 'px'); // 批量写（一次）
+    }
+    return performance.now() - t0;
+  }
+  let tBad = 0, tGood = 0;
+  function showRatio() {
+    document.getElementById('r-ratio').textContent = (tBad && tGood) ? (tBad / tGood).toFixed(1) + '×' : '–';
+  }
+  document.getElementById('btn-thrash-bad').addEventListener('click', () => {
+    tBad = runThrash(true);
+    document.getElementById('r-bad').textContent = tBad.toFixed(2);
+    showRatio();
+  });
+  document.getElementById('btn-thrash-good').addEventListener('click', () => {
+    tGood = runThrash(false);
+    document.getElementById('r-good').textContent = tGood.toFixed(2);
+    showRatio();
+  });
+
+  // ===== ③ will-change =====
+  const willBox = document.getElementById('willchange-box');
+  const chk = document.getElementById('chk-willchange');
+  chk.addEventListener('change', () => {
+    willBox.style.willChange = chk.checked ? 'transform' : 'auto';
+  });
+  willBox.addEventListener('mouseenter', () => willBox.style.transform = 'scale(1.3)');
+  willBox.addEventListener('mouseleave', () => willBox.style.transform = 'scale(1)');
+  document.getElementById('btn-layer').addEventListener('click', () => {
+    alert('合成层不可见，验证方法：DevTools → 右上角 ⋮ → More tools → Rendering → 勾选 Layer borders（合成层会显示橙色边框）；或打开 Layers 面板，观察勾选 will-change 的元素被单独分层。');
+  });
+
+  // ===== ④ IntersectionObserver =====
+  const grid = document.getElementById('card-grid');
+  for (let i = 1; i <= 12; i++) {
+    const c = document.createElement('div');
+    c.className = 'card';
+    c.textContent = i;
+    grid.appendChild(c);
+  }
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('animate-in');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2 });
+  document.querySelectorAll('.card').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
