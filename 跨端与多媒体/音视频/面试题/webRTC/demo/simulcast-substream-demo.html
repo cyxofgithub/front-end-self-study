@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>三端帧率/分辨率控制 — simulcast + 子流切换 Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #0f1117; color: #d7dce5; display: flex; flex-direction: column; }
+  code, .mono { font-family: "SF Mono", Menlo, Consolas, monospace; }
+
+  header { padding: 14px 20px; border-bottom: 1px solid #232838; }
+  header h1 { font-size: 16px; color: #fff; }
+  header .sub { font-size: 12px; color: #7a8299; margin-top: 5px; line-height: 1.7; }
+  header .sub b { color: #f0b45c; }
+
+  .controls { padding: 12px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #232838; }
+  .controls .hint { font-size: 12px; color: #7a8299; }
+  .preset { border: 1px solid #2f3650; background: #171a21; color: #9db1e0; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+  .preset.active { background: #244a7c; color: #fff; border-color: #3560b0; }
+
+  .layout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding: 14px 20px; }
+  @media (max-width: 1000px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel { background: #171a21; border: 1px solid #232838; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; }
+  .panel-title { padding: 10px 14px; font-size: 13px; color: #fff; border-bottom: 1px solid #232838; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .tag { font-size: 10px; padding: 2px 8px; border-radius: 999px; border: 1px solid #2f3650; color: #8b95ad; white-space: nowrap; }
+  .tag.real { color: #6fe09a; border-color: #24402e; }
+  .tag.mock { color: #f0b45c; border-color: #4a3320; }
+  .panel-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+  .kv { font-size: 12px; display: flex; justify-content: space-between; border-bottom: 1px dashed #232838; padding: 4px 0; }
+  .kv .k { color: #7a8299; }
+  .kv .v { color: #e8eefc; font-family: monospace; }
+  .codeblock { background: #10131c; border: 1px solid #232838; border-radius: 8px; padding: 10px; font-size: 11px; line-height: 1.6; color: #9db1e0; overflow-x: auto; white-space: pre; }
+  .codeblock.dim { color: #5b6785; }
+  .caption { font-size: 11px; color: #7a8299; }
+  canvas, video { width: 100%; border-radius: 8px; background: #000; border: 1px solid #232838; }
+  video { aspect-ratio: 16/9; }
+  .note { font-size: 11.5px; color: #8b95ad; line-height: 1.7; }
+  .note b { color: #f0b45c; }
+  .note code { color: #9db1e0; }
+
+  .seg { display: flex; gap: 8px; }
+  .seg button { flex: 1; border: 1px solid #2f3650; background: none; color: #9db1e0; border-radius: 8px; padding: 7px; cursor: pointer; font-size: 12px; }
+  .seg button.active { background: #244a7c; color: #fff; border-color: #3560b0; }
+
+  .flow { display: flex; flex-direction: column; gap: 6px; font-size: 12px; }
+  .flow .node { border: 1px solid #2c3448; border-radius: 8px; padding: 8px 10px; background: #191d28; line-height: 1.6; }
+  .flow .node.hl { border-color: #3560b0; background: #1d2a45; color: #dbe6ff; }
+  .flow .arrow { text-align: center; color: #5b6785; font-size: 11px; }
+
+  .meter { height: 10px; background: #10131c; border-radius: 5px; overflow: hidden; border: 1px solid #232838; }
+  .meter > div { height: 100%; background: #3560b0; width: 100%; transition: width .3s; }
+
+  footer { padding: 12px 20px; font-size: 11px; color: #5b6785; border-top: 1px solid #232838; line-height: 1.7; }
+  footer code { color: #7a8299; }
+</style>
+</head>
+<body>
+<header>
+  <h1>三端帧率/分辨率控制 — simulcast + 子流切换</h1>
+  <div class="sub">一句话结论：<b>帧率/分辨率是编码端定死的参数</b>——上行（编码器参数）真正改、服务端（挑档/转码）有条件改、下行（换子流 URL）只能选。下面用真实 WebRTC 环回推拉流验证。</div>
+</header>
+
+<div class="controls">
+  <span class="hint">点档位 = 上行改编码参数 → 下行收到的流随之变（本 demo 无 SFU，档位直接驱动上行编码器）：</span>
+  <button class="preset active" data-preset="main">🎥 主码流 720p30</button>
+  <button class="preset" data-preset="sub">📺 子码流 360p15</button>
+  <button class="preset" data-preset="low">📱 极低档 180p10</button>
+</div>
+
+<div class="layout">
+  <section class="panel">
+    <div class="panel-title">① 上行 · 车端编码器 <span class="tag real">真实 getParameters/setParameters</span></div>
+    <div class="panel-body">
+      <canvas id="srcCanvas" width="1280" height="720"></canvas>
+      <div class="note">帧率/分辨率<b>在这里定死</b>：<code>canvas.captureStream(fps)</code> 控帧率，<code>scaleResolutionDownBy</code> 控分辨率（对应车端 <code>-framerate</code>/<code>scale</code>）。</div>
+      <div class="caption">当前实时发送的编码参数（<code>setParameters</code> 实际下发）：</div>
+      <div id="upEncodings" class="codeblock">…</div>
+      <div class="caption">若要 simulcast 多档（SFU 挑档的基础），配三档 rid：</div>
+      <div class="codeblock dim">params.encodings = [
+  { rid: 'h', maxBitrate: 2_000_000, scaleResolutionDownBy: 1, maxFramerate: 30 }, // 720p30 主档
+  { rid: 'm', maxBitrate: 500_000,  scaleResolutionDownBy: 2, maxFramerate: 15 },  // 360p15 中档
+  { rid: 'l', maxBitrate: 150_000,  scaleResolutionDownBy: 4, maxFramerate: 15 },  // 180p15 低档
+];</div>
+      <div class="kv"><span class="k">outbound frameWidth×Height</span><span class="v" id="upRes">—</span></div>
+      <div class="kv"><span class="k">outbound framesPerSecond</span><span class="v" id="upFps">—</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">② 服务端 · SFU <span class="tag mock">模拟图例</span></div>
+    <div class="panel-body">
+      <div class="seg" id="sfuMode">
+        <button data-mode="pick" class="active">挑档（simulcast）</button>
+        <button data-mode="transcode">转码（重编码）</button>
+      </div>
+      <div class="flow" id="sfuFlow"></div>
+      <div class="note" id="sfuNote"></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-title">③ 下行 · 浏览器拉流 <span class="tag real">真实 ontrack + getStats</span></div>
+    <div class="panel-body">
+      <video id="outVideo" muted autoplay playsinline></video>
+      <div class="kv"><span class="k">inbound frameWidth×Height</span><span class="v" id="downRes">—</span></div>
+      <div class="kv"><span class="k">inbound framesPerSecond</span><span class="v" id="downFps">—</span></div>
+      <div class="kv"><span class="k">inbound framesDecoded</span><span class="v" id="downDecoded">—</span></div>
+      <div class="caption">解码开销（像素吞吐口径，相对主码流）：</div>
+      <div class="meter"><div id="costMeter"></div></div>
+      <div class="note" id="costNote">—</div>
+      <div class="note">浏览器<b>改不了</b>帧率，只能选拉哪一档；本 demo「选档」= 换 URL 让上行按档编码（文档 4.4 <code>subUrl vs mainUrl</code> 那行）。</div>
+    </div>
+  </section>
+</div>
+
+<footer>
+  真实部分：<code>canvas.captureStream</code> / <code>RTCPeerConnection</code> + SDP-ICE 环回信令 / <code>getParameters</code>·<code>setParameters</code>（scaleResolutionDownBy·maxFramerate·maxBitrate）/ <code>getStats</code> 出·入站读数。模拟部分：SFU 挑档/转码图例、解码开销估算公式（浏览器无「硬/软解」直读 API）。接真实 SRS：把环回信令换成 WHEP 的 <code>fetch</code>（文档 §二），档位切换换成拉 <code>vehicle_01_sub</code> 子流 URL。
+</footer>
+
+<script>
+class SimulcastDemo {
+  constructor() {
+    this.canvas = document.getElementById('srcCanvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.video = document.getElementById('outVideo');
+    this.senderPc = new RTCPeerConnection();
+    this.receiverPc = new RTCPeerConnection();
+    this.sender = null;
+    this.stream = null;
+    this.frame = 0;
+    this.current = 'main';
+    this.sfuMode = 'pick';
+
+    this.PRESETS = {
+      main: { label: '主码流', res: '720p',  fps: 30, scaleDownBy: 1, bitrate: 2_000_000 },
+      sub:  { label: '子码流', res: '360p',  fps: 15, scaleDownBy: 2, bitrate: 500_000 },
+      low:  { label: '极低档', res: '180p',  fps: 10, scaleDownBy: 4, bitrate: 150_000 },
+    };
+
+    this.setupSignal();
+    this.bindUI();
+    this.startDraw();
+    this.renderSfu();
+  }
+
+  setupSignal() {
+    this.senderPc.onicecandidate = (e) => { if (e.candidate) this.receiverPc.addIceCandidate(e.candidate).catch(() => {}); };
+    this.receiverPc.onicecandidate = (e) => { if (e.candidate) this.senderPc.addIceCandidate(e.candidate).catch(() => {}); };
+    this.receiverPc.ontrack = (e) => {
+      const stream = e.streams[0] || new MediaStream([e.track]);
+      this.video.srcObject = stream;
+      this.video.play().catch(() => {});
+    };
+  }
+
+  async start() {
+    this.stream = this.canvas.captureStream(this.PRESETS[this.current].fps);
+    this.sender = this.senderPc.addTrack(this.stream.getVideoTracks()[0], this.stream);
+    await this.applyEncoding(this.PRESETS[this.current]);
+
+    // 环回 SDP 交换（真实 SDP/ICE，通道是模拟的：同页两个 PC 直接互塞）
+    const offer = await this.senderPc.createOffer();
+    await this.senderPc.setLocalDescription(offer);
+    await this.receiverPc.setRemoteDescription(offer);
+    const answer = await this.receiverPc.createAnswer();
+    await this.receiverPc.setLocalDescription(answer);
+    await this.senderPc.setRemoteDescription(answer);
+
+    this.updateEncodingDisplay();
+    this.renderCost();
+    this.pollStats();
+  }
+
+  async applyEncoding(p) {
+    const params = this.sender.getParameters();
+    params.encodings = [{ maxBitrate: p.bitrate, scaleResolutionDownBy: p.scaleDownBy, maxFramerate: p.fps }];
+    await this.sender.setParameters(params);
+  }
+
+  async switchPreset(key) {
+    this.current = key;
+    const p = this.PRESETS[key];
+    // 停旧采集，按新帧率重新采集（= 车端 -framerate）
+    if (this.stream) this.stream.getTracks().forEach((t) => t.stop());
+    this.stream = this.canvas.captureStream(p.fps);
+    await this.sender.replaceTrack(this.stream.getVideoTracks()[0]);
+    await this.applyEncoding(p);
+    this.updateEncodingDisplay();
+    this.renderSfu();
+    this.renderCost();
+  }
+
+  startDraw() {
+    const loop = () => {
+      this.frame++;
+      const c = this.ctx, t = this.frame, w = this.canvas.width, h = this.canvas.height;
+      c.fillStyle = '#0a0c12';
+      c.fillRect(0, 0, w, h);
+      c.strokeStyle = '#1a1f2e';
+      c.lineWidth = 1;
+      for (let x = 0; x <= w; x += 64) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); }
+      for (let y = 0; y <= h; y += 64) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); }
+      const bx = w / 2 + Math.sin(t * 0.05) * (w / 3);
+      const by = h / 2 + Math.cos(t * 0.04) * (h / 3);
+      c.fillStyle = '#7ea6ff';
+      c.beginPath(); c.arc(bx, by, 24, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#e8eefc';
+      c.font = 'bold 28px monospace';
+      c.fillText('frame ' + t, 20, 40);
+      c.font = '20px monospace';
+      c.fillText('t=' + (t / 30).toFixed(1) + 's', 20, 72);
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  }
+
+  async pollStats() {
+    const sendStats = await this.senderPc.getStats();
+    sendStats.forEach((r) => {
+      if (r.type === 'outbound-rtp' && r.kind === 'video') {
+        document.getElementById('upRes').textContent = `${r.frameWidth ?? '—'}×${r.frameHeight ?? '—'}`;
+        document.getElementById('upFps').textContent = (r.framesPerSecond ?? 0).toFixed(1) + ' fps';
+      }
+    });
+    const recvStats = await this.receiverPc.getStats();
+    recvStats.forEach((r) => {
+      if (r.type === 'inbound-rtp' && r.kind === 'video') {
+        document.getElementById('downRes').textContent = `${r.frameWidth ?? '—'}×${r.frameHeight ?? '—'}`;
+        document.getElementById('downFps').textContent = (r.framesPerSecond ?? 0).toFixed(1) + ' fps';
+        document.getElementById('downDecoded').textContent = r.framesDecoded ?? '—';
+      }
+    });
+    setTimeout(() => this.pollStats(), 500);
+  }
+
+  updateEncodingDisplay() {
+    const p = this.PRESETS[this.current];
+    document.getElementById('upEncodings').textContent =
+`params.encodings = [{
+  maxBitrate: ${p.bitrate},
+  scaleResolutionDownBy: ${p.scaleDownBy},  // 分辨率 ÷ ${p.scaleDownBy} → ${p.res}
+  maxFramerate: ${p.fps},                    // 帧率上限
+}]`;
+  }
+
+  renderSfu() {
+    const p = this.PRESETS[this.current];
+    const flow = document.getElementById('sfuFlow');
+    if (this.sfuMode === 'pick') {
+      flow.innerHTML = `
+        <div class="node">车端推 3 档：h=720p30 / m=360p15 / l=180p10</div>
+        <div class="arrow">▼ 挑一档转发（不解码不编码，几乎 0 CPU）</div>
+        <div class="node hl">SFU 挑「${p.label}」档 → 原样转发给下行</div>`;
+      document.getElementById('sfuNote').innerHTML = `<b>挑档</b>：帧率/分辨率仍是车端编码时定的，SFU 只转发，所以一台能扛几百上千路。`;
+    } else {
+      flow.innerHTML = `
+        <div class="node">车端只推 1 份：720p30</div>
+        <div class="arrow">▼ 解码 + 重新编码（很贵）</div>
+        <div class="node hl">SFU 转码出子流：${p.res} @ ${p.fps}fps</div>`;
+      document.getElementById('sfuNote').innerHTML = `<b>转码</b>：服务端解码再编码才真正改了帧率/分辨率，但一台只能转几路（软编/硬编都贵），是兜底手段。`;
+    }
+  }
+
+  renderCost() {
+    const main = this.PRESETS.main;
+    const p = this.PRESETS[this.current];
+    const px = (r) => (1280 / r.scaleDownBy) * (720 / r.scaleDownBy) * r.fps;
+    const ratio = px(p) / px(main);
+    document.getElementById('costMeter').style.width = (ratio * 100).toFixed(1) + '%';
+    document.getElementById('costNote').innerHTML =
+      `当前「${p.label}」像素吞吐 ≈ 主码流的 <b>1/${Math.round(1 / ratio)}</b>（${px(p).toLocaleString()} px/s vs ${px(main).toLocaleString()} px/s）；文档口径「1/4 起」是含固定开销的保守值。`;
+  }
+
+  bindUI() {
+    document.querySelectorAll('.preset').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.preset').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.switchPreset(btn.dataset.preset);
+      });
+    });
+    document.querySelectorAll('#sfuMode button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#sfuMode button').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        this.sfuMode = btn.dataset.mode;
+        this.renderSfu();
+      });
+    });
+  }
+}
+
+const demo = new SimulcastDemo();
+demo.start().catch((err) => {
+  console.error('[demo] 启动失败：', err);
+  document.getElementById('upEncodings').textContent = '启动失败：' + err.message;
+});
+</script>
+</body>
+</html>
