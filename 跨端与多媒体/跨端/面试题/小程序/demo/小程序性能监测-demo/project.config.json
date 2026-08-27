@@ -1,0 +1,29 @@
+{
+    "description": "小程序性能监测与 setData 更新策略 Demo",
+    "packOptions": {
+        "ignore": [],
+        "include": []
+    },
+    "setting": {
+        "urlCheck": false,
+        "es6": true,
+        "enhance": true,
+        "postcss": true,
+        "minified": false,
+        "compileHotReLoad": true,
+        "babelSetting": {
+            "ignore": [],
+            "disablePlugins": [],
+            "outputPath": ""
+        }
+    },
+    "compileType": "miniprogram",
+    "libVersion": "latest",
+    "appid": "wxd3bfe74afbbced53",
+    "projectname": "mini-program-performance-demo",
+    "condition": {},
+    "editorSetting": {
+        "tabIndent": "insertSpaces",
+        "tabSize": 4
+    }
+}

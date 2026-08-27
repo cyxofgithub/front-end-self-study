@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "小程序性能监测 Demo",
+    "navigationBarBackgroundColor": "#111923",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#111923",
+    "backgroundTextStyle": "dark"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

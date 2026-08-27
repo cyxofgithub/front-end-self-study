@@ -1,0 +1,4 @@
+{
+  "desc": "小程序性能监测 Demo sitemap",
+  "rules": [{ "action": "allow", "page": "*" }]
+}

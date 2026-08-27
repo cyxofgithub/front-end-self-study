@@ -1,0 +1,34 @@
+page { background: #111923; color: #edf4f7; }
+.page { min-height: 100vh; box-sizing: border-box; padding: 28rpx 28rpx 60rpx; }
+.hero { padding: 12rpx 4rpx 28rpx; border-bottom: 1rpx solid #2a3846; }
+.eyebrow { color: #55d6c5; font-size: 20rpx; letter-spacing: 2rpx; }
+.title { margin-top: 12rpx; font-size: 48rpx; font-weight: 700; }
+.subtitle { margin-top: 8rpx; color: #9eacba; font-size: 25rpx; }
+.status { display: inline-block; margin-top: 20rpx; padding: 8rpx 14rpx; border: 1rpx solid #3b4a59; color: #9eacba; font-size: 22rpx; }
+.status.running { color: #55d6c5; border-color: #2c9a8f; }
+.section { margin-top: 22rpx; padding: 24rpx; border: 1rpx solid #2c3948; background: #18222d; }
+.section-title { font-size: 28rpx; font-weight: 600; }
+.segmented { display: flex; gap: 12rpx; margin-top: 18rpx; }
+button { height: 76rpx; line-height: 76rpx; padding: 0 22rpx; border-radius: 6rpx; border: 1rpx solid #3a4a5b; background: #222f3c; color: #edf4f7; font-size: 25rpx; }
+.segment { flex: 1; }
+.segment.selected { border-color: #55d6c5; background: #155d59; color: #fff; }
+.explain { margin-top: 14rpx; color: #9eacba; font-size: 22rpx; }
+.slider-row { display: flex; justify-content: space-between; margin-top: 20rpx; color: #b8c5cf; font-size: 24rpx; }
+.slider-value { color: #55d6c5; }
+slider { margin: 8rpx 0 0; }
+.check-row { display: flex; align-items: center; gap: 14rpx; margin-top: 18rpx; color: #c4d0d8; font-size: 23rpx; }
+.checkbox { width: 32rpx; height: 32rpx; line-height: 32rpx; border: 1rpx solid #526274; text-align: center; color: #111923; font-size: 24rpx; }
+.checkbox.checked { border-color: #55d6c5; background: #55d6c5; }
+.metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12rpx; margin-top: 22rpx; }
+.metric { min-height: 118rpx; padding: 18rpx; border: 1rpx solid #2c3948; background: #18222d; }
+.metric-name, .metric-unit { display: block; color: #9eacba; font-size: 21rpx; }
+.metric-value { display: inline-block; margin-top: 8rpx; color: #edf4f7; font-size: 40rpx; font-weight: 700; }
+.metric-value.small { font-size: 30rpx; }
+.actions { display: flex; gap: 12rpx; margin-top: 22rpx; }
+.actions button { flex: 1; }
+.actions .primary { border-color: #2c9a8f; background: #155d59; }
+.preview-section { overflow: hidden; }
+.node-list { margin-top: 18rpx; max-height: 420rpx; overflow: hidden; }
+.node { display: flex; align-items: center; gap: 16rpx; height: 34rpx; color: #8293a2; font-size: 18rpx; }
+.bar { display: block; height: 10rpx; background: #55d6c5; opacity: .65; }
+.notice { margin-top: 22rpx; padding: 20rpx; border-left: 4rpx solid #ffb454; background: #2a251d; color: #c8b594; font-size: 21rpx; }

@@ -1,0 +1,45 @@
+<scroll-view class="page" scroll-y>
+  <view class="hero">
+    <view class="eyebrow">NATIVE MINI PROGRAM</view>
+    <view class="title">性能监测实验</view>
+    <view class="subtitle">真实 setData / wx.nextTick / 页面生命周期</view>
+    <view class="status {{running ? 'running' : ''}}">{{running ? '实验运行中' : '已停止'}}</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">更新策略</view>
+    <view class="segmented">
+      <button class="segment {{strategy === 'naive' ? 'selected' : ''}}" bindtap="chooseNaive">逐事件更新</button>
+      <button class="segment {{strategy === 'batched' ? 'selected' : ''}}" bindtap="chooseBatched">批量更新</button>
+    </view>
+    <view class="explain">{{strategy === 'naive' ? '每个数据事件都调用一次 setData' : '事件先进入缓冲区，每 50ms 合并提交一次'}}</view>
+  </view>
+
+  <view class="section">
+    <view class="slider-row"><text>模拟节点</text><text class="slider-value">{{nodeCount}}</text></view>
+    <slider min="50" max="800" step="50" value="{{nodeCount}}" bindchange="changeNodes" activeColor="#55d6c5" backgroundColor="#344353" block-color="#55d6c5" />
+    <view class="slider-row"><text>数据事件 / 秒</text><text class="slider-value">{{rate}}</text></view>
+    <slider min="5" max="120" step="5" value="{{rate}}" bindchange="changeRate" activeColor="#55d6c5" backgroundColor="#344353" block-color="#55d6c5" />
+    <view class="slider-row"><text>模拟 payload / KB</text><text class="slider-value">{{payloadKb}}</text></view>
+    <slider min="1" max="32" step="1" value="{{payloadKb}}" bindchange="changePayload" activeColor="#55d6c5" backgroundColor="#344353" block-color="#55d6c5" />
+    <view class="check-row" bindtap="toggleLeak"><view class="checkbox {{leak ? 'checked' : ''}}">{{leak ? '✓' : ''}}</view><text>模拟未释放内存（最多 64 MB）</text></view>
+  </view>
+
+  <view class="metrics">
+    <view class="metric"><text class="metric-name">数据事件</text><text class="metric-value">{{events}}</text><text class="metric-unit">次</text></view>
+    <view class="metric"><text class="metric-name">setData 更新</text><text class="metric-value">{{setDataCount}}</text><text class="metric-unit">次</text></view>
+    <view class="metric"><text class="metric-name">更新回调</text><text class="metric-value">{{setDataMs}}</text><text class="metric-unit">ms</text></view>
+    <view class="metric"><text class="metric-name">nextTick 延迟</text><text class="metric-value">{{nextTickMs}}</text><text class="metric-unit">ms</text></view>
+    <view class="metric"><text class="metric-name">模拟通信量</text><text class="metric-value">{{trafficKb}}</text><text class="metric-unit">KB</text></view>
+    <view class="metric"><text class="metric-name">JS Heap</text><text class="metric-value small">{{heapText}}</text><text class="metric-unit">{{heapUnit}}</text></view>
+  </view>
+
+  <view class="actions"><button class="primary" bindtap="toggleRun">{{running ? '停止实验' : '开始实验'}}</button><button bindtap="reset">重置指标与内存</button></view>
+
+  <view class="section preview-section">
+    <view class="section-title">真实页面节点</view>
+    <view class="node-list"><view wx:for="{{rows}}" wx:key="id" class="node"><text>#{{item.id}}</text><text class="bar" style="width: {{item.width}}%;"></text></view></view>
+  </view>
+
+  <view class="notice">本 Demo 是可导入微信开发者工具的原生小程序。FPS、原生组件内存和真实桥接耗时请同时打开开发者工具性能面板或使用真机观察；页面内指标记录的是本次页面实际发生的更新和可用的 JS Heap。</view>
+</scroll-view>
