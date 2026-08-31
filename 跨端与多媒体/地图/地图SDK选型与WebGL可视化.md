@@ -156,4 +156,4 @@ flowchart LR
 - [高德地图与高频轨迹渲染（SDK 使用层：接入、Marker 选型、rAF 管线、轨迹抽稀）](./高德地图与高频轨迹渲染.md)
 - [Canvas 完整指南与面试题（2D 上下文、动画、事件）](../Canvas完整指南与面试题.md)
 - [WebGL 与 WebGPU 区别（升级路线）](../webgl/webgl与webgpu区别.md)
-- [消息来源侧：MQTT 长连接治理](../../网络与安全/计算机网络/websocket/WebSocket与MQTT长连接治理.md)
+- [消息来源侧：MQTT 长连接治理](../../网络与安全/计算机网络/websocket/MQTT的QoS遗嘱保留消息与订阅生命周期.md)
