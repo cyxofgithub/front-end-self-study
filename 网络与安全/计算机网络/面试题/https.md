@@ -77,6 +77,17 @@ sequenceDiagram
 
 以图中 TLS 1.2 完整握手流程为例，一次全新的 HTTPS 连接需要 **3 个 RTT** 才能开始传输业务数据：
 
+```text
+1 条 HTTPS over TCP 连接（TLS 1.2 首次连接）
+├─ TCP 握手：3 个典型报文，消耗 1 RTT
+├─ TLS 握手：约 4 个握手消息组，消耗 2 RTT
+└─ HTTP 请求与响应：N 个业务报文，至少消耗 1 RTT 才收到响应首字节
+
+从建连开始到收到 HTTP 响应首字节：约 1 + 2 + 1 = 4 RTT
+```
+
+> 这里的“4 个 TLS 握手消息组”是面试中的简化说法，不等于物理上固定只发 4 个 TCP 包。TLS 消息可能被合并或因证书链、MTU 而拆分；响应体较大时，完整下载还要受带宽、拥塞窗口和丢包重传影响。
+
 ```mermaid
 sequenceDiagram
     participant C as 客户端
