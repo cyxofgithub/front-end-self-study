@@ -1,9 +1,0 @@
-{
-  "name": "rust-wasm-demo",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "build:wasm": "wasm-pack build --target web",
-    "serve": "npx serve ."
-  }
-}

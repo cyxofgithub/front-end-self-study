@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="不定高度虚拟滚动原理交互演示" />
+    <title>不定高度虚拟滚动实验台</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Variable Height Virtualization</p>
+          <h1>不定高度虚拟滚动实验台</h1>
+        </div>
+        <div class="topbar-actions">
+          <label class="field compact-field">
+            <span>跳转 block</span>
+            <input id="jump-input" type="number" min="1" max="1000" value="500" />
+          </label>
+          <button id="jump-button" type="button">跳转</button>
+          <button id="grow-button" class="accent" type="button">改变视口上方高度</button>
+        </div>
+      </header>
+
+      <section class="workspace">
+        <div class="stage">
+          <div class="stage-header">
+            <div>
+              <strong>虚拟文档</strong>
+              <span>共 1,000 个不定高 block</span>
+            </div>
+            <label class="range-field">
+              <span>Overscan <output id="overscan-output">4</output></span>
+              <input id="overscan-input" type="range" min="0" max="12" value="4" />
+            </label>
+          </div>
+          <div id="viewport" class="viewport" tabindex="0" aria-label="虚拟滚动文档">
+            <div id="virtual-content"></div>
+          </div>
+        </div>
+
+        <aside class="inspector">
+          <section>
+            <p class="eyebrow">Live State</p>
+            <h2>实时索引</h2>
+            <dl class="stats">
+              <div><dt>scrollTop</dt><dd id="scroll-top">0 px</dd></div>
+              <div><dt>可见范围</dt><dd id="visible-range">-</dd></div>
+              <div><dt>实际挂载</dt><dd id="render-range">-</dd></div>
+              <div><dt>DOM block</dt><dd id="dom-count">0 / 1000</dd></div>
+              <div><dt>top spacer</dt><dd id="top-spacer">0 px</dd></div>
+              <div><dt>bottom spacer</dt><dd id="bottom-spacer">0 px</dd></div>
+              <div><dt>已实测</dt><dd id="measured-count">0</dd></div>
+              <div><dt>文档总高度</dt><dd id="total-height">0 px</dd></div>
+            </dl>
+          </section>
+
+          <section class="memory-map">
+            <p class="eyebrow">Height Index</p>
+            <h2>高度索引如何工作</h2>
+            <div class="formula">offset(i) = height(0) + ... + height(i - 1)</div>
+            <div class="legend">
+              <span><i class="estimated"></i>预估高度</span>
+              <span><i class="measured"></i>实测高度</span>
+              <span><i class="anchor"></i>可见锚点</span>
+            </div>
+          </section>
+
+          <section class="event-panel">
+            <div class="section-heading">
+              <div><p class="eyebrow">Event Log</p><h2>测量与补偿</h2></div>
+              <button id="clear-log" class="icon-button" type="button" title="清空日志" aria-label="清空日志">×</button>
+            </div>
+            <ol id="event-log" class="event-log"></ol>
+          </section>
+        </aside>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
