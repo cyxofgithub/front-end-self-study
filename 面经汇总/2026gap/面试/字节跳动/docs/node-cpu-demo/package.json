@@ -1,0 +1,25 @@
+{
+  "name": "node-cpu-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev:unsafe": "node --import tsx src/server.ts",
+    "dev:safe": "DEMO_MODE=safe node --import tsx src/server.ts",
+    "dev:gc": "DEMO_MODE=gc node --max-old-space-size=192 --import tsx src/server.ts",
+    "trace:gc": "DEMO_MODE=gc node --max-old-space-size=192 --trace-gc --import tsx src/server.ts",
+    "inspect:gc": "pnpm build && DEMO_MODE=gc node --max-old-space-size=192 --expose-gc --inspect-brk=127.0.0.1:9230 --enable-source-maps dist/server.js",
+    "profile": "mkdir -p profiles && node --import tsx --cpu-prof --cpu-prof-dir=profiles src/server.ts",
+    "trigger": "node --import tsx src/trigger.ts",
+    "load": "node --import tsx src/load.ts",
+    "load:gc": "LOAD_PATH=/allocate RPS=2 node --import tsx src/load.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0"
+  }
+}
