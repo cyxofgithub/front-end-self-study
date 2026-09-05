@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package demo;
+
+// 这份 .proto 就是「契约」：服务端和客户端都用它，字段编号必须一致。
+service UserService {
+  // 一个远程方法：传入 GetUserRequest，返回 User。
+  // 客户端调用时会写成 client.GetUser(...)，看起来像本地函数。
+  rpc GetUser (GetUserRequest) returns (User);
+}
+
+message GetUserRequest {
+  string id = 1;   // 字段编号 1 = id
+}
+
+message User {
+  string id = 1;   // 字段编号 1 = id
+  string name = 2; // 字段编号 2 = name
+  string age = 3; // 字段编号 3 = age
+}
